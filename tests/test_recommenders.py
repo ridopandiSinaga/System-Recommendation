@@ -54,9 +54,34 @@ def test_content_based_recommends_similar_metadata():
     assert recommendations.iloc[0]["isbn"] == "B"
 
 
+def test_content_based_artifact_roundtrip(tmp_path):
+    artifact = tmp_path / "content.joblib"
+    recommender = ContentBasedRecommender().fit(sample_books())
+
+    recommender.save(artifact)
+    loaded = ContentBasedRecommender.load(artifact)
+    recommendations = loaded.recommend_similar(title="Python Basics", top_n=1)
+
+    assert recommendations.iloc[0]["isbn"] == "B"
+
+
 def test_collaborative_recommends_unread_similar_item():
     recommender = ItemBasedCollaborativeRecommender(n_neighbors=2).fit(sample_books(), sample_ratings())
     recommendations = recommender.recommend_for_user(user_id=2, top_n=1)
+
+    assert recommendations.iloc[0]["isbn"] == "B"
+
+
+def test_collaborative_artifact_roundtrip(tmp_path):
+    artifact = tmp_path / "collab.joblib"
+    recommender = ItemBasedCollaborativeRecommender(n_neighbors=2).fit(
+        sample_books(),
+        sample_ratings(),
+    )
+
+    recommender.save(artifact)
+    loaded = ItemBasedCollaborativeRecommender.load(artifact)
+    recommendations = loaded.recommend_for_user(user_id=2, top_n=1)
 
     assert recommendations.iloc[0]["isbn"] == "B"
 

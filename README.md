@@ -108,6 +108,16 @@ Rekomendasi collaborative filtering berdasarkan histori user:
 uv run book-rec recommend-collab --data-dir data/raw --user-id 5709
 ```
 
+Simpan model artifact untuk setting default app:
+
+```bash
+uv run book-rec train-content --data-dir data/raw --output models/content.joblib
+uv run book-rec train-collab --data-dir data/raw --output models/collab.joblib
+```
+
+Artifact di folder `models/` diabaikan oleh git. Streamlit app akan memakai
+artifact tersebut jika tersedia dan setting sidebar masih default.
+
 ## Demo Streamlit
 
 Jalankan app:
@@ -224,14 +234,12 @@ Verifikasi yang sudah dilakukan pada project ini:
 - Dataset sangat sparse, sehingga collaborative filtering baseline belum optimal.
 - Cover buku berasal dari URL eksternal dataset dan bisa gagal tampil jika URL
   sumber tidak tersedia.
-- Streamlit app membangun model saat startup dan menyimpan hasilnya di cache
-  Streamlit, belum memakai artifact permanen dari folder `models/`.
+- Streamlit app membangun model saat startup dan menyimpan hasilnya di cache jika
+  artifact default di `models/` belum tersedia.
 - Evaluasi di notebook masih ringan dan belum memakai split temporal.
 
 ## Roadmap
 
-- simpan model artifact ke `models/`
-- tambah command `book-rec train-content` dan `book-rec train-collab`
 - tambah screenshot Streamlit ke `docs/images/`
 - eksperimen hybrid recommender yang menggabungkan metadata dan rating
 - revisi atau ringkas notebook lama jika masih ingin disimpan di repo

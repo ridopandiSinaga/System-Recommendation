@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
-import pandas as pd
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender
 from book_recommender.data import DatasetNotFoundError, dataset_summary, prepare_dataset, validate_data_dir
 
 
-DEFAULT_MAX_BOOKS = 30_000
+DEFAULT_MAX_BOOKS = 5_000
 
 
 def main() -> None:
@@ -47,6 +49,17 @@ def build_parser() -> argparse.ArgumentParser:
     collab.add_argument("--top-n", type=int, default=10)
     collab.add_argument("--neighbors", type=int, default=50)
     collab.set_defaults(func=recommend_collab)
+
+    train_content = subparsers.add_parser("train-content", help="Build and save content model artifact.")
+    add_common_dataset_args(train_content)
+    train_content.add_argument("--output", type=Path, default=Path("models/content.joblib"))
+    train_content.set_defaults(func=train_content_model)
+
+    train_collab = subparsers.add_parser("train-collab", help="Build and save collaborative model artifact.")
+    add_common_dataset_args(train_collab)
+    train_collab.add_argument("--neighbors", type=int, default=50)
+    train_collab.add_argument("--output", type=Path, default=Path("models/collab.joblib"))
+    train_collab.set_defaults(func=train_collab_model)
 
     return parser
 
@@ -93,6 +106,25 @@ def recommend_collab(args: argparse.Namespace) -> None:
     print_recommendations(recommendations)
 
 
+def train_content_model(args: argparse.Namespace) -> None:
+    dataset = load_prepared_dataset(args)
+    recommender = ContentBasedRecommender().fit(dataset.books)
+    save_artifact(recommender, args.output)
+    print(f"Saved content model to {args.output.resolve()}")
+    print_training_summary(dataset)
+
+
+def train_collab_model(args: argparse.Namespace) -> None:
+    dataset = load_prepared_dataset(args)
+    recommender = ItemBasedCollaborativeRecommender(n_neighbors=args.neighbors).fit(
+        dataset.books,
+        dataset.ratings,
+    )
+    save_artifact(recommender, args.output)
+    print(f"Saved collaborative model to {args.output.resolve()}")
+    print_training_summary(dataset)
+
+
 def load_prepared_dataset(args: argparse.Namespace):
     return prepare_dataset(
         data_dir=args.data_dir,
@@ -103,7 +135,17 @@ def load_prepared_dataset(args: argparse.Namespace):
     )
 
 
-def print_recommendations(recommendations: pd.DataFrame) -> None:
+def save_artifact(recommender, output: Path) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    recommender.save(output)
+
+
+def print_training_summary(dataset) -> None:
+    for key, value in dataset_summary(dataset).items():
+        print(f"{key}: {value:,}")
+
+
+def print_recommendations(recommendations) -> None:
     if recommendations.empty:
         print("No recommendations found.")
         return

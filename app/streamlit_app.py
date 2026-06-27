@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
+
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 import pandas as pd
 import streamlit as st
@@ -12,7 +16,12 @@ from book_recommender.data import DatasetNotFoundError, dataset_summary, prepare
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data" / "raw"
+MODELS_DIR = PROJECT_ROOT / "models"
 DEFAULT_MAX_BOOKS = 5_000
+DEFAULT_MIN_USER_RATINGS = 2
+DEFAULT_MIN_BOOK_RATINGS = 2
+CONTENT_ARTIFACT = MODELS_DIR / "content.joblib"
+COLLAB_ARTIFACT = MODELS_DIR / "collab.joblib"
 
 
 st.set_page_config(
@@ -35,9 +44,14 @@ def main() -> None:
             value=DEFAULT_MAX_BOOKS,
             step=1_000,
         )
-        min_user_ratings = st.slider("Min user ratings", 1, 10, 2)
-        min_book_ratings = st.slider("Min book ratings", 1, 10, 2)
+        min_user_ratings = st.slider("Min user ratings", 1, 10, DEFAULT_MIN_USER_RATINGS)
+        min_book_ratings = st.slider("Min book ratings", 1, 10, DEFAULT_MIN_BOOK_RATINGS)
         top_n = st.slider("Recommendations", 3, 20, 8)
+        artifact_mode = uses_default_artifact_params(max_books, min_user_ratings, min_book_ratings)
+        if artifact_mode and CONTENT_ARTIFACT.exists() and COLLAB_ARTIFACT.exists():
+            st.success("Using saved model artifacts")
+        else:
+            st.caption("Models are built in cache for the current settings.")
 
     try:
         validate_data_dir(DATA_DIR)
@@ -73,14 +87,28 @@ def load_dataset(max_books: int, min_user_ratings: int, min_book_ratings: int):
 
 @st.cache_resource(show_spinner="Building content model")
 def load_content_model(max_books: int, min_user_ratings: int, min_book_ratings: int):
+    if uses_default_artifact_params(max_books, min_user_ratings, min_book_ratings):
+        if CONTENT_ARTIFACT.exists():
+            return ContentBasedRecommender.load(CONTENT_ARTIFACT)
     dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
     return ContentBasedRecommender().fit(dataset.books)
 
 
 @st.cache_resource(show_spinner="Building collaborative model")
 def load_collab_model(max_books: int, min_user_ratings: int, min_book_ratings: int):
+    if uses_default_artifact_params(max_books, min_user_ratings, min_book_ratings):
+        if COLLAB_ARTIFACT.exists():
+            return ItemBasedCollaborativeRecommender.load(COLLAB_ARTIFACT)
     dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
     return ItemBasedCollaborativeRecommender(n_neighbors=50).fit(dataset.books, dataset.ratings)
+
+
+def uses_default_artifact_params(max_books: int, min_user_ratings: int, min_book_ratings: int) -> bool:
+    return (
+        max_books == DEFAULT_MAX_BOOKS
+        and min_user_ratings == DEFAULT_MIN_USER_RATINGS
+        and min_book_ratings == DEFAULT_MIN_BOOK_RATINGS
+    )
 
 
 def render_summary(dataset) -> None:
