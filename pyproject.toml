@@ -1,0 +1,51 @@
+[project]
+name = "book-recommender"
+version = "0.1.0"
+description = "Book recommendation system using Kaggle Book Recommendation Dataset."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "joblib>=1.4",
+    "kaggle>=1.6",
+    "matplotlib>=3.8",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "scikit-learn>=1.4",
+    "scipy>=1.12",
+    "seaborn>=0.13",
+]
+
+[project.optional-dependencies]
+app = [
+    "streamlit>=1.36",
+]
+
+[project.scripts]
+book-rec = "book_recommender.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/book_recommender"]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "jupytext>=1.16",
+    "nbconvert>=7.17.1",
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
