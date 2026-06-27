@@ -366,6 +366,17 @@ display(metrics.groupby("model")[metric_columns].mean())
 # - Evaluasi awal sudah memakai target holdout, tetapi masih terbatas karena
 #   hanya mengevaluasi sampel kecil dan belum memakai split temporal.
 #
+# Catatan batasan:
+#
+# - Dataset rating sangat sparse, sehingga hasil collaborative filtering masih
+#   mudah dipengaruhi buku populer.
+# - Cold-start belum diselesaikan penuh: user baru memakai popularity fallback,
+#   sedangkan buku baru tanpa rating lebih sulit masuk ke rekomendasi
+#   collaborative filtering.
+# - Content-based dan collaborative filtering masih dua pendekatan terpisah,
+#   belum digabung sebagai model hybrid.
+# - Fitur demografis seperti umur dan lokasi belum dipakai sebagai fitur model.
+#
 # Pengembangan lanjutan yang masuk akal:
 #
 # - simpan model sebagai artifact di `models/`
@@ -373,3 +384,4 @@ display(metrics.groupby("model")[metric_columns].mean())
 # - eksperimen hybrid recommender yang menggabungkan metadata dan rating
 # - perluas evaluasi ranking dengan split temporal dan sampel user yang lebih
 #   besar
+# - eksplorasi strategi cold-start dan mitigasi popularity bias

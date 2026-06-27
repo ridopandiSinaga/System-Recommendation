@@ -253,15 +253,30 @@ Verifikasi yang sudah dilakukan pada project ini:
 
 ## Batasan Saat Ini
 
-- Dataset sangat sparse, sehingga collaborative filtering baseline belum optimal.
+- Dataset sangat sparse, sehingga collaborative filtering baseline belum optimal
+  dan hasil evaluasi ranking masih perlu dibaca sebagai sinyal awal.
+- Rekomendasi collaborative filtering cenderung terpengaruh popularity bias:
+  buku yang sering dirating lebih mudah muncul dibanding buku niche atau buku
+  dengan sedikit interaksi.
+- Cold-start belum diselesaikan penuh. User baru tanpa histori rating memakai
+  popularity fallback, sedangkan buku baru tanpa rating sulit direkomendasikan
+  oleh collaborative filtering.
+- Content-based recommendation dan collaborative filtering masih berjalan sebagai
+  dua pendekatan terpisah. Proyek ini belum membangun model hybrid yang
+  menggabungkan metadata buku dan histori rating dalam satu skor rekomendasi.
+- Fitur demografis seperti `age` dan `location` dibersihkan untuk eksplorasi,
+  tetapi belum dipakai dalam model agar baseline tetap sederhana dan mudah
+  direproduksi.
+- Evaluasi ranking masih memakai leave-one-out pada sampel user, belum memakai
+  split temporal yang lebih dekat dengan skenario produksi.
 - Cover buku berasal dari URL eksternal dataset dan bisa gagal tampil jika URL
   sumber tidak tersedia.
 - Streamlit app membangun model saat startup dan menyimpan hasilnya di cache jika
   artifact default di `models/` belum tersedia.
-- Evaluasi di notebook masih ringan dan belum memakai split temporal.
 
 ## Roadmap
 
-- tambah screenshot Streamlit ke `docs/images/`
 - eksperimen hybrid recommender yang menggabungkan metadata dan rating
+- evaluasi temporal dan sampel user yang lebih besar untuk metrik ranking
+- eksplorasi mitigasi popularity bias dan strategi cold-start
 - revisi atau ringkas notebook lama jika masih ingin disimpan di repo
