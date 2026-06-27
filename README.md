@@ -8,8 +8,8 @@ project machine learning yang bisa dijalankan ulang secara lokal. Fokus project:
 - membuat rekomendasi buku berbasis histori rating user
 - menyediakan notebook end-to-end dan demo Streamlit
 
-File lama `rekomendasi.ipynb` dan `rekomendasi.py` tetap disimpan sebagai arsip.
-Laporan lama dari README sebelumnya dipindahkan ke
+File lama `rekomendasi.ipynb`, `rekomendasi.py`, dan zip proyek lama disimpan di
+folder [`legacy/`](legacy/) sebagai arsip. Laporan lama dari README sebelumnya dipindahkan ke
 [`docs/LEGACY_REPORT_2023.md`](docs/LEGACY_REPORT_2023.md).
 
 ## Tech Stack
@@ -32,6 +32,10 @@ Laporan lama dari README sebelumnya dipindahkan ke
 |-- docs/
 |   |-- DATASET.md
 |   `-- LEGACY_REPORT_2023.md
+|-- legacy/
+|   |-- rekomendasi.ipynb
+|   |-- rekomendasi.py
+|   `-- recommender system.zip
 |-- models/
 |-- notebooks/
 |   |-- 01_end_to_end_book_recommender.ipynb
