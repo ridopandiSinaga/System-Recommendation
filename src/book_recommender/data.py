@@ -37,10 +37,14 @@ def validate_data_dir(data_dir: str | Path) -> Path:
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
+    read_kwargs = {"low_memory": True}
+    if path.name == BOOKS_FILE:
+        read_kwargs["dtype"] = {"Year-Of-Publication": "string"}
+
     try:
-        return pd.read_csv(path, low_memory=False)
+        return pd.read_csv(path, **read_kwargs)
     except UnicodeDecodeError:
-        return pd.read_csv(path, low_memory=False, encoding="latin-1")
+        return pd.read_csv(path, encoding="latin-1", **read_kwargs)
 
 
 def load_raw_data(data_dir: str | Path = "data/raw") -> BookDataset:

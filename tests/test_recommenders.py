@@ -3,7 +3,15 @@ import pandas as pd
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender
 from book_recommender.data import clean_books, clean_ratings
-from book_recommender.evaluation import precision_at_k, recall_at_k
+from book_recommender.evaluation import (
+    average_precision_at_k,
+    build_leave_one_out_split,
+    hit_rate_at_k,
+    ndcg_at_k,
+    precision_at_k,
+    ranking_metrics_at_k,
+    recall_at_k,
+)
 
 
 def sample_books():
@@ -87,8 +95,40 @@ def test_collaborative_artifact_roundtrip(tmp_path):
 
 
 def test_ranking_metrics():
-    recommended = ["B", "C", "D"]
+    recommended = ["B", "C", "A", "D"]
     relevant = {"A", "B"}
 
     assert precision_at_k(recommended, relevant, k=2) == 0.5
     assert recall_at_k(recommended, relevant, k=2) == 0.5
+    assert hit_rate_at_k(recommended, relevant, k=2) == 1.0
+    assert average_precision_at_k(recommended, relevant, k=4) == 0.8333333333333333
+    assert round(ndcg_at_k(recommended, relevant, k=4), 4) == 0.9197
+    assert precision_at_k(["A"], relevant, k=4) == 0.25
+
+    metrics = ranking_metrics_at_k(recommended, relevant, k=4)
+
+    assert metrics["precision_at_4"] == 0.5
+    assert metrics["recall_at_4"] == 1.0
+    assert metrics["hit_rate_at_4"] == 1.0
+    assert metrics["map_at_4"] == 0.8333333333333333
+    assert round(metrics["ndcg_at_4"], 4) == 0.9197
+
+
+def test_leave_one_out_split_removes_holdout_rating():
+    train, holdout = build_leave_one_out_split(
+        sample_ratings(),
+        sample_users=1,
+        min_interactions=2,
+        min_relevant_rating=8,
+        random_state=42,
+    )
+
+    assert len(holdout) == 1
+    assert len(train) == len(sample_ratings()) - 1
+    holdout_row = holdout.iloc[0]
+    overlap = train[
+        (train["user_id"] == holdout_row["user_id"])
+        & (train["isbn"] == holdout_row["isbn"])
+        & (train["book_rating"] == holdout_row["book_rating"])
+    ]
+    assert overlap.empty

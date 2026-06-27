@@ -10,6 +10,7 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender
 from book_recommender.data import DatasetNotFoundError, dataset_summary, prepare_dataset, validate_data_dir
+from book_recommender.evaluation import build_leave_one_out_split, ranking_metrics_at_k
 
 
 DEFAULT_MAX_BOOKS = 5_000
@@ -49,6 +50,19 @@ def build_parser() -> argparse.ArgumentParser:
     collab.add_argument("--top-n", type=int, default=10)
     collab.add_argument("--neighbors", type=int, default=50)
     collab.set_defaults(func=recommend_collab)
+
+    evaluate_collab = subparsers.add_parser(
+        "evaluate-collab",
+        help="Evaluate collaborative filtering with leave-one-out ranking metrics.",
+    )
+    add_common_dataset_args(evaluate_collab)
+    evaluate_collab.add_argument("--sample-users", type=int, default=100)
+    evaluate_collab.add_argument("--min-interactions", type=int, default=3)
+    evaluate_collab.add_argument("--min-relevant-rating", type=float, default=8.0)
+    evaluate_collab.add_argument("--k", type=int, default=50)
+    evaluate_collab.add_argument("--neighbors", type=int, default=100)
+    evaluate_collab.add_argument("--random-state", type=int, default=42)
+    evaluate_collab.set_defaults(func=evaluate_collab_model)
 
     train_content = subparsers.add_parser("train-content", help="Build and save content model artifact.")
     add_common_dataset_args(train_content)
@@ -125,6 +139,43 @@ def train_collab_model(args: argparse.Namespace) -> None:
     print_training_summary(dataset)
 
 
+def evaluate_collab_model(args: argparse.Namespace) -> None:
+    dataset = load_prepared_dataset(args)
+    train_ratings, holdout_ratings = build_leave_one_out_split(
+        dataset.ratings,
+        sample_users=args.sample_users,
+        min_interactions=args.min_interactions,
+        min_relevant_rating=args.min_relevant_rating,
+        random_state=args.random_state,
+    )
+    recommender = ItemBasedCollaborativeRecommender(n_neighbors=args.neighbors).fit(
+        dataset.books,
+        train_ratings,
+    )
+
+    rows = []
+    for holdout in holdout_ratings.itertuples(index=False):
+        user_id = int(holdout.user_id)
+        relevant = [holdout.isbn]
+        collab_recommended = recommender.recommend_for_user(user_id, top_n=args.k)["isbn"].tolist()
+        train_history = train_ratings[train_ratings["user_id"] == user_id]
+        read_isbns = set(train_history["isbn"])
+        popularity_recommended = recommender.recommend_popular(
+            top_n=args.k,
+            exclude_isbns=read_isbns,
+        )["isbn"].tolist()
+
+        rows.append({"model": "collaborative", **ranking_metrics_at_k(collab_recommended, relevant, args.k)})
+        rows.append({"model": "popularity", **ranking_metrics_at_k(popularity_recommended, relevant, args.k)})
+
+    print(f"evaluated_users: {holdout_ratings['user_id'].nunique():,}")
+    print(f"holdout_items: {len(holdout_ratings):,}")
+    print(f"k: {args.k}")
+    print(f"train_ratings: {len(train_ratings):,}")
+    print()
+    print_evaluation_summary(rows)
+
+
 def load_prepared_dataset(args: argparse.Namespace):
     return prepare_dataset(
         data_dir=args.data_dir,
@@ -159,3 +210,14 @@ def print_recommendations(recommendations) -> None:
     if "score" in printable.columns:
         printable["score"] = printable["score"].map(lambda value: f"{float(value):.4f}")
     print(printable.to_string(index=False))
+
+
+def print_evaluation_summary(rows: list[dict[str, float | str]]) -> None:
+    import pandas as pd
+
+    results = pd.DataFrame(rows)
+    metrics = [column for column in results.columns if column != "model"]
+    summary = results.groupby("model")[metrics].mean().reset_index()
+    for column in metrics:
+        summary[column] = summary[column].map(lambda value: f"{float(value):.4f}")
+    print(summary.to_string(index=False))

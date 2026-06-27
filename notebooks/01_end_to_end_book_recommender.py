@@ -33,6 +33,8 @@
 # %%
 from pathlib import Path
 
+import gc
+
 import matplotlib
 try:
     get_ipython
@@ -46,7 +48,7 @@ import seaborn as sns
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender
 from book_recommender.data import dataset_summary, load_raw_data, prepare_dataset, validate_data_dir
-from book_recommender.evaluation import precision_at_k, recall_at_k
+from book_recommender.evaluation import build_leave_one_out_split, ranking_metrics_at_k
 
 try:
     from IPython.display import display
@@ -156,6 +158,11 @@ plt.tight_layout()
 plt.show()
 
 display(rating_counts.rename("count").reset_index().rename(columns={"index": "rating"}))
+
+
+# %%
+del raw
+gc.collect()
 
 
 # %% [markdown]
@@ -296,47 +303,17 @@ display(
 # - tahan satu buku dengan rating tinggi sebagai data relevan
 # - latih recommender tanpa rating yang ditahan
 # - cek apakah buku yang ditahan muncul di Top-K rekomendasi
+# - bandingkan collaborative filtering dengan popularity baseline
 #
 # Evaluasi ini belum sekuat eksperimen produksi, tetapi lebih baik daripada
 # klaim akurasi manual tanpa target yang jelas. Karena dataset sangat sparse,
-# Top-50 dipakai untuk membaca sinyal baseline awal.
+# Top-50 dipakai untuk membaca sinyal baseline awal. Metrik yang dipakai:
+# Precision@K, Recall@K, HitRate@K, MAP@K, dan NDCG@K.
 
 # %%
-def build_leave_one_out_sample(
-    ratings: pd.DataFrame,
-    sample_users: int = 30,
-    min_interactions: int = 3,
-    min_relevant_rating: float = 8.0,
-    random_state: int = 42,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    eligible = ratings.groupby("user_id").filter(lambda frame: len(frame) >= min_interactions)
-    eligible = eligible[eligible["book_rating"] >= min_relevant_rating]
-
-    users = (
-        eligible["user_id"]
-        .drop_duplicates()
-        .sample(n=min(sample_users, eligible["user_id"].nunique()), random_state=random_state)
-    )
-
-    holdout_rows = []
-    for user_id in users:
-        user_rows = eligible[eligible["user_id"] == user_id]
-        holdout_rows.append(user_rows.sample(n=1, random_state=random_state))
-
-    holdout = pd.concat(holdout_rows).reset_index(drop=True)
-    train = ratings.merge(
-        holdout[["user_id", "isbn"]],
-        on=["user_id", "isbn"],
-        how="left",
-        indicator=True,
-    )
-    train = train[train["_merge"] == "left_only"].drop(columns=["_merge"]).reset_index(drop=True)
-    return train, holdout
-
-
-train_ratings, holdout_ratings = build_leave_one_out_sample(
+train_ratings, holdout_ratings = build_leave_one_out_split(
     dataset.ratings,
-    sample_users=10,
+    sample_users=20,
     random_state=RANDOM_STATE,
 )
 
@@ -348,22 +325,32 @@ eval_model = ItemBasedCollaborativeRecommender(n_neighbors=100).fit(
 k = 50
 metric_rows = []
 for row in holdout_ratings.itertuples(index=False):
-    recommended = eval_model.recommend_for_user(int(row.user_id), top_n=k)["isbn"].tolist()
+    user_id = int(row.user_id)
     relevant = [row.isbn]
+    collab_recommended = eval_model.recommend_for_user(user_id, top_n=k)["isbn"].tolist()
+    train_history = train_ratings[train_ratings["user_id"] == user_id]
+    popularity_recommended = eval_model.recommend_popular(
+        top_n=k,
+        exclude_isbns=set(train_history["isbn"]),
+    )["isbn"].tolist()
+
     metric_rows.append(
-        {
-            "user_id": int(row.user_id),
-            "heldout_isbn": row.isbn,
-            f"precision_at_{k}": precision_at_k(recommended, relevant, k),
-            f"recall_at_{k}": recall_at_k(recommended, relevant, k),
-            f"hit_at_{k}": float(row.isbn in recommended),
-        }
+        {"model": "collaborative", "user_id": user_id, **ranking_metrics_at_k(collab_recommended, relevant, k)}
+    )
+    metric_rows.append(
+        {"model": "popularity", "user_id": user_id, **ranking_metrics_at_k(popularity_recommended, relevant, k)}
     )
 
 metrics = pd.DataFrame(metric_rows)
 display(metrics.head())
-metric_columns = [f"precision_at_{k}", f"recall_at_{k}", f"hit_at_{k}"]
-display(metrics[metric_columns].mean().to_frame("mean"))
+metric_columns = [
+    f"precision_at_{k}",
+    f"recall_at_{k}",
+    f"hit_rate_at_{k}",
+    f"map_at_{k}",
+    f"ndcg_at_{k}",
+]
+display(metrics.groupby("model")[metric_columns].mean())
 
 
 # %% [markdown]
@@ -384,5 +371,5 @@ display(metrics[metric_columns].mean().to_frame("mean"))
 # - simpan model sebagai artifact di `models/`
 # - tambah Streamlit demo dengan cover buku
 # - eksperimen hybrid recommender yang menggabungkan metadata dan rating
-# - evaluasi dengan Precision@K, Recall@K, MAP@K, atau NDCG@K pada split yang
-#   lebih sistematis
+# - perluas evaluasi ranking dengan split temporal dan sampel user yang lebih
+#   besar

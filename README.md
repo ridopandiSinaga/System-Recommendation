@@ -108,6 +108,15 @@ Rekomendasi collaborative filtering berdasarkan histori user:
 uv run book-rec recommend-collab --data-dir data/raw --user-id 5709
 ```
 
+Evaluasi ranking collaborative filtering:
+
+```bash
+uv run book-rec evaluate-collab --data-dir data/raw --sample-users 100 --k 50
+```
+
+Command evaluasi memakai split leave-one-out, lalu membandingkan collaborative
+filtering dengan popularity baseline pada holdout user yang sama.
+
 Simpan model artifact untuk setting default app:
 
 ```bash
@@ -201,16 +210,25 @@ baru mengutamakan reproducibility dan baseline yang mudah diuji.
 
 ## Evaluasi
 
-Notebook memakai evaluasi leave-one-out kecil untuk collaborative filtering:
+Notebook dan CLI memakai evaluasi leave-one-out untuk collaborative filtering:
 
 - pilih beberapa user dengan minimal jumlah rating tertentu
 - tahan satu buku dengan rating tinggi sebagai target
 - latih recommender tanpa target tersebut
-- hitung apakah target muncul di Top-K rekomendasi
+- rekomendasikan Top-K buku untuk user tersebut
+- bandingkan collaborative filtering dengan popularity baseline
 
-Evaluasi ini adalah baseline awal, bukan klaim performa final. Untuk eksperimen
-lebih kuat, gunakan split yang lebih sistematis dan metrik seperti Precision@K,
-Recall@K, MAP@K, atau NDCG@K.
+Metrik yang tersedia:
+
+- `Precision@K`: proporsi Top-K rekomendasi yang relevan
+- `Recall@K`: proporsi item relevan yang berhasil ditemukan di Top-K
+- `HitRate@K`: apakah minimal satu item relevan muncul di Top-K
+- `MAP@K`: rata-rata precision pada posisi item relevan
+- `NDCG@K`: kualitas urutan ranking, item relevan di posisi atas bernilai lebih
+
+Evaluasi ini adalah benchmark ranking awal, bukan klaim performa final. Untuk
+eksperimen produksi, gunakan split temporal dan jumlah user evaluasi yang lebih
+besar.
 
 ## Verifikasi
 
