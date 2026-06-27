@@ -19,7 +19,7 @@ data/raw/
 Cara download dengan Kaggle CLI:
 
 ```bash
-kaggle datasets download -d arashnic/book-recommendation-dataset -p data/raw --unzip
+uv run kaggle datasets download -d arashnic/book-recommendation-dataset -p data/raw --unzip
 ```
 
 Kaggle CLI membutuhkan credential `kaggle.json`. Simpan credential di lokasi standar

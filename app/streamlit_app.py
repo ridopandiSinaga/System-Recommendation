@@ -139,7 +139,7 @@ def render_content_tab(
     render_cover(selected_cols[0], query_book)
     with selected_cols[1]:
         st.subheader(query_book["book_title"])
-        st.caption(f"{query_book['book_author']} · {query_book['publisher']}")
+        st.caption(f"{query_book['book_author']} - {query_book['publisher']}")
         st.code(str(query_book["isbn"]), language=None)
 
     recommendations = content_model.recommend_similar(title=selected_title, top_n=top_n)
