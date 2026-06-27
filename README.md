@@ -139,6 +139,10 @@ Fitur app:
 - tampilkan cover buku dari URL dataset
 - atur ukuran sample dan jumlah rekomendasi dari sidebar
 
+Preview:
+
+![Streamlit demo](docs/images/streamlit-demo.png)
+
 ## Notebook End-to-End
 
 Notebook utama:

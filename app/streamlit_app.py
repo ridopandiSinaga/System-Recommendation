@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import os
+from html import escape
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -200,10 +203,57 @@ def render_recommendation_grid(recommendations: pd.DataFrame) -> None:
 def render_cover(container, row) -> None:
     image_url = value_from_row(row, "image_m_url")
     title = value_from_row(row, "book_title") or "Book cover"
-    if image_url and isinstance(image_url, str) and image_url.startswith(("http://", "https://")):
-        container.image(image_url, use_container_width=True)
+    safe_title = escape(str(title))
+    cover_bytes = fetch_cover_bytes(str(image_url)) if image_url else None
+    if cover_bytes:
+        container.image(cover_bytes, use_container_width=True)
     else:
-        container.info(title)
+        container.markdown(
+            f"""
+            <div style="
+                min-height: 170px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                background: #f8fafc;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 12px;
+                text-align: center;
+                color: #64748b;
+                font-size: 0.85rem;">
+                {safe_title}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+@st.cache_data(show_spinner=False, max_entries=2_000)
+def fetch_cover_bytes(image_url: str) -> bytes | None:
+    normalized_url = normalize_cover_url(image_url)
+    if not normalized_url:
+        return None
+
+    request = Request(normalized_url, headers={"User-Agent": "Mozilla/5.0"})
+    try:
+        with urlopen(request, timeout=8) as response:
+            content_type = response.headers.get("Content-Type", "")
+            if "image" not in content_type:
+                return None
+            return response.read()
+    except (OSError, URLError, TimeoutError):
+        return None
+
+
+def normalize_cover_url(image_url: str) -> str | None:
+    if not image_url or image_url == "<NA>":
+        return None
+    if image_url.startswith("http://images.amazon.com/"):
+        return image_url.replace("http://", "https://", 1)
+    if image_url.startswith(("http://", "https://")):
+        return image_url
+    return None
 
 
 def find_default_title_index(titles: list[str], default_title: str) -> int:
