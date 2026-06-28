@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 from html import escape
 from pathlib import Path
-from urllib.error import URLError
-from urllib.request import Request, urlopen
 
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -292,46 +290,42 @@ def render_cover(container, row) -> None:
     image_url = value_from_row(row, "image_m_url")
     title = value_from_row(row, "book_title") or "Book cover"
     safe_title = escape(str(title))
-    cover_bytes = fetch_cover_bytes(str(image_url)) if image_url else None
-    if cover_bytes:
-        container.image(cover_bytes, use_container_width=True)
-    else:
+    normalized_url = normalize_cover_url(str(image_url)) if image_url else None
+    if normalized_url:
+        safe_url = escape(normalized_url, quote=True)
         container.markdown(
             f"""
-            <div style="
+            <img src="{safe_url}" alt="{safe_title}" style="
+                width: 100%;
                 min-height: 170px;
-                border: 1px solid #e5e7eb;
+                max-height: 260px;
+                object-fit: contain;
                 border-radius: 8px;
-                background: #f8fafc;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 12px;
-                text-align: center;
-                color: #64748b;
-                font-size: 0.85rem;">
-                {safe_title}
-            </div>
+                background: #f8fafc;" />
             """,
             unsafe_allow_html=True,
         )
+        return
 
-
-@st.cache_data(show_spinner=False, max_entries=2_000)
-def fetch_cover_bytes(image_url: str) -> bytes | None:
-    normalized_url = normalize_cover_url(image_url)
-    if not normalized_url:
-        return None
-
-    request = Request(normalized_url, headers={"User-Agent": "Mozilla/5.0"})
-    try:
-        with urlopen(request, timeout=8) as response:
-            content_type = response.headers.get("Content-Type", "")
-            if "image" not in content_type:
-                return None
-            return response.read()
-    except (OSError, URLError, TimeoutError):
-        return None
+    container.markdown(
+        f"""
+        <div style="
+            min-height: 170px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.85rem;">
+            {safe_title}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def normalize_cover_url(image_url: str) -> str | None:
