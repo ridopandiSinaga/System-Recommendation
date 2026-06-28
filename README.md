@@ -294,10 +294,3 @@ Verifikasi yang sudah dilakukan pada project ini:
   sumber tidak tersedia.
 - Streamlit app membangun model saat startup dan menyimpan hasilnya di cache jika
   artifact default di `models/` belum tersedia.
-
-## Roadmap
-
-- eksperimen hybrid recommender yang menggabungkan metadata dan rating
-- evaluasi temporal dan sampel user yang lebih besar untuk metrik ranking
-- eksplorasi mitigasi popularity bias dan strategi cold-start
-- revisi atau ringkas notebook lama jika masih ingin disimpan di repo
