@@ -354,6 +354,28 @@ display(metrics.groupby("model")[metric_columns].mean())
 
 
 # %% [markdown]
+# ### Interpretasi Hasil Evaluasi
+#
+# Pada sampel evaluasi ini, collaborative filtering memiliki HitRate@50 lebih
+# tinggi dibanding popularity baseline. Artinya, model collaborative lebih sering
+# menemukan buku holdout yang sebelumnya disembunyikan dari histori user.
+#
+# Nilai Precision@50 tetap kecil karena skenario leave-one-out hanya memiliki
+# satu item relevan untuk setiap user. Jika satu item relevan berhasil muncul di
+# Top-50, precision maksimum untuk user tersebut hanya `1 / 50 = 0.02`.
+# Karena itu, HitRate@K dan Recall@K lebih mudah dibaca untuk melihat apakah
+# model berhasil menemukan item holdout, sedangkan MAP@K dan NDCG@K membantu
+# melihat seberapa baik posisi item relevan di ranking.
+#
+# Pada hasil contoh, popularity baseline bisa memiliki MAP@50 atau NDCG@50 yang
+# lebih baik ketika berhasil hit, karena item relevannya muncul di posisi yang
+# lebih tinggi. Namun hit rate collaborative yang lebih tinggi memberi sinyal
+# bahwa histori rating user mulai memberi efek personalisasi. Karena dataset
+# sangat sparse dan jumlah user evaluasi masih kecil, hasil ini sebaiknya dibaca
+# sebagai benchmark awal, bukan klaim performa final.
+
+
+# %% [markdown]
 # ## 7. Kesimpulan
 #
 # Dari notebook ini:
