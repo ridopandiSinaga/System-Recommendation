@@ -1,16 +1,12 @@
 # Book Recommender System
 
-Project ini adalah perapihan ulang dari notebook rekomendasi buku lama menjadi
-project machine learning yang bisa dijalankan ulang secara lokal. Fokus project:
+Project ini membangun sistem rekomendasi buku yang bisa dijalankan ulang secara
+lokal dan tersedia sebagai demo Streamlit. Fokus project:
 
 - memproses Kaggle Book Recommendation Dataset dari file mentah
 - membuat rekomendasi buku berbasis metadata buku
 - membuat rekomendasi buku berbasis histori rating user
 - menyediakan notebook end-to-end dan demo Streamlit
-
-File lama `rekomendasi.ipynb`, `rekomendasi.py`, dan zip proyek lama disimpan di
-folder [`legacy/`](legacy/) sebagai arsip. Laporan lama dari README sebelumnya dipindahkan ke
-[`docs/LEGACY_REPORT_2023.md`](docs/LEGACY_REPORT_2023.md).
 
 ## Tech Stack
 
@@ -31,11 +27,7 @@ folder [`legacy/`](legacy/) sebagai arsip. Laporan lama dari README sebelumnya d
 |   `-- processed/
 |-- docs/
 |   |-- DATASET.md
-|   `-- LEGACY_REPORT_2023.md
-|-- legacy/
-|   |-- rekomendasi.ipynb
-|   |-- rekomendasi.py
-|   `-- recommender system.zip
+|   `-- images/
 |-- models/
 |-- notebooks/
 |   |-- 01_end_to_end_book_recommender.ipynb
@@ -227,10 +219,10 @@ eksplisit. Rating `0` dibuang karena diperlakukan sebagai belum memberi rating.
 Model mencari buku dengan pola rating yang mirip, lalu merekomendasikan buku
 yang mirip dengan buku-buku yang disukai user.
 
-Pendekatan ini sengaja dibuat sebagai baseline ringan berbasis scikit-learn,
-bukan deep learning. Versi notebook lama memakai TensorFlow, tetapi script lama
-masih terikat Colab dan mengandung bug dot product pada model embedding. Pipeline
-baru mengutamakan reproducibility dan baseline yang mudah diuji.
+Pendekatan ini digunakan sebagai baseline ringan berbasis scikit-learn agar alur
+rekomendasi mudah direproduksi, diuji, dan dijelaskan. Fokusnya adalah membangun
+sistem rekomendasi yang jelas dari preprocessing, modeling, evaluasi ranking,
+hingga demo aplikasi.
 
 ## Evaluasi
 
