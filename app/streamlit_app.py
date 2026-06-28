@@ -14,12 +14,18 @@ import streamlit as st
 
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender
-from book_recommender.data import DatasetNotFoundError, dataset_summary, prepare_dataset, validate_data_dir
+from book_recommender.data import (
+    DatasetNotFoundError,
+    dataset_summary,
+    prepare_dataset,
+    validate_data_dir,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data" / "raw"
 MODELS_DIR = PROJECT_ROOT / "models"
+KAGGLE_DATASET = "arashnic/book-recommendation-dataset"
 DEFAULT_MAX_BOOKS = 5_000
 DEFAULT_MIN_USER_RATINGS = 2
 DEFAULT_MIN_BOOK_RATINGS = 2
@@ -57,10 +63,17 @@ def main() -> None:
             st.caption("Models are built in cache for the current settings.")
 
     try:
-        validate_data_dir(DATA_DIR)
-    except DatasetNotFoundError as exc:
+        dataset_message = ensure_dataset_available()
+    except (DatasetNotFoundError, RuntimeError) as exc:
         st.error(str(exc))
+        st.info(
+            "For Streamlit Cloud, add Kaggle credentials in app secrets as "
+            '`username = "..."` and `key = "..."`.'
+        )
         st.stop()
+
+    if dataset_message:
+        st.success(dataset_message)
 
     dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
     content_model = load_content_model(max_books, min_user_ratings, min_book_ratings)
@@ -112,6 +125,81 @@ def uses_default_artifact_params(max_books: int, min_user_ratings: int, min_book
         and min_user_ratings == DEFAULT_MIN_USER_RATINGS
         and min_book_ratings == DEFAULT_MIN_BOOK_RATINGS
     )
+
+
+def ensure_dataset_available() -> str | None:
+    try:
+        validate_data_dir(DATA_DIR)
+        return None
+    except DatasetNotFoundError as exc:
+        credentials = get_kaggle_credentials()
+        if credentials is None:
+            raise exc
+
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    username, key = credentials
+    with st.spinner("Downloading Kaggle Book Recommendation Dataset"):
+        download_kaggle_dataset(username=username, key=key)
+
+    validate_data_dir(DATA_DIR)
+    return "Dataset downloaded from Kaggle using Streamlit secrets."
+
+
+def get_kaggle_credentials() -> tuple[str, str] | None:
+    secrets = st.secrets
+    nested = secret_value(secrets, "kaggle")
+
+    username = (
+        secret_value(secrets, "username")
+        or secret_value(secrets, "KAGGLE_USERNAME")
+        or secret_value(secrets, "kaggle_username")
+        or secret_value(nested, "username")
+        or secret_value(nested, "KAGGLE_USERNAME")
+    )
+    key = (
+        secret_value(secrets, "key")
+        or secret_value(secrets, "KAGGLE_KEY")
+        or secret_value(secrets, "kaggle_key")
+        or secret_value(nested, "key")
+        or secret_value(nested, "KAGGLE_KEY")
+    )
+
+    if not username or not key:
+        return None
+    return str(username), str(key)
+
+
+def secret_value(container, key: str):
+    if container is None:
+        return None
+    try:
+        return container.get(key)
+    except Exception:
+        try:
+            return container[key]
+        except Exception:
+            return None
+
+
+def download_kaggle_dataset(username: str, key: str) -> None:
+    os.environ["KAGGLE_USERNAME"] = username
+    os.environ["KAGGLE_KEY"] = key
+
+    try:
+        from kaggle.api.kaggle_api_extended import KaggleApi
+    except ImportError as exc:
+        raise RuntimeError(
+            "Package `kaggle` is not installed. Add `kaggle` to deployment dependencies."
+        ) from exc
+
+    try:
+        api = KaggleApi()
+        api.authenticate()
+        api.dataset_download_files(KAGGLE_DATASET, path=str(DATA_DIR), unzip=True, quiet=True)
+    except Exception as exc:
+        raise RuntimeError(
+            "Failed to download Kaggle dataset. Check Streamlit secrets and Kaggle API access."
+        ) from exc
 
 
 def render_summary(dataset) -> None:

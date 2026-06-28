@@ -156,6 +156,26 @@ Preview:
 
 ![Streamlit demo](docs/images/streamlit-demo.png)
 
+### Deploy ke Streamlit Community Cloud
+
+Entry point app:
+
+```text
+app/streamlit_app.py
+```
+
+Dataset Kaggle tidak ikut disimpan di git. Saat deploy, app akan mencoba
+download dataset dari Kaggle jika `data/raw/Books.csv`, `Ratings.csv`, dan
+`Users.csv` belum tersedia. Tambahkan secret berikut di Streamlit Cloud:
+
+```toml
+username = "KAGGLE_USERNAME_ANDA"
+key = "KAGGLE_API_KEY_ANDA"
+```
+
+Credential tersebut hanya dipakai saat runtime untuk mengunduh dataset ke
+folder `data/raw/` pada environment Streamlit Cloud.
+
 ## Notebook End-to-End
 
 Notebook utama:

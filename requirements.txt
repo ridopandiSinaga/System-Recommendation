@@ -1,5 +1,7 @@
 streamlit
 pandas
 numpy
-tensorflow
 scikit-learn
+scipy
+joblib
+kaggle
