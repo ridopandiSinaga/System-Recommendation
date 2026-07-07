@@ -107,11 +107,13 @@ uv run book-rec recommend-collab --data-dir data/raw --user-id 5709
 Evaluasi ranking collaborative filtering:
 
 ```bash
-uv run book-rec evaluate-collab --data-dir data/raw --sample-users 100 --k 50
+uv run book-rec evaluate-collab --data-dir data/raw --sample-users 100 --k 50 --output artifacts/evaluation/collab_evaluation.json
 ```
 
-Command evaluasi memakai split leave-one-out, lalu membandingkan collaborative
-filtering dengan popularity baseline pada holdout user yang sama.
+Command evaluasi memakai split leave-one-out dengan filtering dan pemilihan
+candidate books berdasarkan train split saja. Hasilnya membandingkan
+collaborative filtering dengan popularity baseline pada holdout user yang sama
+dan menyimpan parameter, metrik, diagnostics, serta hasil per user ke JSON.
 
 Simpan model artifact untuk setting default app:
 
@@ -230,6 +232,7 @@ Notebook dan CLI memakai evaluasi leave-one-out untuk collaborative filtering:
 
 - pilih beberapa user dengan minimal jumlah rating tertentu
 - tahan satu buku dengan rating tinggi sebagai target
+- lakukan filtering sparsity dan pemilihan candidate books dari train split saja
 - latih recommender tanpa target tersebut
 - rekomendasikan Top-K buku untuk user tersebut
 - bandingkan collaborative filtering dengan popularity baseline
@@ -240,28 +243,25 @@ Metrik yang tersedia:
 - `Recall@K`: proporsi item relevan yang berhasil ditemukan di Top-K
 - `HitRate@K`: apakah minimal satu item relevan muncul di Top-K
 - `MAP@K`: rata-rata precision pada posisi item relevan
+- `MRR@K`: posisi reciprocal item relevan pertama di Top-K
 - `NDCG@K`: kualitas urutan ranking, item relevan di posisi atas bernilai lebih
+- `Coverage@K`: proporsi katalog kandidat yang muncul dalam rekomendasi
+- `Novelty@K`: rata-rata inverse popularity item yang direkomendasikan
+- `Intra-list Diversity@K`: keragaman item dalam satu daftar rekomendasi
+- popularity share pada top 1%, 5%, dan 10% item populer
 
 Evaluasi ini adalah benchmark ranking awal, bukan klaim performa final. Untuk
 eksperimen produksi, gunakan split temporal dan jumlah user evaluasi yang lebih
-besar.
+besar. Dataset tidak memiliki timestamp, sehingga split temporal belum dapat
+dilakukan tanpa data tambahan.
 
-Contoh hasil verifikasi lokal dengan `--sample-users 20 --k 50 --max-books 5000`:
+Artifact evaluasi default tersimpan di:
 
-| model | Precision@50 | Recall@50 | HitRate@50 | MAP@50 | NDCG@50 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| collaborative | 0.0020 | 0.1000 | 0.1000 | 0.0033 | 0.0200 |
-| popularity | 0.0010 | 0.0500 | 0.0500 | 0.0167 | 0.0250 |
+```text
+artifacts/evaluation/collab_evaluation.json
+```
 
-Interpretasinya: collaborative filtering menemukan item holdout pada 10% user
-evaluasi, sedangkan popularity baseline menemukan 5%. Ini memberi sinyal bahwa
-histori rating user menambah personalisasi dibanding hanya memilih buku populer.
-Namun nilai Precision@50 tetap rendah karena setiap user hanya memiliki satu item
-holdout yang dianggap relevan, sehingga maksimal precision untuk satu hit di
-Top-50 adalah 0.02. Nilai MAP@50 dan NDCG@50 popularity lebih tinggi pada contoh
-ini karena saat popularity berhasil hit, item relevannya berada di posisi ranking
-yang lebih baik. Dengan demikian, hasil ini sebaiknya dibaca sebagai baseline
-awal yang sudah terukur, bukan performa final.
+Folder `artifacts/` diabaikan oleh git karena berisi output eksperimen lokal.
 
 ## Verifikasi
 
@@ -282,6 +282,7 @@ Verifikasi yang sudah dilakukan pada project ini:
 - `uv run pytest` berhasil
 - `uv run ruff check src tests app notebooks/01_end_to_end_book_recommender.py` berhasil
 - `uv run book-rec check-data --data-dir data/raw` berhasil setelah dataset diunduh
+- `uv run book-rec evaluate-collab --data-dir data/raw --sample-users 20 --k 50 --max-books 5000 --output artifacts/evaluation/collab_eval_sample20.json` berhasil
 - Streamlit app berhasil berjalan di `http://localhost:8501`
 
 ## Batasan Saat Ini

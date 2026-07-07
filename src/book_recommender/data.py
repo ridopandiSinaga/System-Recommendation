@@ -56,6 +56,23 @@ def load_raw_data(data_dir: str | Path = "data/raw") -> BookDataset:
     )
 
 
+def load_clean_dataset(data_dir: str | Path = "data/raw") -> BookDataset:
+    return clean_dataset(load_raw_data(data_dir))
+
+
+def clean_dataset(dataset: BookDataset) -> BookDataset:
+    books = clean_books(dataset.books)
+    ratings = clean_ratings(dataset.ratings)
+    users = clean_users(dataset.users)
+
+    ratings = ratings[ratings["isbn"].isin(books["isbn"])].reset_index(drop=True)
+    return BookDataset(
+        books=books.reset_index(drop=True),
+        ratings=ratings,
+        users=users.reset_index(drop=True),
+    )
+
+
 def clean_books(books: pd.DataFrame) -> pd.DataFrame:
     renamed = books.rename(
         columns={
@@ -199,10 +216,32 @@ def prepare_dataset(
     max_ratings: int | None = None,
     random_state: int = 42,
 ) -> BookDataset:
-    raw = load_raw_data(data_dir)
-    books = clean_books(raw.books)
-    ratings = clean_ratings(raw.ratings)
-    users = clean_users(raw.users)
+    dataset = load_clean_dataset(data_dir)
+    return prepare_interaction_dataset(
+        books=dataset.books,
+        ratings=dataset.ratings,
+        users=dataset.users,
+        min_user_ratings=min_user_ratings,
+        min_book_ratings=min_book_ratings,
+        max_books=max_books,
+        max_ratings=max_ratings,
+        random_state=random_state,
+    )
+
+
+def prepare_interaction_dataset(
+    books: pd.DataFrame,
+    ratings: pd.DataFrame,
+    users: pd.DataFrame,
+    min_user_ratings: int = 1,
+    min_book_ratings: int = 1,
+    max_books: int | None = None,
+    max_ratings: int | None = None,
+    random_state: int = 42,
+) -> BookDataset:
+    books = books.reset_index(drop=True).copy()
+    ratings = ratings.reset_index(drop=True).copy()
+    users = users.reset_index(drop=True).copy()
 
     ratings = ratings[ratings["isbn"].isin(books["isbn"])]
     ratings = filter_sparse_interactions(

@@ -1,16 +1,24 @@
 import pandas as pd
+from scipy.sparse import csr_matrix
 
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender
-from book_recommender.data import clean_books, clean_ratings
+from book_recommender.data import BookDataset, clean_books, clean_ratings
 from book_recommender.evaluation import (
     average_precision_at_k,
     build_leave_one_out_split,
+    catalog_coverage_at_k,
     hit_rate_at_k,
+    intra_list_diversity_at_k,
+    mean_novelty_at_k,
     ndcg_at_k,
+    popularity_share_at_k,
     precision_at_k,
+    prepare_leave_one_out_evaluation,
     ranking_metrics_at_k,
     recall_at_k,
+    reciprocal_rank_at_k,
+    recommendation_diagnostics_at_k,
 )
 
 
@@ -102,6 +110,7 @@ def test_ranking_metrics():
     assert recall_at_k(recommended, relevant, k=2) == 0.5
     assert hit_rate_at_k(recommended, relevant, k=2) == 1.0
     assert average_precision_at_k(recommended, relevant, k=4) == 0.8333333333333333
+    assert reciprocal_rank_at_k(recommended, relevant, k=4) == 1.0
     assert round(ndcg_at_k(recommended, relevant, k=4), 4) == 0.9197
     assert precision_at_k(["A"], relevant, k=4) == 0.25
 
@@ -111,7 +120,41 @@ def test_ranking_metrics():
     assert metrics["recall_at_4"] == 1.0
     assert metrics["hit_rate_at_4"] == 1.0
     assert metrics["map_at_4"] == 0.8333333333333333
+    assert metrics["mrr_at_4"] == 1.0
     assert round(metrics["ndcg_at_4"], 4) == 0.9197
+
+
+def test_recommendation_diagnostics():
+    recommendation_lists = [["A", "B"], ["B", "C"]]
+    catalog = ["A", "B", "C", "D"]
+    popularity = pd.Series({"A": 10, "B": 5, "C": 1, "D": 1})
+    features = csr_matrix(
+        [
+            [1.0, 0.0],
+            [0.0, 1.0],
+            [1.0, 0.0],
+            [0.0, 1.0],
+        ]
+    )
+    item_to_index = {isbn: index for index, isbn in enumerate(catalog)}
+
+    assert catalog_coverage_at_k(recommendation_lists, catalog, k=2) == 0.75
+    assert popularity_share_at_k(recommendation_lists, popularity, top_percent=0.25, k=2) == 0.25
+    assert mean_novelty_at_k(recommendation_lists, popularity, total_interactions=17, k=2) > 0
+    assert intra_list_diversity_at_k(["A", "B"], features, item_to_index, k=2) == 1.0
+
+    diagnostics = recommendation_diagnostics_at_k(
+        recommendation_lists,
+        catalog_items=catalog,
+        popularity_counts=popularity,
+        k=2,
+        item_features=features,
+        item_to_index=item_to_index,
+    )
+
+    assert diagnostics["catalog_coverage_at_2"] == 0.75
+    assert diagnostics["top_1pct_popularity_share_at_2"] == 0.25
+    assert diagnostics["intra_list_diversity_at_2"] == 1.0
 
 
 def test_leave_one_out_split_removes_holdout_rating():
@@ -132,3 +175,41 @@ def test_leave_one_out_split_removes_holdout_rating():
         & (train["book_rating"] == holdout_row["book_rating"])
     ]
     assert overlap.empty
+
+
+def test_leave_one_out_evaluation_filters_candidates_from_train_only():
+    books = clean_books(
+        pd.DataFrame(
+            [
+                {"ISBN": "A", "Book-Title": "Alpha", "Book-Author": "Author", "Publisher": "Pub"},
+                {"ISBN": "B", "Book-Title": "Beta", "Book-Author": "Author", "Publisher": "Pub"},
+                {"ISBN": "D", "Book-Title": "Delta", "Book-Author": "Author", "Publisher": "Pub"},
+            ]
+        )
+    )
+    ratings = clean_ratings(
+        pd.DataFrame(
+            [
+                {"User-ID": 1, "ISBN": "A", "Book-Rating": 7},
+                {"User-ID": 1, "ISBN": "B", "Book-Rating": 6},
+                {"User-ID": 1, "ISBN": "D", "Book-Rating": 10},
+            ]
+        )
+    )
+    users = pd.DataFrame({"user_id": [1], "location": ["x"], "age": [30]})
+
+    evaluation_data = prepare_leave_one_out_evaluation(
+        BookDataset(books=books, ratings=ratings, users=users),
+        sample_users=1,
+        min_interactions=3,
+        min_relevant_rating=10,
+        min_user_ratings=1,
+        min_book_ratings=1,
+        max_books=None,
+        random_state=42,
+    )
+
+    assert evaluation_data.holdout_ratings.iloc[0]["isbn"] == "D"
+    assert "D" not in set(evaluation_data.train_dataset.books["isbn"])
+    assert "D" not in set(evaluation_data.train_dataset.ratings["isbn"])
+    assert evaluation_data.dropped_holdouts == 1

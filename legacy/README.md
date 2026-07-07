@@ -4,6 +4,7 @@ Folder ini menyimpan file proyek lama sebagai arsip referensi:
 
 - `rekomendasi.ipynb`: notebook lama sebelum project dirapikan ulang.
 - `rekomendasi.py`: hasil export script dari notebook lama.
+- `app.py`: UI lama berbasis TensorFlow dan folder `aset/`.
 - `recommender system.zip`: paket lama yang dipertahankan untuk jejak historis.
 
 Pipeline utama project saat ini ada di:

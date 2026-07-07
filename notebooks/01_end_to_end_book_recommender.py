@@ -47,8 +47,18 @@ import seaborn as sns
 
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender
-from book_recommender.data import dataset_summary, load_raw_data, prepare_dataset, validate_data_dir
-from book_recommender.evaluation import build_leave_one_out_split, ranking_metrics_at_k
+from book_recommender.data import (
+    dataset_summary,
+    load_clean_dataset,
+    load_raw_data,
+    prepare_dataset,
+    validate_data_dir,
+)
+from book_recommender.evaluation import (
+    prepare_leave_one_out_evaluation,
+    ranking_metrics_at_k,
+    recommendation_diagnostics_at_k,
+)
 
 try:
     from IPython.display import display
@@ -301,6 +311,7 @@ display(
 #
 # - pilih sebagian user yang punya minimal 3 rating
 # - tahan satu buku dengan rating tinggi sebagai data relevan
+# - lakukan filtering dan pemilihan candidate books dari train split saja
 # - latih recommender tanpa rating yang ditahan
 # - cek apakah buku yang ditahan muncul di Top-K rekomendasi
 # - bandingkan collaborative filtering dengan popularity baseline
@@ -308,31 +319,42 @@ display(
 # Evaluasi ini belum sekuat eksperimen produksi, tetapi lebih baik daripada
 # klaim akurasi manual tanpa target yang jelas. Karena dataset sangat sparse,
 # Top-50 dipakai untuk membaca sinyal baseline awal. Metrik yang dipakai:
-# Precision@K, Recall@K, HitRate@K, MAP@K, dan NDCG@K.
+# Precision@K, Recall@K, HitRate@K, MAP@K, MRR@K, NDCG@K, coverage, novelty,
+# diversity, dan popularity share.
 
 # %%
-train_ratings, holdout_ratings = build_leave_one_out_split(
-    dataset.ratings,
+clean_dataset = load_clean_dataset(DATA_DIR)
+evaluation_data = prepare_leave_one_out_evaluation(
+    clean_dataset,
     sample_users=20,
+    min_user_ratings=MIN_USER_RATINGS,
+    min_book_ratings=MIN_BOOK_RATINGS,
+    max_books=MAX_BOOKS,
     random_state=RANDOM_STATE,
 )
+train_dataset = evaluation_data.train_dataset
 
 eval_model = ItemBasedCollaborativeRecommender(n_neighbors=100).fit(
-    dataset.books,
-    train_ratings,
+    train_dataset.books,
+    train_dataset.ratings,
 )
+eval_content_model = ContentBasedRecommender().fit(train_dataset.books)
 
 k = 50
 metric_rows = []
-for row in holdout_ratings.itertuples(index=False):
+recommendation_lists = {"collaborative": [], "popularity": []}
+for row in evaluation_data.evaluable_holdout_ratings.itertuples(index=False):
     user_id = int(row.user_id)
-    relevant = [row.isbn]
-    collab_recommended = eval_model.recommend_for_user(user_id, top_n=k)["isbn"].tolist()
-    train_history = train_ratings[train_ratings["user_id"] == user_id]
+    relevant = [str(row.isbn)]
+    collab_recommended = [
+        str(isbn) for isbn in eval_model.recommend_for_user(user_id, top_n=k)["isbn"].tolist()
+    ]
+    train_history = train_dataset.ratings[train_dataset.ratings["user_id"] == user_id]
     popularity_recommended = eval_model.recommend_popular(
         top_n=k,
         exclude_isbns=set(train_history["isbn"]),
     )["isbn"].tolist()
+    popularity_recommended = [str(isbn) for isbn in popularity_recommended]
 
     metric_rows.append(
         {"model": "collaborative", "user_id": user_id, **ranking_metrics_at_k(collab_recommended, relevant, k)}
@@ -340,6 +362,8 @@ for row in holdout_ratings.itertuples(index=False):
     metric_rows.append(
         {"model": "popularity", "user_id": user_id, **ranking_metrics_at_k(popularity_recommended, relevant, k)}
     )
+    recommendation_lists["collaborative"].append(collab_recommended)
+    recommendation_lists["popularity"].append(popularity_recommended)
 
 metrics = pd.DataFrame(metric_rows)
 display(metrics.head())
@@ -348,9 +372,33 @@ metric_columns = [
     f"recall_at_{k}",
     f"hit_rate_at_{k}",
     f"map_at_{k}",
+    f"mrr_at_{k}",
     f"ndcg_at_{k}",
 ]
 display(metrics.groupby("model")[metric_columns].mean())
+
+popularity_counts = train_dataset.ratings["isbn"].astype(str).value_counts()
+item_to_index = {
+    str(isbn): index
+    for index, isbn in enumerate(train_dataset.books["isbn"].astype(str).tolist())
+}
+diagnostics = pd.DataFrame(
+    [
+        {
+            "model": model,
+            **recommendation_diagnostics_at_k(
+                recommendations,
+                catalog_items=train_dataset.books["isbn"].astype(str).tolist(),
+                popularity_counts=popularity_counts,
+                k=k,
+                item_features=eval_content_model.matrix,
+                item_to_index=item_to_index,
+            ),
+        }
+        for model, recommendations in recommendation_lists.items()
+    ]
+)
+display(diagnostics)
 
 
 # %% [markdown]
@@ -365,14 +413,17 @@ display(metrics.groupby("model")[metric_columns].mean())
 # Top-50, precision maksimum untuk user tersebut hanya `1 / 50 = 0.02`.
 # Karena itu, HitRate@K dan Recall@K lebih mudah dibaca untuk melihat apakah
 # model berhasil menemukan item holdout, sedangkan MAP@K dan NDCG@K membantu
-# melihat seberapa baik posisi item relevan di ranking.
+# melihat seberapa baik posisi item relevan di ranking. MRR@K menambahkan
+# ringkasan posisi item relevan pertama.
 #
 # Pada hasil contoh, popularity baseline bisa memiliki MAP@50 atau NDCG@50 yang
 # lebih baik ketika berhasil hit, karena item relevannya muncul di posisi yang
 # lebih tinggi. Namun hit rate collaborative yang lebih tinggi memberi sinyal
 # bahwa histori rating user mulai memberi efek personalisasi. Karena dataset
 # sangat sparse dan jumlah user evaluasi masih kecil, hasil ini sebaiknya dibaca
-# sebagai benchmark awal, bukan klaim performa final.
+# sebagai benchmark awal, bukan klaim performa final. Diagnostics seperti
+# coverage, novelty, diversity, dan popularity share membantu memantau apakah
+# rekomendasi terlalu terkonsentrasi pada item populer.
 
 
 # %% [markdown]
