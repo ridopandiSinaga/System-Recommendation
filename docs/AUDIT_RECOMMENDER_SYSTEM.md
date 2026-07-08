@@ -17,12 +17,17 @@ Perbaikan awal yang sudah diterapkan setelah audit:
 - Hybrid recommender ditambahkan dengan skor gabungan collaborative, content
   profile, dan popularity yang dinormalisasi.
 - CLI dan Streamlit app dapat menampilkan rekomendasi hybrid.
+- CLI `tune-hybrid` ditambahkan untuk membandingkan beberapa kombinasi bobot
+  hybrid pada split evaluasi yang sama.
 - Root `app.py` lama dipindahkan ke `legacy/app.py` agar entry point aktif tidak
   membingungkan.
 - Test ditambah untuk memastikan holdout tidak ikut membentuk candidate catalog
   train, memverifikasi metrik diagnostics, dan menjaga roundtrip artifact hybrid.
 - Evaluasi lokal `--sample-users 200 --k 50 --max-books 5000` menunjukkan
-  `HitRate@50` hybrid `0.1757`, collaborative `0.1081`, dan popularity `0.1216`.
+  `HitRate@50` hybrid tuned `0.2027`, collaborative `0.1081`, dan popularity
+  `0.1216`.
+- Bobot dasar hybrid default diubah ke hasil tuning awal:
+  collaborative `0.40`, content `0.45`, popularity `0.15`.
 
 Catatan: bagian audit di bawah tetap menggambarkan temuan awal. Beberapa item
 yang masih relevan adalah content-based evaluation, cold-start yang lebih kuat,

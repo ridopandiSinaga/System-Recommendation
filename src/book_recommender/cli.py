@@ -27,6 +27,14 @@ from book_recommender.hybrid import HybridRecommender
 
 
 DEFAULT_MAX_BOOKS = 5_000
+DEFAULT_HYBRID_WEIGHT_GRID = [
+    (0.50, 0.40, 0.10),
+    (0.45, 0.45, 0.10),
+    (0.35, 0.55, 0.10),
+    (0.55, 0.35, 0.10),
+    (0.40, 0.45, 0.15),
+    (0.30, 0.60, 0.10),
+]
 
 
 def main() -> None:
@@ -83,9 +91,9 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate_collab.add_argument("--k", type=int, default=50)
     evaluate_collab.add_argument("--neighbors", type=int, default=100)
     evaluate_collab.add_argument("--hybrid-candidate-pool-size", type=int, default=500)
-    evaluate_collab.add_argument("--hybrid-collaborative-weight", type=float, default=0.45)
+    evaluate_collab.add_argument("--hybrid-collaborative-weight", type=float, default=0.40)
     evaluate_collab.add_argument("--hybrid-content-weight", type=float, default=0.45)
-    evaluate_collab.add_argument("--hybrid-popularity-weight", type=float, default=0.10)
+    evaluate_collab.add_argument("--hybrid-popularity-weight", type=float, default=0.15)
     evaluate_collab.add_argument("--hybrid-min-content-rating", type=float, default=8.0)
     evaluate_collab.add_argument("--disable-hybrid-dynamic-weights", action="store_true")
     evaluate_collab.add_argument("--random-state", type=int, default=42)
@@ -96,6 +104,36 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to save evaluation metrics and parameters as JSON.",
     )
     evaluate_collab.set_defaults(func=evaluate_collab_model)
+
+    tune_hybrid = subparsers.add_parser(
+        "tune-hybrid",
+        help="Evaluate several hybrid weight combinations on the same holdout split.",
+    )
+    add_common_dataset_args(tune_hybrid)
+    tune_hybrid.add_argument("--sample-users", type=int, default=100)
+    tune_hybrid.add_argument("--min-interactions", type=int, default=3)
+    tune_hybrid.add_argument("--min-relevant-rating", type=float, default=8.0)
+    tune_hybrid.add_argument("--k", type=int, default=50)
+    tune_hybrid.add_argument("--neighbors", type=int, default=100)
+    tune_hybrid.add_argument("--hybrid-candidate-pool-size", type=int, default=500)
+    tune_hybrid.add_argument("--hybrid-min-content-rating", type=float, default=8.0)
+    tune_hybrid.add_argument("--disable-hybrid-dynamic-weights", action="store_true")
+    tune_hybrid.add_argument(
+        "--weight-grid",
+        default=None,
+        help=(
+            "Semicolon-separated collab,content,popularity weights. "
+            "Example: '0.5,0.4,0.1;0.35,0.55,0.1'."
+        ),
+    )
+    tune_hybrid.add_argument("--random-state", type=int, default=42)
+    tune_hybrid.add_argument(
+        "--output",
+        type=Path,
+        default=Path("artifacts/evaluation/hybrid_weight_tuning.json"),
+        help="Path to save tuning results as JSON.",
+    )
+    tune_hybrid.set_defaults(func=tune_hybrid_weights)
 
     train_content = subparsers.add_parser("train-content", help="Build and save content model artifact.")
     add_common_dataset_args(train_content)
@@ -336,6 +374,116 @@ def evaluate_collab_model(args: argparse.Namespace) -> None:
         print(f"saved_evaluation: {args.output.resolve()}")
 
 
+def tune_hybrid_weights(args: argparse.Namespace) -> None:
+    clean_dataset = load_clean_dataset(args.data_dir)
+    evaluation_data = prepare_leave_one_out_evaluation(
+        clean_dataset,
+        sample_users=args.sample_users,
+        min_interactions=args.min_interactions,
+        min_relevant_rating=args.min_relevant_rating,
+        min_user_ratings=args.min_user_ratings,
+        min_book_ratings=args.min_book_ratings,
+        max_books=args.max_books,
+        max_ratings=args.max_ratings,
+        random_state=args.random_state,
+    )
+    if evaluation_data.evaluable_holdout_ratings.empty:
+        raise SystemExit(
+            "No evaluable holdout ratings remain after train-only filtering. "
+            "Try increasing --max-books or lowering min rating filters."
+        )
+
+    train_dataset = evaluation_data.train_dataset
+    hybrid_recommender = HybridRecommender(
+        n_neighbors=args.neighbors,
+        dynamic_weights=not args.disable_hybrid_dynamic_weights,
+        min_content_rating=args.hybrid_min_content_rating,
+    ).fit(train_dataset.books, train_dataset.ratings)
+
+    popularity_counts = train_dataset.ratings["isbn"].astype(str).value_counts()
+    catalog_items = train_dataset.books["isbn"].astype(str).tolist()
+    item_to_index = {
+        str(isbn): index
+        for index, isbn in enumerate(train_dataset.books["isbn"].astype(str).tolist())
+    }
+
+    weight_grid = parse_weight_grid(args.weight_grid)
+    results = []
+    for config_index, weights in enumerate(weight_grid, start=1):
+        hybrid_recommender.collaborative_weight = weights["collaborative_weight"]
+        hybrid_recommender.content_weight = weights["content_weight"]
+        hybrid_recommender.popularity_weight = weights["popularity_weight"]
+
+        metric_rows = []
+        recommendation_lists = []
+        train_user_counts = train_dataset.ratings["user_id"].value_counts()
+        for holdout in evaluation_data.evaluable_holdout_ratings.itertuples(index=False):
+            user_id = int(holdout.user_id)
+            relevant = [str(holdout.isbn)]
+            recommended = [
+                str(isbn)
+                for isbn in hybrid_recommender.recommend_for_user(
+                    user_id,
+                    top_n=args.k,
+                    candidate_pool_size=args.hybrid_candidate_pool_size,
+                )["isbn"].tolist()
+            ]
+            train_interactions = int(train_user_counts.get(user_id, 0))
+            metric_rows.append(
+                {
+                    "model": "hybrid",
+                    "user_id": user_id,
+                    "user_segment": interaction_segment(train_interactions),
+                    "train_interactions": train_interactions,
+                    "holdout_isbn": str(holdout.isbn),
+                    **ranking_metrics_at_k(recommended, relevant, args.k),
+                }
+            )
+            recommendation_lists.append(recommended)
+
+        summary = summarize_evaluation_rows(metric_rows, ["model"])
+        diagnostics = recommendation_diagnostics_at_k(
+            recommendation_lists,
+            catalog_items=catalog_items,
+            popularity_counts=popularity_counts,
+            k=args.k,
+            item_features=hybrid_recommender.content_model.matrix,
+            item_to_index=item_to_index,
+        )
+        result = {
+            "config_id": f"w{config_index}",
+            **weights,
+            "dynamic_weights": not args.disable_hybrid_dynamic_weights,
+            **dataframe_records(summary)[0],
+            **diagnostics,
+        }
+        results.append(result)
+
+    ranked_results = rank_tuning_results(results, args.k)
+
+    print("protocol: leave-one-out with train-only filtering/top-books")
+    print(f"sampled_holdouts: {len(evaluation_data.holdout_ratings):,}")
+    print(f"evaluable_holdouts: {len(evaluation_data.evaluable_holdout_ratings):,}")
+    print(f"dropped_holdouts: {evaluation_data.dropped_holdouts:,}")
+    print(f"k: {args.k}")
+    print(f"weight_configs: {len(ranked_results):,}")
+    print(f"dynamic_weights: {not args.disable_hybrid_dynamic_weights}")
+    print()
+    print("Hybrid weight tuning:")
+    print_tuning_summary(ranked_results, args.k)
+
+    if args.output:
+        save_tuning_artifact(
+            args.output,
+            clean_dataset=clean_dataset,
+            evaluation_data=evaluation_data,
+            results=ranked_results,
+            args=args,
+        )
+        print()
+        print(f"saved_tuning: {args.output.resolve()}")
+
+
 def load_prepared_dataset(args: argparse.Namespace):
     return prepare_dataset(
         data_dir=args.data_dir,
@@ -426,6 +574,70 @@ def print_diagnostics(diagnostics: dict[str, dict[str, float]]) -> None:
     print(results.to_string(index=False))
 
 
+def parse_weight_grid(value: str | None) -> list[dict[str, float]]:
+    if value is None or not value.strip():
+        raw_configs = DEFAULT_HYBRID_WEIGHT_GRID
+    else:
+        raw_configs = []
+        for config in value.split(";"):
+            parts = [part.strip() for part in config.split(",") if part.strip()]
+            if len(parts) != 3:
+                raise ValueError("Each weight config must contain exactly 3 comma-separated numbers.")
+            raw_configs.append(tuple(float(part) for part in parts))
+
+    parsed = []
+    for collaborative, content, popularity in raw_configs:
+        if collaborative < 0 or content < 0 or popularity < 0:
+            raise ValueError("Hybrid weights must be non-negative.")
+        total = collaborative + content + popularity
+        if total <= 0:
+            raise ValueError("Hybrid weights must sum to a positive value.")
+        parsed.append(
+            {
+                "collaborative_weight": collaborative / total,
+                "content_weight": content / total,
+                "popularity_weight": popularity / total,
+            }
+        )
+    return parsed
+
+
+def rank_tuning_results(results: list[dict], k: int) -> list[dict]:
+    return sorted(
+        results,
+        key=lambda row: (
+            row[f"hit_rate_at_{k}"],
+            row[f"ndcg_at_{k}"],
+            row[f"catalog_coverage_at_{k}"],
+            -row[f"top_10pct_popularity_share_at_{k}"],
+        ),
+        reverse=True,
+    )
+
+
+def print_tuning_summary(results: list[dict], k: int) -> None:
+    import pandas as pd
+
+    columns = [
+        "config_id",
+        "collaborative_weight",
+        "content_weight",
+        "popularity_weight",
+        f"hit_rate_at_{k}",
+        f"map_at_{k}",
+        f"mrr_at_{k}",
+        f"ndcg_at_{k}",
+        f"catalog_coverage_at_{k}",
+        f"novelty_at_{k}",
+        f"top_10pct_popularity_share_at_{k}",
+    ]
+    table = pd.DataFrame(results)[columns].copy()
+    for column in table.columns:
+        if column != "config_id":
+            table[column] = table[column].map(lambda value: f"{float(value):.4f}")
+    print(table.to_string(index=False))
+
+
 def save_evaluation_artifact(
     output: Path,
     *,
@@ -477,6 +689,51 @@ def save_evaluation_artifact(
             for model, metrics in diagnostics.items()
         },
         "per_user_rows": rows,
+    }
+    output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def save_tuning_artifact(
+    output: Path,
+    *,
+    clean_dataset,
+    evaluation_data,
+    results: list[dict],
+    args: argparse.Namespace,
+) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "protocol": "hybrid_weight_tuning_leave_one_out_train_only_filtering",
+        "parameters": {
+            "sample_users": args.sample_users,
+            "min_interactions": args.min_interactions,
+            "min_relevant_rating": args.min_relevant_rating,
+            "k": args.k,
+            "neighbors": args.neighbors,
+            "random_state": args.random_state,
+            "min_user_ratings": args.min_user_ratings,
+            "min_book_ratings": args.min_book_ratings,
+            "max_books": args.max_books,
+            "max_ratings": args.max_ratings,
+            "hybrid_candidate_pool_size": args.hybrid_candidate_pool_size,
+            "hybrid_min_content_rating": args.hybrid_min_content_rating,
+            "hybrid_dynamic_weights": not args.disable_hybrid_dynamic_weights,
+            "weight_grid": parse_weight_grid(args.weight_grid),
+        },
+        "dataset": {
+            "clean_books": int(len(clean_dataset.books)),
+            "clean_ratings": int(len(clean_dataset.ratings)),
+            "clean_users": int(len(clean_dataset.users)),
+            "sampled_holdouts": int(len(evaluation_data.holdout_ratings)),
+            "evaluable_holdouts": int(len(evaluation_data.evaluable_holdout_ratings)),
+            "dropped_holdouts": int(evaluation_data.dropped_holdouts),
+            "train_ratings_before_filter": int(len(evaluation_data.train_ratings_before_filter)),
+            "train_ratings": int(len(evaluation_data.train_dataset.ratings)),
+            "candidate_books": int(len(evaluation_data.train_dataset.books)),
+        },
+        "results": results,
+        "best_config": results[0] if results else None,
     }
     output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 

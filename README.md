@@ -121,6 +121,19 @@ candidate books berdasarkan train split saja. Hasilnya membandingkan hybrid,
 collaborative filtering, dan popularity baseline pada holdout user yang sama
 serta menyimpan parameter, metrik, diagnostics, dan hasil per user ke JSON.
 
+Tuning bobot hybrid:
+
+```bash
+uv run book-rec tune-hybrid --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/hybrid_weight_tuning_sample200.json
+```
+
+Command tuning mencoba beberapa kombinasi bobot hybrid pada split evaluasi yang
+sama. Default hybrid saat ini memakai bobot hasil tuning awal:
+
+```text
+collaborative=0.40, content=0.45, popularity=0.15
+```
+
 Simpan model artifact untuk setting default app:
 
 ```bash
@@ -245,7 +258,8 @@ Model hybrid menggabungkan tiga sinyal:
 Setiap skor dinormalisasi sebelum digabung. Bobot hybrid disesuaikan secara
 sederhana berdasarkan jumlah histori user: user dengan histori sedikit mendapat
 bobot content/popularity lebih besar, sedangkan user dengan histori lebih banyak
-mendapat bobot collaborative lebih besar.
+mendapat bobot collaborative lebih besar. Bobot dasar default hasil tuning awal
+adalah `0.40` collaborative, `0.45` content, dan `0.15` popularity.
 
 ## Evaluasi
 
@@ -288,7 +302,7 @@ Contoh hasil evaluasi lokal dengan `--sample-users 200 --k 50 --max-books 5000`:
 
 | model | HitRate@50 | MAP@50 | MRR@50 | NDCG@50 | Coverage@50 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| hybrid | 0.1757 | 0.0317 | 0.0317 | 0.0618 | 0.4118 |
+| hybrid | 0.2027 | 0.0323 | 0.0323 | 0.0667 | 0.4106 |
 | collaborative | 0.1081 | 0.0405 | 0.0405 | 0.0555 | 0.4072 |
 | popularity | 0.1216 | 0.0326 | 0.0326 | 0.0503 | 0.0108 |
 
@@ -316,7 +330,8 @@ Verifikasi yang sudah dilakukan pada project ini:
 - `uv run ruff check src tests app notebooks/01_end_to_end_book_recommender.py` berhasil
 - `uv run book-rec check-data --data-dir data/raw` berhasil setelah dataset diunduh
 - `uv run book-rec recommend-hybrid --data-dir data/raw --user-id 5709 --top-n 5 --max-books 5000` berhasil
-- `uv run book-rec evaluate-collab --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/recommender_eval_sample200.json` berhasil
+- `uv run book-rec tune-hybrid --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/hybrid_weight_tuning_sample200.json` berhasil
+- `uv run book-rec evaluate-collab --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/recommender_eval_tuned_sample200.json` berhasil
 - Streamlit app berhasil berjalan di `http://localhost:8501`
 
 ## Batasan Saat Ini

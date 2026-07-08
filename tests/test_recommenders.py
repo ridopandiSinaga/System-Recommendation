@@ -2,6 +2,7 @@ import pandas as pd
 from scipy.sparse import csr_matrix
 
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
+from book_recommender.cli import parse_weight_grid, rank_tuning_results
 from book_recommender.content_based import ContentBasedRecommender
 from book_recommender.data import BookDataset, clean_books, clean_ratings
 from book_recommender.hybrid import HybridRecommender
@@ -132,6 +133,48 @@ def test_hybrid_artifact_roundtrip(tmp_path):
     recommendations = loaded.recommend_for_user(user_id=2, top_n=1, candidate_pool_size=5)
 
     assert recommendations.iloc[0]["isbn"] == "B"
+
+
+def test_parse_weight_grid_normalizes_configs():
+    configs = parse_weight_grid("2,1,1;0.5,0.4,0.1")
+
+    assert configs[0]["collaborative_weight"] == 0.5
+    assert configs[0]["content_weight"] == 0.25
+    assert configs[0]["popularity_weight"] == 0.25
+    assert configs[1]["collaborative_weight"] == 0.5
+    assert configs[1]["content_weight"] == 0.4
+    assert configs[1]["popularity_weight"] == 0.1
+
+
+def test_rank_tuning_results_prefers_hit_rate_then_ndcg():
+    results = [
+        {
+            "config_id": "low",
+            "hit_rate_at_10": 0.1,
+            "ndcg_at_10": 0.5,
+            "catalog_coverage_at_10": 0.9,
+            "top_10pct_popularity_share_at_10": 0.1,
+        },
+        {
+            "config_id": "best",
+            "hit_rate_at_10": 0.2,
+            "ndcg_at_10": 0.1,
+            "catalog_coverage_at_10": 0.1,
+            "top_10pct_popularity_share_at_10": 0.9,
+        },
+        {
+            "config_id": "tie_break",
+            "hit_rate_at_10": 0.2,
+            "ndcg_at_10": 0.2,
+            "catalog_coverage_at_10": 0.1,
+            "top_10pct_popularity_share_at_10": 0.9,
+        },
+    ]
+
+    ranked = rank_tuning_results(results, k=10)
+
+    assert ranked[0]["config_id"] == "tie_break"
+    assert ranked[1]["config_id"] == "best"
 
 
 def test_ranking_metrics():

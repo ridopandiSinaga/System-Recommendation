@@ -18,9 +18,9 @@ class HybridRecommender:
     def __init__(
         self,
         n_neighbors: int = 50,
-        collaborative_weight: float = 0.45,
+        collaborative_weight: float = 0.40,
         content_weight: float = 0.45,
-        popularity_weight: float = 0.10,
+        popularity_weight: float = 0.15,
         dynamic_weights: bool = True,
         min_content_rating: float = 8.0,
     ):
