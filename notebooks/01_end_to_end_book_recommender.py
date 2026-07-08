@@ -25,6 +25,7 @@
 # - membersihkan data buku, rating, dan user
 # - membangun rekomendasi content-based dari metadata buku
 # - membangun rekomendasi collaborative filtering dari histori rating user
+# - membangun rekomendasi hybrid dari metadata, rating user, dan popularity
 # - mengevaluasi hasil secara sederhana dan menjelaskan keterbatasannya
 #
 # Kode utama sengaja disimpan di `src/book_recommender` supaya notebook ini tetap
@@ -59,6 +60,7 @@ from book_recommender.evaluation import (
     ranking_metrics_at_k,
     recommendation_diagnostics_at_k,
 )
+from book_recommender.hybrid import HybridRecommender
 
 try:
     from IPython.display import display
@@ -305,7 +307,44 @@ display(
 
 
 # %% [markdown]
-# ## 6. Evaluasi Sederhana
+# ## 6. Hybrid Recommendation
+#
+# Model hybrid menggabungkan tiga sinyal:
+#
+# - collaborative filtering dari pola rating user
+# - content profile dari metadata buku yang disukai user
+# - popularity sebagai fallback kecil
+#
+# Skor tiap sinyal dinormalisasi sebelum digabung agar skala collaborative,
+# content, dan popularity tidak langsung dicampur mentah.
+
+# %%
+hybrid_model = HybridRecommender(n_neighbors=50).fit(
+    dataset.books,
+    dataset.ratings,
+)
+
+hybrid_recommendations = hybrid_model.recommend_for_user(candidate_user_id, top_n=10)
+
+display(
+    hybrid_recommendations[
+        [
+            "score",
+            "collaborative_score",
+            "content_score",
+            "popularity_score",
+            "source",
+            "isbn",
+            "book_title",
+            "book_author",
+            "publisher",
+        ]
+    ]
+)
+
+
+# %% [markdown]
+# ## 7. Evaluasi Sederhana
 #
 # Untuk gambaran awal, notebook ini memakai evaluasi leave-one-out kecil:
 #
@@ -314,7 +353,7 @@ display(
 # - lakukan filtering dan pemilihan candidate books dari train split saja
 # - latih recommender tanpa rating yang ditahan
 # - cek apakah buku yang ditahan muncul di Top-K rekomendasi
-# - bandingkan collaborative filtering dengan popularity baseline
+# - bandingkan hybrid, collaborative filtering, dan popularity baseline
 #
 # Evaluasi ini belum sekuat eksperimen produksi, tetapi lebih baik daripada
 # klaim akurasi manual tanpa target yang jelas. Karena dataset sangat sparse,
@@ -334,18 +373,22 @@ evaluation_data = prepare_leave_one_out_evaluation(
 )
 train_dataset = evaluation_data.train_dataset
 
-eval_model = ItemBasedCollaborativeRecommender(n_neighbors=100).fit(
+eval_hybrid_model = HybridRecommender(n_neighbors=100).fit(
     train_dataset.books,
     train_dataset.ratings,
 )
-eval_content_model = ContentBasedRecommender().fit(train_dataset.books)
+eval_model = eval_hybrid_model.collaborative_model
+eval_content_model = eval_hybrid_model.content_model
 
 k = 50
 metric_rows = []
-recommendation_lists = {"collaborative": [], "popularity": []}
+recommendation_lists = {"hybrid": [], "collaborative": [], "popularity": []}
 for row in evaluation_data.evaluable_holdout_ratings.itertuples(index=False):
     user_id = int(row.user_id)
     relevant = [str(row.isbn)]
+    hybrid_recommended = [
+        str(isbn) for isbn in eval_hybrid_model.recommend_for_user(user_id, top_n=k)["isbn"].tolist()
+    ]
     collab_recommended = [
         str(isbn) for isbn in eval_model.recommend_for_user(user_id, top_n=k)["isbn"].tolist()
     ]
@@ -357,11 +400,15 @@ for row in evaluation_data.evaluable_holdout_ratings.itertuples(index=False):
     popularity_recommended = [str(isbn) for isbn in popularity_recommended]
 
     metric_rows.append(
+        {"model": "hybrid", "user_id": user_id, **ranking_metrics_at_k(hybrid_recommended, relevant, k)}
+    )
+    metric_rows.append(
         {"model": "collaborative", "user_id": user_id, **ranking_metrics_at_k(collab_recommended, relevant, k)}
     )
     metric_rows.append(
         {"model": "popularity", "user_id": user_id, **ranking_metrics_at_k(popularity_recommended, relevant, k)}
     )
+    recommendation_lists["hybrid"].append(hybrid_recommended)
     recommendation_lists["collaborative"].append(collab_recommended)
     recommendation_lists["popularity"].append(popularity_recommended)
 
@@ -404,9 +451,10 @@ display(diagnostics)
 # %% [markdown]
 # ### Interpretasi Hasil Evaluasi
 #
-# Pada sampel evaluasi ini, collaborative filtering memiliki HitRate@50 lebih
-# tinggi dibanding popularity baseline. Artinya, model collaborative lebih sering
-# menemukan buku holdout yang sebelumnya disembunyikan dari histori user.
+# Pada sampel evaluasi ini, hybrid, collaborative filtering, dan popularity
+# baseline dibandingkan pada user dan holdout item yang sama. Model hybrid
+# ditambahkan untuk melihat apakah gabungan metadata, pola rating, dan popularity
+# dapat memperbaiki trade-off relevance, coverage, dan novelty.
 #
 # Nilai Precision@50 tetap kecil karena skenario leave-one-out hanya memiliki
 # satu item relevan untuk setiap user. Jika satu item relevan berhasil muncul di
@@ -418,16 +466,14 @@ display(diagnostics)
 #
 # Pada hasil contoh, popularity baseline bisa memiliki MAP@50 atau NDCG@50 yang
 # lebih baik ketika berhasil hit, karena item relevannya muncul di posisi yang
-# lebih tinggi. Namun hit rate collaborative yang lebih tinggi memberi sinyal
-# bahwa histori rating user mulai memberi efek personalisasi. Karena dataset
-# sangat sparse dan jumlah user evaluasi masih kecil, hasil ini sebaiknya dibaca
-# sebagai benchmark awal, bukan klaim performa final. Diagnostics seperti
-# coverage, novelty, diversity, dan popularity share membantu memantau apakah
-# rekomendasi terlalu terkonsentrasi pada item populer.
+# lebih tinggi. Karena dataset sangat sparse dan jumlah user evaluasi masih
+# kecil, hasil ini sebaiknya dibaca sebagai benchmark awal, bukan klaim performa
+# final. Diagnostics seperti coverage, novelty, diversity, dan popularity share
+# membantu memantau apakah rekomendasi terlalu terkonsentrasi pada item populer.
 
 
 # %% [markdown]
-# ## 7. Kesimpulan
+# ## 8. Kesimpulan
 #
 # Dari notebook ini:
 #
@@ -436,6 +482,8 @@ display(diagnostics)
 #   metadata, termasuk saat user belum punya histori rating.
 # - Collaborative filtering cocok ketika user sudah memiliki histori rating,
 #   karena rekomendasi berasal dari pola kesukaan user lain.
+# - Hybrid recommendation menggabungkan sinyal metadata, histori rating, dan
+#   popularity dalam satu skor rekomendasi yang bisa dievaluasi.
 # - Evaluasi awal sudah memakai target holdout, tetapi masih terbatas karena
 #   hanya mengevaluasi sampel kecil dan belum memakai split temporal.
 #
@@ -446,15 +494,15 @@ display(diagnostics)
 # - Cold-start belum diselesaikan penuh: user baru memakai popularity fallback,
 #   sedangkan buku baru tanpa rating lebih sulit masuk ke rekomendasi
 #   collaborative filtering.
-# - Content-based dan collaborative filtering masih dua pendekatan terpisah,
-#   belum digabung sebagai model hybrid.
+# - Hybrid yang tersedia masih berupa weighted scoring baseline, belum memakai
+#   matrix factorization atau model ranking yang dipelajari secara end-to-end.
 # - Fitur demografis seperti umur dan lokasi belum dipakai sebagai fitur model.
 #
 # Pengembangan lanjutan yang masuk akal:
 #
 # - simpan model sebagai artifact di `models/`
 # - tambah Streamlit demo dengan cover buku
-# - eksperimen hybrid recommender yang menggabungkan metadata dan rating
+# - tuning bobot hybrid berdasarkan hasil evaluasi ranking
 # - perluas evaluasi ranking dengan split temporal dan sampel user yang lebih
 #   besar
 # - eksplorasi strategi cold-start dan mitigasi popularity bias

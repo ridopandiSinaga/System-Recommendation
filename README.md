@@ -104,16 +104,22 @@ Rekomendasi collaborative filtering berdasarkan histori user:
 uv run book-rec recommend-collab --data-dir data/raw --user-id 5709
 ```
 
-Evaluasi ranking collaborative filtering:
+Rekomendasi hybrid berdasarkan histori user:
 
 ```bash
-uv run book-rec evaluate-collab --data-dir data/raw --sample-users 100 --k 50 --output artifacts/evaluation/collab_evaluation.json
+uv run book-rec recommend-hybrid --data-dir data/raw --user-id 5709
+```
+
+Evaluasi ranking recommender:
+
+```bash
+uv run book-rec evaluate-collab --data-dir data/raw --sample-users 100 --k 50 --output artifacts/evaluation/recommender_evaluation.json
 ```
 
 Command evaluasi memakai split leave-one-out dengan filtering dan pemilihan
-candidate books berdasarkan train split saja. Hasilnya membandingkan
-collaborative filtering dengan popularity baseline pada holdout user yang sama
-dan menyimpan parameter, metrik, diagnostics, serta hasil per user ke JSON.
+candidate books berdasarkan train split saja. Hasilnya membandingkan hybrid,
+collaborative filtering, dan popularity baseline pada holdout user yang sama
+serta menyimpan parameter, metrik, diagnostics, dan hasil per user ke JSON.
 
 Simpan model artifact untuk setting default app:
 
@@ -142,7 +148,8 @@ http://localhost:8501
 Fitur app:
 
 - pilih judul buku dan lihat rekomendasi buku serupa
-- masukkan `user_id` dan lihat rekomendasi dari histori rating
+- masukkan `user_id` dan lihat rekomendasi collaborative atau hybrid dari
+  histori rating
 - tampilkan cover buku dari URL dataset
 - atur ukuran sample dan jumlah rekomendasi dari sidebar
 
@@ -185,6 +192,7 @@ Notebook ini memperlihatkan alur dari awal sampai akhir:
 - preprocessing
 - content-based recommendation
 - collaborative filtering
+- hybrid recommendation
 - evaluasi Top-K sederhana
 - kesimpulan dan keterbatasan
 
@@ -226,16 +234,29 @@ rekomendasi mudah direproduksi, diuji, dan dijelaskan. Fokusnya adalah membangun
 sistem rekomendasi yang jelas dari preprocessing, modeling, evaluasi ranking,
 hingga demo aplikasi.
 
+### Hybrid Recommendation
+
+Model hybrid menggabungkan tiga sinyal:
+
+- skor collaborative dari kemiripan item berdasarkan histori rating
+- skor content profile dari metadata buku yang disukai user
+- skor popularity sebagai fallback kecil dan stabilizer
+
+Setiap skor dinormalisasi sebelum digabung. Bobot hybrid disesuaikan secara
+sederhana berdasarkan jumlah histori user: user dengan histori sedikit mendapat
+bobot content/popularity lebih besar, sedangkan user dengan histori lebih banyak
+mendapat bobot collaborative lebih besar.
+
 ## Evaluasi
 
-Notebook dan CLI memakai evaluasi leave-one-out untuk collaborative filtering:
+Notebook dan CLI memakai evaluasi leave-one-out untuk ranking recommender:
 
 - pilih beberapa user dengan minimal jumlah rating tertentu
 - tahan satu buku dengan rating tinggi sebagai target
 - lakukan filtering sparsity dan pemilihan candidate books dari train split saja
 - latih recommender tanpa target tersebut
 - rekomendasikan Top-K buku untuk user tersebut
-- bandingkan collaborative filtering dengan popularity baseline
+- bandingkan hybrid, collaborative filtering, dan popularity baseline
 
 Metrik yang tersedia:
 
@@ -258,10 +279,22 @@ dilakukan tanpa data tambahan.
 Artifact evaluasi default tersimpan di:
 
 ```text
-artifacts/evaluation/collab_evaluation.json
+artifacts/evaluation/recommender_evaluation.json
 ```
 
 Folder `artifacts/` diabaikan oleh git karena berisi output eksperimen lokal.
+
+Contoh hasil evaluasi lokal dengan `--sample-users 200 --k 50 --max-books 5000`:
+
+| model | HitRate@50 | MAP@50 | MRR@50 | NDCG@50 | Coverage@50 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| hybrid | 0.1757 | 0.0317 | 0.0317 | 0.0618 | 0.4118 |
+| collaborative | 0.1081 | 0.0405 | 0.0405 | 0.0555 | 0.4072 |
+| popularity | 0.1216 | 0.0326 | 0.0326 | 0.0503 | 0.0108 |
+
+Interpretasinya: hybrid memberi HitRate@50 dan NDCG@50 terbaik pada sampel ini,
+sementara collaborative masih unggul pada MAP/MRR. Popularity baseline memiliki
+coverage sangat rendah karena terkonsentrasi pada buku populer.
 
 ## Verifikasi
 
@@ -282,7 +315,8 @@ Verifikasi yang sudah dilakukan pada project ini:
 - `uv run pytest` berhasil
 - `uv run ruff check src tests app notebooks/01_end_to_end_book_recommender.py` berhasil
 - `uv run book-rec check-data --data-dir data/raw` berhasil setelah dataset diunduh
-- `uv run book-rec evaluate-collab --data-dir data/raw --sample-users 20 --k 50 --max-books 5000 --output artifacts/evaluation/collab_eval_sample20.json` berhasil
+- `uv run book-rec recommend-hybrid --data-dir data/raw --user-id 5709 --top-n 5 --max-books 5000` berhasil
+- `uv run book-rec evaluate-collab --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/recommender_eval_sample200.json` berhasil
 - Streamlit app berhasil berjalan di `http://localhost:8501`
 
 ## Batasan Saat Ini
@@ -296,8 +330,8 @@ Verifikasi yang sudah dilakukan pada project ini:
   popularity fallback, sedangkan buku baru tanpa rating sulit direkomendasikan
   oleh collaborative filtering.
 - Content-based recommendation dan collaborative filtering masih berjalan sebagai
-  dua pendekatan terpisah. Proyek ini belum membangun model hybrid yang
-  menggabungkan metadata buku dan histori rating dalam satu skor rekomendasi.
+  pendekatan yang bisa diuji terpisah. Model hybrid sudah tersedia, tetapi masih
+  berupa penggabungan skor baseline, bukan model latent factor atau deep learning.
 - Fitur demografis seperti `age` dan `location` dibersihkan untuk eksplorasi,
   tetapi belum dipakai dalam model agar baseline tetap sederhana dan mudah
   direproduksi.

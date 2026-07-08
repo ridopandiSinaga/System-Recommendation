@@ -57,11 +57,16 @@ class ItemBasedCollaborativeRecommender:
         self.popularity = self._build_popularity()
         return self
 
-    def recommend_for_user(self, user_id: int, top_n: int = 10, seed_items: int = 5) -> pd.DataFrame:
+    def score_for_user(
+        self,
+        user_id: int,
+        seed_items: int = 5,
+        candidate_pool_size: int | None = None,
+    ) -> pd.DataFrame:
         self._check_is_fitted()
         user_history = self.ratings[self.ratings["user_id"] == int(user_id)].copy()
         if user_history.empty:
-            return self.recommend_popular(top_n=top_n)
+            return pd.DataFrame(columns=["isbn", "score"])
 
         read_isbns = set(user_history["isbn"])
         seed_history = user_history.sort_values("book_rating", ascending=False).head(seed_items)
@@ -88,11 +93,26 @@ class ItemBasedCollaborativeRecommender:
                 scores[candidate_isbn] += similarity * rating_weight
 
         if not scores:
-            return self.recommend_popular(top_n=top_n, exclude_isbns=read_isbns)
+            return pd.DataFrame(columns=["isbn", "score"])
 
         scored = pd.DataFrame(
             [{"isbn": isbn, "score": score} for isbn, score in scores.items()]
         ).sort_values("score", ascending=False)
+        if candidate_pool_size is not None and candidate_pool_size > 0:
+            scored = scored.head(candidate_pool_size)
+        return scored.reset_index(drop=True)
+
+    def recommend_for_user(self, user_id: int, top_n: int = 10, seed_items: int = 5) -> pd.DataFrame:
+        self._check_is_fitted()
+        user_history = self.ratings[self.ratings["user_id"] == int(user_id)].copy()
+        if user_history.empty:
+            return self.recommend_popular(top_n=top_n)
+
+        read_isbns = set(user_history["isbn"])
+        scored = self.score_for_user(user_id=user_id, seed_items=seed_items, candidate_pool_size=top_n)
+        if scored.empty:
+            return self.recommend_popular(top_n=top_n, exclude_isbns=read_isbns)
+
         result = scored.merge(self.books, on="isbn", how="left")
         return result.head(top_n).reset_index(drop=True)
 

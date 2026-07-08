@@ -18,6 +18,7 @@ from book_recommender.data import (
     prepare_dataset,
     validate_data_dir,
 )
+from book_recommender.hybrid import HybridRecommender
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -76,16 +77,22 @@ def main() -> None:
     dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
     content_model = load_content_model(max_books, min_user_ratings, min_book_ratings)
     collab_model = load_collab_model(max_books, min_user_ratings, min_book_ratings)
+    hybrid_model = load_hybrid_model(max_books, min_user_ratings, min_book_ratings)
 
     render_summary(dataset)
 
-    content_tab, collab_tab = st.tabs(["Similar books", "User recommendations"])
+    content_tab, collab_tab, hybrid_tab = st.tabs(
+        ["Similar books", "Collaborative", "Hybrid"]
+    )
 
     with content_tab:
         render_content_tab(dataset.books, content_model, top_n)
 
     with collab_tab:
         render_collab_tab(dataset.books, dataset.ratings, collab_model, top_n)
+
+    with hybrid_tab:
+        render_hybrid_tab(dataset.books, dataset.ratings, hybrid_model, top_n)
 
 
 @st.cache_data(show_spinner="Loading dataset")
@@ -115,6 +122,12 @@ def load_collab_model(max_books: int, min_user_ratings: int, min_book_ratings: i
             return ItemBasedCollaborativeRecommender.load(COLLAB_ARTIFACT)
     dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
     return ItemBasedCollaborativeRecommender(n_neighbors=50).fit(dataset.books, dataset.ratings)
+
+
+@st.cache_resource(show_spinner="Building hybrid model")
+def load_hybrid_model(max_books: int, min_user_ratings: int, min_book_ratings: int):
+    dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
+    return HybridRecommender(n_neighbors=50).fit(dataset.books, dataset.ratings)
 
 
 def uses_default_artifact_params(max_books: int, min_user_ratings: int, min_book_ratings: int) -> bool:
@@ -259,6 +272,33 @@ def render_collab_tab(
     render_recommendation_grid(recommendations)
 
 
+def render_hybrid_tab(
+    books: pd.DataFrame,
+    ratings: pd.DataFrame,
+    hybrid_model: HybridRecommender,
+    top_n: int,
+) -> None:
+    active_users = ratings["user_id"].value_counts()
+    default_user = int(active_users.index[0])
+    user_id = st.number_input("User ID", min_value=1, value=default_user, step=1, key="hybrid_user_id")
+
+    user_history = (
+        ratings[ratings["user_id"] == int(user_id)]
+        .sort_values("book_rating", ascending=False)
+        .merge(books, on="isbn", how="left")
+    )
+
+    if user_history.empty:
+        st.warning("User history is not available in the current sample.")
+    else:
+        st.subheader("Highest rated books")
+        render_history(user_history.head(5))
+
+    recommendations = hybrid_model.recommend_for_user(int(user_id), top_n=top_n)
+    st.subheader("Recommendations")
+    render_recommendation_grid(recommendations)
+
+
 def render_history(history: pd.DataFrame) -> None:
     cols = st.columns(min(5, len(history)))
     for col, row in zip(cols, history.itertuples(index=False)):
@@ -283,6 +323,8 @@ def render_recommendation_grid(recommendations: pd.DataFrame) -> None:
                 st.caption(f"{row.book_author}")
                 if hasattr(row, "score"):
                     st.write(f"Score: {float(row.score):.3f}")
+                if hasattr(row, "source"):
+                    st.caption(f"Signal: {row.source}")
                 st.caption(str(row.publisher))
 
 

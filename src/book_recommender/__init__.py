@@ -5,4 +5,5 @@ __all__ = [
     "collaborative",
     "data",
     "evaluation",
+    "hybrid",
 ]

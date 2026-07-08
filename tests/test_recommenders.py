@@ -4,6 +4,7 @@ from scipy.sparse import csr_matrix
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender
 from book_recommender.data import BookDataset, clean_books, clean_ratings
+from book_recommender.hybrid import HybridRecommender
 from book_recommender.evaluation import (
     average_precision_at_k,
     build_leave_one_out_split,
@@ -98,6 +99,37 @@ def test_collaborative_artifact_roundtrip(tmp_path):
     recommender.save(artifact)
     loaded = ItemBasedCollaborativeRecommender.load(artifact)
     recommendations = loaded.recommend_for_user(user_id=2, top_n=1)
+
+    assert recommendations.iloc[0]["isbn"] == "B"
+
+
+def test_hybrid_recommends_unread_item_with_component_scores():
+    recommender = HybridRecommender(n_neighbors=2).fit(sample_books(), sample_ratings())
+    recommendations = recommender.recommend_for_user(user_id=2, top_n=1, candidate_pool_size=5)
+
+    assert recommendations.iloc[0]["isbn"] == "B"
+    assert recommendations.iloc[0]["score"] > 0
+    assert "collaborative_score" in recommendations.columns
+    assert "content_score" in recommendations.columns
+    assert "popularity_score" in recommendations.columns
+    assert recommendations.iloc[0]["source"] in {"collaborative", "content", "popularity"}
+
+
+def test_hybrid_unknown_user_uses_popularity_fallback():
+    recommender = HybridRecommender(n_neighbors=2).fit(sample_books(), sample_ratings())
+    recommendations = recommender.recommend_for_user(user_id=999, top_n=1)
+
+    assert not recommendations.empty
+    assert recommendations.iloc[0]["source"] == "popularity"
+
+
+def test_hybrid_artifact_roundtrip(tmp_path):
+    artifact = tmp_path / "hybrid.joblib"
+    recommender = HybridRecommender(n_neighbors=2).fit(sample_books(), sample_ratings())
+
+    recommender.save(artifact)
+    loaded = HybridRecommender.load(artifact)
+    recommendations = loaded.recommend_for_user(user_id=2, top_n=1, candidate_pool_size=5)
 
     assert recommendations.iloc[0]["isbn"] == "B"
 

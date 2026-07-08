@@ -14,14 +14,19 @@ Perbaikan awal yang sudah diterapkan setelah audit:
 - Diagnostics rekomendasi ditambah `Coverage@K`, novelty, intra-list diversity,
   serta share rekomendasi pada top 1%, 5%, dan 10% item populer.
 - Hasil evaluasi dapat disimpan sebagai artifact JSON di `artifacts/evaluation/`.
+- Hybrid recommender ditambahkan dengan skor gabungan collaborative, content
+  profile, dan popularity yang dinormalisasi.
+- CLI dan Streamlit app dapat menampilkan rekomendasi hybrid.
 - Root `app.py` lama dipindahkan ke `legacy/app.py` agar entry point aktif tidak
   membingungkan.
 - Test ditambah untuk memastikan holdout tidak ikut membentuk candidate catalog
-  train dan untuk memverifikasi metrik diagnostics.
+  train, memverifikasi metrik diagnostics, dan menjaga roundtrip artifact hybrid.
+- Evaluasi lokal `--sample-users 200 --k 50 --max-books 5000` menunjukkan
+  `HitRate@50` hybrid `0.1757`, collaborative `0.1081`, dan popularity `0.1216`.
 
 Catatan: bagian audit di bawah tetap menggambarkan temuan awal. Beberapa item
 yang masih relevan adalah content-based evaluation, cold-start yang lebih kuat,
-explainability, hybrid recommender, dan scalability plan.
+explainability, tuning hybrid, dan scalability plan.
 
 ## Ringkasan Project
 

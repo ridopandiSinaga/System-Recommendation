@@ -23,6 +23,7 @@ from book_recommender.evaluation import (
     ranking_metrics_at_k,
     recommendation_diagnostics_at_k,
 )
+from book_recommender.hybrid import HybridRecommender
 
 
 DEFAULT_MAX_BOOKS = 5_000
@@ -63,9 +64,17 @@ def build_parser() -> argparse.ArgumentParser:
     collab.add_argument("--neighbors", type=int, default=50)
     collab.set_defaults(func=recommend_collab)
 
+    hybrid = subparsers.add_parser("recommend-hybrid", help="Recommend books using hybrid scoring.")
+    add_common_dataset_args(hybrid)
+    hybrid.add_argument("--user-id", type=int, required=True)
+    hybrid.add_argument("--top-n", type=int, default=10)
+    hybrid.add_argument("--neighbors", type=int, default=50)
+    hybrid.add_argument("--candidate-pool-size", type=int, default=500)
+    hybrid.set_defaults(func=recommend_hybrid)
+
     evaluate_collab = subparsers.add_parser(
         "evaluate-collab",
-        help="Evaluate collaborative filtering with leave-one-out ranking metrics.",
+        help="Evaluate collaborative, hybrid, and popularity ranking metrics.",
     )
     add_common_dataset_args(evaluate_collab)
     evaluate_collab.add_argument("--sample-users", type=int, default=100)
@@ -73,11 +82,17 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate_collab.add_argument("--min-relevant-rating", type=float, default=8.0)
     evaluate_collab.add_argument("--k", type=int, default=50)
     evaluate_collab.add_argument("--neighbors", type=int, default=100)
+    evaluate_collab.add_argument("--hybrid-candidate-pool-size", type=int, default=500)
+    evaluate_collab.add_argument("--hybrid-collaborative-weight", type=float, default=0.45)
+    evaluate_collab.add_argument("--hybrid-content-weight", type=float, default=0.45)
+    evaluate_collab.add_argument("--hybrid-popularity-weight", type=float, default=0.10)
+    evaluate_collab.add_argument("--hybrid-min-content-rating", type=float, default=8.0)
+    evaluate_collab.add_argument("--disable-hybrid-dynamic-weights", action="store_true")
     evaluate_collab.add_argument("--random-state", type=int, default=42)
     evaluate_collab.add_argument(
         "--output",
         type=Path,
-        default=Path("artifacts/evaluation/collab_evaluation.json"),
+        default=Path("artifacts/evaluation/recommender_evaluation.json"),
         help="Path to save evaluation metrics and parameters as JSON.",
     )
     evaluate_collab.set_defaults(func=evaluate_collab_model)
@@ -138,6 +153,20 @@ def recommend_collab(args: argparse.Namespace) -> None:
     print_recommendations(recommendations)
 
 
+def recommend_hybrid(args: argparse.Namespace) -> None:
+    dataset = load_prepared_dataset(args)
+    recommender = HybridRecommender(n_neighbors=args.neighbors).fit(
+        dataset.books,
+        dataset.ratings,
+    )
+    recommendations = recommender.recommend_for_user(
+        user_id=args.user_id,
+        top_n=args.top_n,
+        candidate_pool_size=args.candidate_pool_size,
+    )
+    print_recommendations(recommendations)
+
+
 def train_content_model(args: argparse.Namespace) -> None:
     dataset = load_prepared_dataset(args)
     recommender = ContentBasedRecommender().fit(dataset.books)
@@ -177,22 +206,38 @@ def evaluate_collab_model(args: argparse.Namespace) -> None:
         )
 
     train_dataset = evaluation_data.train_dataset
-    recommender = ItemBasedCollaborativeRecommender(n_neighbors=args.neighbors).fit(
+    hybrid_recommender = HybridRecommender(
+        n_neighbors=args.neighbors,
+        collaborative_weight=args.hybrid_collaborative_weight,
+        content_weight=args.hybrid_content_weight,
+        popularity_weight=args.hybrid_popularity_weight,
+        dynamic_weights=not args.disable_hybrid_dynamic_weights,
+        min_content_rating=args.hybrid_min_content_rating,
+    ).fit(
         train_dataset.books,
         train_dataset.ratings,
     )
-    content_model = ContentBasedRecommender().fit(train_dataset.books)
+    recommender = hybrid_recommender.collaborative_model
+    content_model = hybrid_recommender.content_model
     item_to_index = {
         str(isbn): index
         for index, isbn in enumerate(train_dataset.books["isbn"].astype(str).tolist())
     }
 
     rows = []
-    recommendation_lists = {"collaborative": [], "popularity": []}
+    recommendation_lists = {"hybrid": [], "collaborative": [], "popularity": []}
     train_user_counts = train_dataset.ratings["user_id"].value_counts()
     for holdout in evaluation_data.evaluable_holdout_ratings.itertuples(index=False):
         user_id = int(holdout.user_id)
         relevant = [str(holdout.isbn)]
+        hybrid_recommended = [
+            str(isbn)
+            for isbn in hybrid_recommender.recommend_for_user(
+                user_id,
+                top_n=args.k,
+                candidate_pool_size=args.hybrid_candidate_pool_size,
+            )["isbn"].tolist()
+        ]
         collab_recommended = [
             str(isbn) for isbn in recommender.recommend_for_user(user_id, top_n=args.k)["isbn"].tolist()
         ]
@@ -207,6 +252,16 @@ def evaluate_collab_model(args: argparse.Namespace) -> None:
         train_interactions = int(train_user_counts.get(user_id, 0))
         segment = interaction_segment(train_interactions)
 
+        rows.append(
+            {
+                "model": "hybrid",
+                "user_id": user_id,
+                "user_segment": segment,
+                "train_interactions": train_interactions,
+                "holdout_isbn": str(holdout.isbn),
+                **ranking_metrics_at_k(hybrid_recommended, relevant, args.k),
+            }
+        )
         rows.append(
             {
                 "model": "collaborative",
@@ -227,6 +282,7 @@ def evaluate_collab_model(args: argparse.Namespace) -> None:
                 **ranking_metrics_at_k(popularity_recommended, relevant, args.k),
             }
         )
+        recommendation_lists["hybrid"].append(hybrid_recommended)
         recommendation_lists["collaborative"].append(collab_recommended)
         recommendation_lists["popularity"].append(popularity_recommended)
 
@@ -307,7 +363,19 @@ def print_recommendations(recommendations) -> None:
 
     columns = [
         column
-        for column in ["score", "isbn", "book_title", "book_author", "publisher", "mean_rating", "rating_count"]
+        for column in [
+            "score",
+            "collaborative_score",
+            "content_score",
+            "popularity_score",
+            "source",
+            "isbn",
+            "book_title",
+            "book_author",
+            "publisher",
+            "mean_rating",
+            "rating_count",
+        ]
         if column in recommendations.columns
     ]
     printable = recommendations[columns].copy()
@@ -384,6 +452,12 @@ def save_evaluation_artifact(
             "min_book_ratings": args.min_book_ratings,
             "max_books": args.max_books,
             "max_ratings": args.max_ratings,
+            "hybrid_candidate_pool_size": getattr(args, "hybrid_candidate_pool_size", None),
+            "hybrid_collaborative_weight": getattr(args, "hybrid_collaborative_weight", None),
+            "hybrid_content_weight": getattr(args, "hybrid_content_weight", None),
+            "hybrid_popularity_weight": getattr(args, "hybrid_popularity_weight", None),
+            "hybrid_min_content_rating": getattr(args, "hybrid_min_content_rating", None),
+            "hybrid_dynamic_weights": not getattr(args, "disable_hybrid_dynamic_weights", False),
         },
         "dataset": {
             "clean_books": int(len(clean_dataset.books)),
