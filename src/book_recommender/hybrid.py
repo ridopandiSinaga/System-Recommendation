@@ -96,6 +96,7 @@ class HybridRecommender:
             "content_score",
             "popularity_score",
             "source",
+            "reason",
         ]
         rows = []
         for index in np.argsort(-final_scores):
@@ -103,6 +104,11 @@ class HybridRecommender:
             if not np.isfinite(score) or score <= 0.0:
                 continue
             isbn = str(self.books.iloc[index]["isbn"])
+            source = strongest_source(
+                collaborative=weights["collaborative"] * collaborative_scores[index],
+                content=weights["content"] * content_scores[index],
+                popularity=weights["popularity"] * popularity_scores[index],
+            )
             rows.append(
                 {
                     "isbn": isbn,
@@ -110,11 +116,8 @@ class HybridRecommender:
                     "collaborative_score": float(collaborative_scores[index]),
                     "content_score": float(content_scores[index]),
                     "popularity_score": float(popularity_scores[index]),
-                    "source": strongest_source(
-                        collaborative=weights["collaborative"] * collaborative_scores[index],
-                        content=weights["content"] * content_scores[index],
-                        popularity=weights["popularity"] * popularity_scores[index],
-                    ),
+                    "source": source,
+                    "reason": recommendation_reason(source),
                 }
             )
             if len(rows) >= top_n:
@@ -229,6 +232,7 @@ class HybridRecommender:
         popular["popularity_score"] = normalize_scores(popular["score"].to_numpy(dtype="float64"))
         popular["score"] = popular["popularity_score"]
         popular["source"] = "popularity"
+        popular["reason"] = recommendation_reason("popularity")
         return popular.reset_index(drop=True)
 
     def _fill_with_popular(
@@ -249,6 +253,7 @@ class HybridRecommender:
         filler["popularity_score"] = normalize_scores(filler["score"].to_numpy(dtype="float64"))
         filler["score"] = filler["popularity_score"]
         filler["source"] = "popularity"
+        filler["reason"] = recommendation_reason("popularity")
         combined = pd.concat([result, filler[result.columns]], ignore_index=True)
         return combined.head(top_n)
 
@@ -289,3 +294,12 @@ def strongest_source(collaborative: float, content: float, popularity: float) ->
         "popularity": float(popularity),
     }
     return max(sources, key=sources.get)
+
+
+def recommendation_reason(source: str) -> str:
+    reasons = {
+        "collaborative": "Similar rating patterns to books the user rated highly.",
+        "content": "Metadata is similar to books the user rated highly.",
+        "popularity": "Popular fallback from books with strong rating history.",
+    }
+    return reasons.get(source, "Combined hybrid signal from user history and book metadata.")

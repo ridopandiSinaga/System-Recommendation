@@ -113,6 +113,8 @@ def test_hybrid_recommends_unread_item_with_component_scores():
     assert "collaborative_score" in recommendations.columns
     assert "content_score" in recommendations.columns
     assert "popularity_score" in recommendations.columns
+    assert "reason" in recommendations.columns
+    assert recommendations.iloc[0]["reason"]
     assert recommendations.iloc[0]["source"] in {"collaborative", "content", "popularity"}
 
 
@@ -122,6 +124,7 @@ def test_hybrid_unknown_user_uses_popularity_fallback():
 
     assert not recommendations.empty
     assert recommendations.iloc[0]["source"] == "popularity"
+    assert recommendations.iloc[0]["reason"] == "Popular fallback from books with strong rating history."
 
 
 def test_hybrid_artifact_roundtrip(tmp_path):

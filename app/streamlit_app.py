@@ -325,6 +325,8 @@ def render_recommendation_grid(recommendations: pd.DataFrame) -> None:
                     st.write(f"Score: {float(row.score):.3f}")
                 if hasattr(row, "source"):
                     st.caption(f"Signal: {row.source}")
+                if hasattr(row, "reason"):
+                    st.caption(str(row.reason))
                 st.caption(str(row.publisher))
 
 

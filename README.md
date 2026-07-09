@@ -261,6 +261,10 @@ bobot content/popularity lebih besar, sedangkan user dengan histori lebih banyak
 mendapat bobot collaborative lebih besar. Bobot dasar default hasil tuning awal
 adalah `0.40` collaborative, `0.45` content, dan `0.15` popularity.
 
+Output hybrid juga menyertakan `source` dan `reason` agar rekomendasi dapat
+dijelaskan sebagai sinyal collaborative, content profile, atau popularity
+fallback.
+
 ## Evaluasi
 
 Notebook dan CLI memakai evaluasi leave-one-out untuk ranking recommender:

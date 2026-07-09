@@ -17,6 +17,8 @@ Perbaikan awal yang sudah diterapkan setelah audit:
 - Hybrid recommender ditambahkan dengan skor gabungan collaborative, content
   profile, dan popularity yang dinormalisasi.
 - CLI dan Streamlit app dapat menampilkan rekomendasi hybrid.
+- Rekomendasi hybrid menyertakan `source` dan `reason` sebagai explainability
+  sederhana untuk user/reviewer.
 - CLI `tune-hybrid` ditambahkan untuk membandingkan beberapa kombinasi bobot
   hybrid pada split evaluasi yang sama.
 - Root `app.py` lama dipindahkan ke `legacy/app.py` agar entry point aktif tidak
@@ -31,7 +33,7 @@ Perbaikan awal yang sudah diterapkan setelah audit:
 
 Catatan: bagian audit di bawah tetap menggambarkan temuan awal. Beberapa item
 yang masih relevan adalah content-based evaluation, cold-start yang lebih kuat,
-explainability, tuning hybrid, dan scalability plan.
+explainability yang lebih detail, tuning hybrid, dan scalability plan.
 
 ## Ringkasan Project
 

@@ -517,6 +517,7 @@ def print_recommendations(recommendations) -> None:
             "content_score",
             "popularity_score",
             "source",
+            "reason",
             "isbn",
             "book_title",
             "book_author",
