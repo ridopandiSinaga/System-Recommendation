@@ -341,11 +341,11 @@ def render_cover(container, row) -> None:
             f"""
             <img src="{safe_url}" alt="{safe_title}" style="
                 width: 100%;
-                min-height: 170px;
-                max-height: 260px;
+                height: 170px;
                 object-fit: contain;
                 border-radius: 8px;
-                background: #f8fafc;" />
+                background: #f8fafc;
+                display: block;" />
             """,
             unsafe_allow_html=True,
         )
@@ -354,7 +354,7 @@ def render_cover(container, row) -> None:
     container.markdown(
         f"""
         <div style="
-            min-height: 170px;
+            height: 170px;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             background: #f8fafc;
