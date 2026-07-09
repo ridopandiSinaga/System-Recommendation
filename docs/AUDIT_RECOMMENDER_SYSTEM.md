@@ -1,6 +1,7 @@
 # Audit Recommender System
 
 Tanggal audit: 2026-07-08
+Tanggal tindak lanjut: 2026-07-09
 
 ## Status Tindak Lanjut
 
@@ -31,9 +32,10 @@ Perbaikan awal yang sudah diterapkan setelah audit:
 - Bobot dasar hybrid default diubah ke hasil tuning awal:
   collaborative `0.40`, content `0.45`, popularity `0.15`.
 
-Catatan: bagian audit di bawah tetap menggambarkan temuan awal. Beberapa item
-yang masih relevan adalah content-based evaluation, cold-start yang lebih kuat,
-explainability yang lebih detail, tuning hybrid, dan scalability plan.
+Catatan: bagian audit di bawah sudah disesuaikan dengan tindak lanjut awal.
+Beberapa item yang masih relevan adalah content-based evaluation, cold-start
+yang lebih kuat, explainability yang lebih detail, validasi hybrid yang lebih
+luas, dan scalability plan.
 
 ## Ringkasan Project
 
@@ -55,12 +57,11 @@ File utama yang ditemukan:
 | Notebook utama | `notebooks/01_end_to_end_book_recommender.py` dan `.ipynb` |
 | Tests | `tests/test_recommenders.py` |
 | Dokumentasi dataset | `docs/DATASET.md` |
-| File lama/arsip | `legacy/`, `docs/LEGACY_REPORT_2023.md`, dan `app.py` |
+| File lama/arsip | `legacy/` dan `docs/LEGACY_REPORT_2023.md` |
 
-Catatan: `app.py` di root tampak sebagai UI lama berbasis TensorFlow dan folder
-`aset/`. Jalur ini tidak konsisten dengan package baru, membutuhkan dependency
-yang tidak ada di `pyproject.toml`, dan sebaiknya dipindahkan ke `legacy/` atau
-diberi penanda jelas bahwa bukan entry point aktif.
+Catatan: `app.py` lama berbasis TensorFlow dan folder `aset/` sudah dipindahkan
+ke `legacy/app.py`, sehingga entry point aktif project tetap
+`app/streamlit_app.py`.
 
 ## Pipeline Saat Ini
 
@@ -78,9 +79,12 @@ Alur pipeline aktif:
    cosine distance.
 8. Collaborative model membuat sparse matrix item-user dari rating eksplisit,
    lalu memakai item-item KNN berbasis cosine distance.
-9. Evaluasi collaborative memakai leave-one-out split dan membandingkan model
-   collaborative dengan popularity baseline.
-10. Streamlit app menampilkan rekomendasi buku mirip dan rekomendasi per `user_id`.
+9. Hybrid model menggabungkan skor collaborative, content profile, dan
+   popularity yang dinormalisasi.
+10. Evaluasi memakai leave-one-out split dan membandingkan hybrid,
+    collaborative, serta popularity baseline.
+11. Streamlit app menampilkan rekomendasi buku mirip, rekomendasi per `user_id`,
+    dan rekomendasi hybrid.
 
 Representasi saat ini:
 
@@ -91,7 +95,8 @@ Representasi saat ini:
 | Interaksi user-item | Rating eksplisit `book_rating` skala 1-10 setelah rating 0 dibuang |
 | Output content-based | Top-N buku mirip dengan satu judul/ISBN query, dengan skor similarity |
 | Output collaborative | Top-N buku untuk user, dengan skor agregasi similarity item-item |
-| Output evaluasi | Ranking metrics Top-K, bukan accuracy classification |
+| Output hybrid | Top-N buku untuk user dengan `source` dan `reason` sederhana |
+| Output evaluasi | Ranking metrics Top-K dan diagnostics coverage/diversity/novelty, bukan accuracy classification |
 
 Sistem utama menghasilkan Top-N recommendation. Tidak ada model prediksi rating
 final di package baru.
@@ -217,8 +222,9 @@ Kelemahan:
 - Cold-start item tidak tertangani oleh collaborative model.
 - Candidate generation berasal dari nearest neighbors seed item saja, sehingga
   coverage dan serendipity bisa terbatas.
-- Explainability belum dibuat eksplisit, meskipun secara teknis bisa dijelaskan
-  dari seed item yang menyumbang skor.
+- Explainability collaborative belum sampai level seed item yang menyumbang
+  skor. Hybrid sudah punya `source` dan `reason`, tetapi masih berupa alasan
+  kategori sinyal, bukan kontribusi item per item.
 
 Warning: collaborative filtering layak sebagai baseline ringan, tetapi dataset
 sangat sparse. Performa Top-N harus diuji dengan lebih banyak user dan metrik
@@ -226,54 +232,63 @@ coverage/diversity.
 
 ## Audit Hybrid Recommendation
 
-Belum ada hybrid recommender aktif. Project menjalankan content-based dan
-collaborative sebagai dua pendekatan terpisah.
+Hybrid recommender aktif sudah tersedia sebagai baseline gabungan. Skor akhir
+menggabungkan collaborative signal, content profile dari buku yang pernah diberi
+rating tinggi, dan popularity signal yang dinormalisasi. Bobot default hasil
+tuning awal adalah collaborative `0.40`, content `0.45`, dan popularity `0.15`.
 
-Ini bukan bug jika scope project adalah membandingkan dua baseline, tetapi jika
-targetnya sistem rekomendasi yang lebih siap pakai, hybrid perlu ditambahkan
-secara bertahap.
+Yang sudah baik:
 
-Rekomendasi hybrid realistis:
+- Skor collaborative, content, dan popularity tidak digabung mentah, tetapi
+  dinormalisasi lebih dulu.
+- Untuk user dengan histori cukup, collaborative dan content dapat saling
+  melengkapi.
+- Untuk sinyal yang tidak tersedia, hybrid dapat turun ke signal lain atau
+  popularity fallback.
+- Output rekomendasi menyertakan `source` dan `reason`, sehingga UI/CLI tidak
+  hanya menampilkan skor numerik.
+- CLI `tune-hybrid` dapat membandingkan beberapa kombinasi bobot pada split
+  evaluasi yang sama.
 
-- User baru: content-based dari preferensi onboarding atau popularity baseline.
-- User lama: collaborative sebagai sumber utama.
-- Item baru: content-based karena belum punya interaksi.
-- Skor akhir: normalisasi skor collaborative, content similarity, popularity, dan
-  diversity penalty sebelum digabung.
-- Jangan menggabungkan skor mentah tanpa normalisasi karena skala similarity,
-  popularity, dan skor model berbeda.
+Batasan yang masih relevan:
+
+- Bobot hybrid masih hasil grid kecil pada sampel terbatas, belum validasi
+  berulang atau eksperimen skala penuh.
+- Belum ada learning-to-rank, matrix factorization, atau model latent factor.
+- Diversity penalty belum masuk ke skor akhir; diversity baru dimonitor sebagai
+  diagnostics evaluasi.
+- Cold-start user tanpa histori masih membutuhkan onboarding preference jika
+  ingin lebih baik dari popularity fallback.
+- Cold-start item belum ideal karena content index default masih dibatasi oleh
+  candidate catalog eksperimen.
 
 ## Potensi Data Leakage
 
-Temuan P0:
+Temuan awal P0 sudah ditindaklanjuti pada jalur evaluasi CLI. Evaluasi sekarang
+menggunakan protokol `leave_one_out_train_only_filtering`: holdout dibuat lebih
+dulu, lalu candidate catalog, popularity baseline, dan model rekomendasi
+dibentuk dari `train_ratings`.
 
-1. `prepare_dataset()` melakukan filter sparsity dan pemilihan `max_books` dari
-   seluruh rating sebelum evaluasi leave-one-out. Pada CLI, `evaluate_collab_model`
-   memanggil `load_prepared_dataset()` lebih dulu, baru menjalankan
-   `build_leave_one_out_split()`. Artinya item universe dan top-books selection
-   dapat dipengaruhi interaksi yang nanti menjadi holdout. Ini leakage evaluasi
-   berbasis interaksi/popularity.
-2. `select_most_rated_books()` memilih buku berdasarkan `ratings["isbn"].value_counts()`
-   dari seluruh dataset prepared. Untuk benchmark offline yang fair, popularity
-   atau item eligibility berbasis interaksi seharusnya dihitung dari train split.
-3. Opsi `max_ratings` melakukan random sampling rating sebelum split. Jika dipakai
-   untuk evaluasi, sampling ini juga terjadi sebelum train-test split dan bisa
-   mengubah distribusi test dengan cara yang tidak eksplisit.
+Yang sudah baik:
 
-Temuan yang sudah baik:
+- Model collaborative, hybrid, dan popularity baseline pada evaluasi di-fit dari
+  `train_ratings`, bukan full ratings.
+- Candidate books untuk evaluasi dipilih dari interaksi train, sehingga holdout
+  tidak ikut menentukan top-books catalog.
+- Item yang sudah ada di train history user dikeluarkan dari rekomendasi baru.
+- Artifact evaluasi menyimpan `sampled_holdouts`, `evaluable_holdouts`,
+  `dropped_holdouts`, jumlah `train_ratings`, dan jumlah `candidate_books`.
 
-- Pada evaluasi collaborative, model di-fit memakai `train_ratings`, bukan full
-  ratings.
-- Popularity baseline pada evaluasi dihitung dari recommender yang di-fit pada
-  train ratings.
-- Item yang sudah ada di train history user dikeluarkan dari rekomendasi
-  collaborative dan popularity baseline.
-- Holdout row dihapus dari train oleh `build_leave_one_out_split()`.
+Risiko tersisa:
 
-P0 ini tidak berarti semua angka evaluasi tidak berguna, tetapi angka tersebut
-belum sepenuhnya bebas dari bias item-selection. Perbaikannya tidak perlu rewrite:
-buat jalur evaluasi yang split lebih dulu, lalu fit preprocessing/model dari
-train interactions.
+- `prepare_dataset()` tetap berguna untuk eksplorasi, Streamlit, dan rekomendasi
+  interaktif, tetapi tidak boleh dipakai sebagai benchmark final jika filtering
+  berbasis full interactions dilakukan sebelum split.
+- Dataset tidak memiliki timestamp, sehingga leakage temporal tidak bisa diuji
+  atau dicegah dengan temporal split.
+- Jika eksperimen baru memakai `max_ratings` random sampling sebelum split,
+  sampling policy perlu didokumentasikan agar hasil tidak disalahartikan sebagai
+  evaluasi produksi.
 
 ## Evaluasi yang Sudah Ada
 
@@ -283,57 +298,63 @@ Evaluasi aktif sudah memakai metrik recommender Top-N, bukan accuracy biasa:
 - `Recall@K`
 - `HitRate@K`
 - `MAP@K`
+- `MRR@K`
 - `NDCG@K`
+- `Coverage@K`
+- novelty
+- intra-list diversity
+- share rekomendasi pada top 1%, 5%, dan 10% item populer
 
-CLI juga membandingkan collaborative filtering dengan popularity baseline.
+CLI juga membandingkan hybrid, collaborative filtering, dan popularity baseline.
+Evaluasi dapat disimpan sebagai artifact JSON untuk reproducibility dan
+menyertakan ringkasan per segmen user berdasarkan jumlah interaksi.
 
-Hasil verifikasi lokal:
+Hasil verifikasi lokal `--sample-users 200 --k 50 --max-books 5000` dengan 74
+holdout yang evaluable:
 
-| Model | Precision@50 | Recall@50 | HitRate@50 | MAP@50 | NDCG@50 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| collaborative | 0.0020 | 0.1000 | 0.1000 | 0.0033 | 0.0200 |
-| popularity | 0.0010 | 0.0500 | 0.0500 | 0.0167 | 0.0250 |
+| Model | Precision@50 | Recall@50 | HitRate@50 | MAP@50 | MRR@50 | NDCG@50 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| hybrid tuned | 0.0041 | 0.2027 | 0.2027 | 0.0323 | 0.0323 | 0.0667 |
+| collaborative | 0.0022 | 0.1081 | 0.1081 | 0.0405 | 0.0405 | 0.0555 |
+| popularity | 0.0024 | 0.1216 | 0.1216 | 0.0326 | 0.0326 | 0.0503 |
+
+Diagnostics pada evaluasi yang sama:
+
+| Model | Coverage@50 | Novelty@50 | Top 1% share | Top 5% share | Top 10% share | Diversity@50 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| hybrid tuned | 0.4106 | 12.1369 | 0.0668 | 0.1776 | 0.2508 | 0.9393 |
+| collaborative | 0.4072 | 12.6837 | 0.0265 | 0.0716 | 0.1065 | 0.9788 |
+| popularity | 0.0108 | 9.5427 | 0.6216 | 1.0000 | 1.0000 | 0.9722 |
 
 Interpretasi:
 
-- Collaborative menemukan holdout item pada 10% dari 20 user evaluasi.
-- Popularity baseline menemukan holdout item pada 5% dari 20 user.
-- Precision@50 rendah karena tiap user hanya punya satu item relevan, sehingga
-  satu hit maksimum hanya memberi precision `1/50 = 0.02`.
-- MAP/NDCG popularity lebih tinggi pada sampel ini ketika popularity berhasil
-  hit di posisi lebih atas.
+- Hybrid tuned menemukan holdout item pada 20.27% dari user evaluable,
+  tertinggi pada eksperimen ini.
+- Precision@50 tetap rendah karena tiap user hanya punya satu holdout relevan,
+  sehingga satu hit maksimum hanya memberi precision `1/50 = 0.02`.
+- Collaborative memiliki MAP/MRR lebih tinggi dari hybrid pada sampel ini,
+  artinya ketika collaborative berhasil hit, posisi item sering lebih atas.
+- Popularity baseline memiliki coverage sangat rendah dan top-popularity share
+  sangat tinggi. Ini menegaskan popularity bias, meskipun relevance-nya tidak
+  selalu buruk pada dataset yang sangat sparse.
+- Hasil ini masih harus dibaca sebagai evaluasi baseline sampel, bukan klaim
+  performa produksi.
 
 ## Evaluasi yang Belum Ada
 
 Yang belum tersedia atau belum cukup kuat:
 
 - Evaluasi content-based secara kuantitatif.
-- MRR@K.
-- Coverage@K sebagai metrik resmi.
-- Intra-list diversity.
-- Novelty.
-- Popularity distribution dari item rekomendasi.
 - Serendipity.
-- Evaluasi per segment user, misalnya user dengan 1-2 interaksi vs user aktif.
+- Validasi hybrid dengan grid lebih luas, repeated random seeds, atau split
+  tambahan.
 - Temporal split. Dataset tidak punya timestamp, jadi tidak bisa dilakukan tanpa
   data tambahan.
 - Negative sampling eksplisit tidak diperlukan jika ranking dievaluasi terhadap
   seluruh unseen candidate set, tetapi candidate universe perlu didokumentasikan
   lebih tegas.
-- Evaluasi dengan sample user lebih besar. Notebook memakai 20 user; CLI default
-  100 user. Ini masih kecil untuk klaim kuat.
-
-Probe tambahan pada 200 user, Top-10 collaborative:
-
-- 2,000 rekomendasi total.
-- 1,261 unique item direkomendasikan.
-- Sample catalog coverage@10: `25.22%` dari 5,000 item.
-- Share rekomendasi pada top 1% item populer: `2.25%`.
-- Share rekomendasi pada top 10% item populer: `10.85%`.
-- Mean pairwise Jaccard antar list 100 user pertama: `0.0044`.
-
-Angka probe ini cukup sehat untuk sampel kecil, tetapi belum menjadi metrik resmi
-karena belum ada di pipeline evaluasi dan belum diuji lint/test.
+- Evaluasi dengan sample user lebih besar. Eksperimen 200 sampled users hanya
+  menghasilkan 74 holdout yang evaluable setelah filtering.
 
 ## Potensi High Bias / Underfitting
 
@@ -368,25 +389,28 @@ terbatas untuk menyimpulkan generalisasi kuat.
 
 ## Popularity Bias dan Diversity
 
-Popularity bias sudah disadari di README, tetapi belum dimonitor sebagai metrik
-pipeline.
+Popularity bias sudah dimonitor sebagai diagnostics evaluasi melalui catalog
+coverage, novelty, intra-list diversity, dan share rekomendasi pada top 1%, 5%,
+serta 10% item populer.
 
 Temuan:
 
 - Popularity baseline tersedia.
 - Collaborative recommender memiliki fallback popularity untuk unknown user.
-- Belum ada Coverage@K, novelty, intra-list diversity, atau distribusi popularitas
-  rekomendasi sebagai output evaluasi resmi.
-- Probe 200 user menunjukkan coverage sampel cukup baik, tetapi ini belum
-  menggantikan evaluasi resmi.
+- Pada evaluasi sample 200 user, popularity baseline hanya memiliki
+  `Coverage@50 = 0.0108`, sedangkan hybrid tuned `0.4106` dan collaborative
+  `0.4072`.
+- Popularity baseline menempatkan 100% rekomendasinya di top 5% dan top 10%
+  item populer pada evaluasi tersebut, sehingga bias popularitasnya jelas.
+- Hybrid tuned menaikkan HitRate@50, tetapi top 10% popularity share-nya
+  `0.2508`, lebih tinggi dari collaborative `0.1065`.
 
 Rekomendasi:
 
-- Tambahkan `catalog_coverage_at_k`.
-- Tambahkan `intra_list_diversity_at_k` berbasis cosine distance content vectors.
-- Tambahkan novelty sederhana: `-log2(popularity(item) / total_interactions)`.
-- Simpan distribusi popularity bucket untuk item yang direkomendasikan.
+- Pantau diagnostics ini pada setiap eksperimen, bukan hanya pada satu artifact.
 - Pertimbangkan reranking dengan diversity penalty agar list tidak terlalu mirip.
+- Jika hybrid ingin lebih eksploratif, tuning bobot harus mempertimbangkan
+  relevance dan popularity diagnostics, bukan hanya HitRate/NDCG.
 
 ## Cold-Start Problem
 
@@ -442,13 +466,13 @@ Yang sudah baik:
 
 Yang perlu diperbaiki:
 
-- `app.py` root masih mengarah ke dependency/aset lama dan bisa membingungkan.
-- Hasil eksperimen belum disimpan otomatis sebagai file metrik.
-- Parameter evaluasi dan model belum disimpan bersama hasil eksperimen.
 - `requirements.txt` tidak punya versi pinning, sementara `pyproject.toml` lebih
-  jelas. Pilih satu sumber dependency utama untuk deployment.
+  jelas. Karena Streamlit Cloud membaca `requirements.txt`, file ini perlu tetap
+  disinkronkan dengan dependency app di `pyproject.toml`.
 - Data raw lokal berisi file gambar tambahan dari Kaggle/legacy; tidak masalah,
   tetapi dokumentasi hanya menyebut CSV.
+- Artifact eksperimen disimpan di `artifacts/` dan tidak ikut git. Untuk laporan
+  publik, ringkasan hasil penting harus tetap dipindahkan ke README/docs.
 
 Parameter penting yang sudah ada:
 
@@ -499,36 +523,35 @@ Rekomendasi:
 
 | Prioritas | Masalah | Dampak | Bukti |
 | --- | --- | --- | --- |
-| P0 | Preprocessing berbasis interaksi dilakukan sebelum evaluation split | Metrik holdout bisa bias karena item universe/top-books dipengaruhi data holdout | `prepare_dataset()` dipanggil sebelum `build_leave_one_out_split()` |
-| P0 | Pemilihan top books memakai seluruh ratings sebelum split | Popularity/item eligibility bocor ke evaluasi | `select_most_rated_books()` memakai `value_counts()` seluruh rating |
 | P1 | Tidak ada timestamp | Tidak bisa temporal split; evaluasi tidak merepresentasikan urutan waktu konsumsi | Kolom timestamp tidak ada di Books/Ratings/Users |
 | P1 | Dataset sangat sparse | CF rapuh, banyak user/item minim sinyal | 57.60% user hanya punya <=1 rating; 66.35% item hanya punya <=1 rating |
-| P1 | Evaluasi belum mencakup coverage/diversity/novelty | Risiko popularity bias dan filter bubble tidak termonitor | Metrik resmi hanya ranking relevance |
 | P1 | Content-based metadata dangkal | Rekomendasi bisa terlalu literal dan kurang semantik | Fitur hanya title, author, publisher |
+| P1 | Evaluasi content-based belum kuantitatif | Sulit membandingkan kontribusi content-only terhadap hybrid | Evaluasi resmi fokus hybrid/collaborative/popularity |
 | P1 | Cold-start item belum tertangani penuh | Buku baru tanpa rating sulit muncul di collaborative | CF hanya memakai item dengan interaksi |
-| P1 | `app.py` root adalah jalur legacy yang tidak konsisten | Membingungkan entry point dan dependency | Mengimpor TensorFlow dan `./aset/*`, sementara package baru tidak |
-| P2 | Explainability belum eksplisit | Sulit menjelaskan alasan rekomendasi ke user | Output hanya skor dan metadata |
-| P2 | Belum ada hybrid recommender | Sistem belum menggabungkan kekuatan content dan collaborative | Dua tab/model berjalan terpisah |
+| P2 | Validasi hybrid masih awal | Bobot bisa terlalu cocok pada sampel kecil | Tuning baru memakai grid kecil dan 74 holdout evaluable |
+| P2 | Explainability masih dangkal | Alasan rekomendasi belum menunjukkan kontribusi seed item atau fitur spesifik | `reason` masih berupa kategori sinyal |
 | P2 | Brute-force nearest neighbors | Tidak scalable untuk katalog besar | `NearestNeighbors(metric="cosine", algorithm="brute")` |
 
 ## Rekomendasi Perbaikan Bertahap
 
-Tahap 1: perbaiki evaluasi dan leakage.
+Tahap 1: perbaiki evaluasi dan leakage. Status: selesai untuk jalur evaluasi
+CLI aktif.
 
-1. Buat fungsi evaluasi yang melakukan clean minimal dulu, lalu split holdout,
+1. [x] Buat fungsi evaluasi yang melakukan clean minimal dulu, lalu split holdout,
    lalu menghitung filter/top-books/popularity dari train ratings saja.
-2. Pastikan `books_for_eval` tidak dipilih memakai hitungan dari full ratings.
-3. Simpan metrik evaluasi ke `artifacts/evaluation/*.csv` atau `.json`.
-4. Tambahkan test bahwa ISBN holdout tidak dipakai dalam popularity count untuk
+2. [x] Pastikan `books_for_eval` tidak dipilih memakai hitungan dari full ratings.
+3. [x] Simpan metrik evaluasi ke `artifacts/evaluation/*.json`.
+4. [x] Tambahkan test bahwa ISBN holdout tidak dipakai dalam popularity count untuk
    user evaluasi dan bahwa model fit hanya menerima train ratings.
 
-Tahap 2: tambah metrik recommender yang belum ada.
+Tahap 2: tambah metrik recommender yang belum ada. Status: selesai untuk metrik
+utama dan diagnostics.
 
-1. Tambahkan `mrr_at_k`.
-2. Tambahkan `catalog_coverage_at_k`.
-3. Tambahkan novelty berbasis inverse popularity.
-4. Tambahkan intra-list diversity berbasis content vector cosine distance.
-5. Laporkan metrik per user segment: `1-2`, `3-5`, `6-10`, dan `>10` interaksi.
+1. [x] Tambahkan `mrr_at_k`.
+2. [x] Tambahkan `catalog_coverage_at_k`.
+3. [x] Tambahkan novelty berbasis inverse popularity.
+4. [x] Tambahkan intra-list diversity berbasis content vector cosine distance.
+5. [x] Laporkan metrik per user segment: `1-2`, `3-5`, `6-10`, dan `>10` interaksi.
 
 Tahap 3: kuatkan cold-start dan content-based.
 
@@ -536,7 +559,8 @@ Tahap 3: kuatkan cold-start dan content-based.
 2. Masukkan semua buku bermetadata valid ke content index, bukan hanya top rated.
 3. Tambahkan user onboarding sederhana di Streamlit: pilih beberapa judul/author,
    lalu gabungkan content similarity.
-4. Tambahkan alasan rekomendasi content-based.
+4. Tambahkan alasan rekomendasi content-based yang lebih spesifik dari fitur
+   author/publisher/judul.
 
 Tahap 4: mitigasi popularity bias.
 
@@ -546,30 +570,35 @@ Tahap 4: mitigasi popularity bias.
 3. Bandingkan hasil sebelum/sesudah reranking pada HitRate@K, Coverage@K, dan
    Diversity@K.
 
-Tahap 5: hybrid minimal.
+Tahap 5: hybrid minimal. Status: selesai sebagai baseline, masih perlu validasi
+lebih luas.
 
-1. Normalisasi skor collaborative dan content ke skala yang sama.
-2. Untuk user dengan histori cukup, gabungkan CF score dan content score dari
+1. [x] Normalisasi skor collaborative dan content ke skala yang sama.
+2. [x] Untuk user dengan histori cukup, gabungkan CF score dan content score dari
    item yang pernah diberi rating tinggi.
-3. Untuk user sparse, beri bobot lebih tinggi ke content/popularity.
-4. Dokumentasikan aturan fallback.
+3. [x] Untuk user sparse, beri bobot lebih tinggi ke content/popularity.
+4. [x] Dokumentasikan aturan fallback.
+5. [ ] Uji bobot dengan grid lebih luas, repeated seeds, dan sample yang lebih
+   besar.
 
 ## Checklist Final Sebelum Project Dianggap Selesai
 
-- [ ] Evaluation split bebas dari preprocessing leakage berbasis full interactions.
-- [ ] Popularity baseline dihitung hanya dari train pada setiap eksperimen.
-- [ ] Item yang sudah dikonsumsi user selalu difilter dari rekomendasi baru.
-- [ ] Precision@K, Recall@K, HitRate@K, MAP@K, NDCG@K, dan MRR@K tersedia.
-- [ ] Coverage@K, diversity, novelty, dan popularity distribution tersedia.
+- [x] Evaluation split bebas dari preprocessing leakage berbasis full interactions
+      pada jalur evaluasi CLI aktif.
+- [x] Popularity baseline dihitung hanya dari train pada evaluasi CLI.
+- [x] Item yang sudah dikonsumsi user selalu difilter dari rekomendasi baru.
+- [x] Precision@K, Recall@K, HitRate@K, MAP@K, NDCG@K, dan MRR@K tersedia.
+- [x] Coverage@K, diversity, novelty, dan popularity distribution tersedia.
 - [ ] Evaluasi content-based tersedia, minimal dengan leave-one-out user profile
       berbasis item metadata.
-- [ ] Evaluasi dilaporkan per segment user berdasarkan jumlah interaksi.
+- [x] Evaluasi dilaporkan per segment user berdasarkan jumlah interaksi.
 - [ ] Cold-start user memiliki fallback selain popularity murni.
 - [ ] Cold-start item dapat masuk melalui content-based index.
-- [ ] Rekomendasi punya explainability sederhana.
-- [ ] `app.py` legacy dipindahkan atau diberi penanda jelas.
-- [ ] Dependency deployment memakai satu sumber yang konsisten.
-- [ ] Hasil eksperimen disimpan dengan parameter, tanggal, dan random seed.
+- [x] Rekomendasi punya explainability sederhana.
+- [x] `app.py` legacy dipindahkan atau diberi penanda jelas.
+- [ ] Dependency deployment memakai manifest yang tersinkron antara
+      `pyproject.toml` dan `requirements.txt`.
+- [x] Hasil eksperimen disimpan dengan parameter, tanggal, dan random seed.
 - [ ] Scalability plan jelas untuk katalog di atas 50k item.
 
 ## Verifikasi Audit
@@ -577,13 +606,18 @@ Tahap 5: hybrid minimal.
 Perintah yang dijalankan:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest
-.\.venv\Scripts\python.exe -m ruff check src tests app notebooks\01_end_to_end_book_recommender.py
-.\.venv\Scripts\book-rec.exe evaluate-collab --data-dir data/raw --sample-users 20 --k 50 --max-books 5000
+uv run pytest
+uv run ruff check src tests app notebooks\01_end_to_end_book_recommender.py
+uv run book-rec tune-hybrid --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/hybrid_weight_tuning_sample200.json
+uv run book-rec evaluate-collab --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/recommender_eval_tuned_sample200.json
+uv run book-rec recommend-hybrid --data-dir data/raw --user-id 5709 --top-n 3 --max-books 5000
 ```
 
 Hasil:
 
-- `pytest`: 6 passed.
+- `pytest`: 13 passed.
 - `ruff`: All checks passed.
-- Evaluasi CLI: hasil sama dengan README untuk sample 20 user.
+- Tuning hybrid terbaik pada sample ini: collaborative `0.40`, content `0.45`,
+  popularity `0.15`.
+- Evaluasi CLI sample 200 user menghasilkan `HitRate@50` hybrid tuned `0.2027`,
+  collaborative `0.1081`, dan popularity `0.1216`.
