@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 from scipy.sparse import csr_matrix
 
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
@@ -147,6 +148,12 @@ def test_parse_weight_grid_normalizes_configs():
     assert configs[1]["collaborative_weight"] == 0.5
     assert configs[1]["content_weight"] == 0.4
     assert configs[1]["popularity_weight"] == 0.1
+
+
+@pytest.mark.parametrize("value", ["nan,1,1", "inf,1,1", "-inf,1,1"])
+def test_parse_weight_grid_rejects_non_finite_weights(value):
+    with pytest.raises(ValueError, match="finite"):
+        parse_weight_grid(value)
 
 
 def test_rank_tuning_results_prefers_hit_rate_then_ndcg():

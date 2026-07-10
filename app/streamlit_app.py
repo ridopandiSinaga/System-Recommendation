@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import os
 from html import escape
+import json
+import logging
 from pathlib import Path
+import shutil
+import tempfile
+import time
+from urllib.parse import urlsplit
+from uuid import uuid4
 
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -10,26 +17,46 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 import pandas as pd
 import streamlit as st
 
+from book_recommender.artifacts import (
+    ArtifactError,
+    fingerprint_dataset,
+    manifest_path,
+    save_model_bundle,
+    sha256_file,
+)
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender
 from book_recommender.data import (
+    BookDataset,
     DatasetNotFoundError,
     dataset_summary,
-    prepare_dataset,
+    load_clean_dataset,
+    prepare_hybrid_dataset,
     validate_data_dir,
 )
 from book_recommender.hybrid import HybridRecommender
+from book_recommender.service import RecommenderService
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data" / "raw"
 MODELS_DIR = PROJECT_ROOT / "models"
 KAGGLE_DATASET = "arashnic/book-recommendation-dataset"
+DATASET_FILES = ("Books.csv", "Ratings.csv", "Users.csv")
 DEFAULT_MAX_BOOKS = 5_000
+DEFAULT_MAX_CONTENT_BOOKS = 20_000
 DEFAULT_MIN_USER_RATINGS = 2
 DEFAULT_MIN_BOOK_RATINGS = 2
-CONTENT_ARTIFACT = MODELS_DIR / "content.joblib"
-COLLAB_ARTIFACT = MODELS_DIR / "collab.joblib"
+HYBRID_ARTIFACT = Path(
+    os.getenv("BOOK_RECOMMENDER_ARTIFACT", str(MODELS_DIR / "hybrid.joblib"))
+)
+ALLOW_RUNTIME_TRAINING = os.getenv("BOOK_RECOMMENDER_ALLOW_RUNTIME_TRAINING", "0") == "1"
+DOWNLOAD_LOCK_STALE_SECONDS = 30 * 60
+ALLOWED_COVER_HOSTS = {
+    "images.amazon.com",
+    "images-na.ssl-images-amazon.com",
+}
+logger = logging.getLogger("book_recommender.streamlit")
 
 
 st.set_page_config(
@@ -44,40 +71,32 @@ def main() -> None:
     st.title("Book Recommender")
 
     with st.sidebar:
-        st.header("Dataset")
-        max_books = st.slider(
-            "Books",
-            min_value=1_000,
-            max_value=20_000,
-            value=DEFAULT_MAX_BOOKS,
-            step=1_000,
-        )
-        min_user_ratings = st.slider("Min user ratings", 1, 10, DEFAULT_MIN_USER_RATINGS)
-        min_book_ratings = st.slider("Min book ratings", 1, 10, DEFAULT_MIN_BOOK_RATINGS)
+        st.header("Serving")
         top_n = st.slider("Recommendations", 3, 20, 8)
-        artifact_mode = uses_default_artifact_params(max_books, min_user_ratings, min_book_ratings)
-        if artifact_mode and CONTENT_ARTIFACT.exists() and COLLAB_ARTIFACT.exists():
-            st.success("Using saved model artifacts")
-        else:
-            st.caption("Models are built in cache for the current settings.")
 
     try:
-        dataset_message = ensure_dataset_available()
-    except (DatasetNotFoundError, RuntimeError) as exc:
-        st.error(str(exc))
+        service = load_service()
+    except (ArtifactError, DatasetNotFoundError, RuntimeError, ValueError) as exc:
+        reference_id = uuid4().hex[:12]
+        logger.exception(
+            "streamlit_model_unavailable",
+            extra={"reference_id": reference_id, "error_type": type(exc).__name__},
+        )
+        st.error(f"Model service is unavailable. Reference: {reference_id}")
         st.info(
-            "For Streamlit Cloud, add Kaggle credentials in app secrets as "
-            '`username = "..."` and `key = "..."`.'
+            "Build a verified serving bundle with `uv run book-rec train-hybrid`. "
+            "For local development only, set BOOK_RECOMMENDER_ALLOW_RUNTIME_TRAINING=1."
         )
         st.stop()
 
-    if dataset_message:
-        st.success(dataset_message)
-
-    dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
-    content_model = load_content_model(max_books, min_user_ratings, min_book_ratings)
-    collab_model = load_collab_model(max_books, min_user_ratings, min_book_ratings)
-    hybrid_model = load_hybrid_model(max_books, min_user_ratings, min_book_ratings)
+    st.sidebar.success(f"Artifact: {service.manifest.artifact_id}")
+    if service.manifest.code_dirty:
+        st.sidebar.warning("Artifact was trained from a dirty worktree.")
+    dataset = BookDataset(
+        books=service.books,
+        ratings=service.ratings,
+        users=pd.DataFrame(columns=["user_id", "location", "age"]),
+    )
 
     render_summary(dataset)
 
@@ -86,56 +105,59 @@ def main() -> None:
     )
 
     with content_tab:
-        render_content_tab(dataset.books, content_model, top_n)
+        render_content_tab(dataset.books, service.content_model, top_n)
 
     with collab_tab:
-        render_collab_tab(dataset.books, dataset.ratings, collab_model, top_n)
+        render_collab_tab(
+            dataset.books,
+            dataset.ratings,
+            service.collaborative_model,
+            top_n,
+        )
 
     with hybrid_tab:
-        render_hybrid_tab(dataset.books, dataset.ratings, hybrid_model, top_n)
+        render_hybrid_tab(dataset.books, dataset.ratings, service.model, top_n)
 
 
-@st.cache_data(show_spinner="Loading dataset")
-def load_dataset(max_books: int, min_user_ratings: int, min_book_ratings: int):
-    return prepare_dataset(
+@st.cache_resource(show_spinner="Loading verified hybrid artifact")
+def load_service() -> RecommenderService:
+    if HYBRID_ARTIFACT.is_file() and manifest_path(HYBRID_ARTIFACT).is_file():
+        return RecommenderService.load(HYBRID_ARTIFACT)
+    if not ALLOW_RUNTIME_TRAINING:
+        raise RuntimeError(
+            f"Verified hybrid artifact is missing: {HYBRID_ARTIFACT}. "
+            "Serving is load-only by default."
+        )
+
+    ensure_dataset_available()
+    dataset = prepare_hybrid_dataset(
         DATA_DIR,
-        min_user_ratings=min_user_ratings,
-        min_book_ratings=min_book_ratings,
-        max_books=max_books,
+        min_user_ratings=DEFAULT_MIN_USER_RATINGS,
+        min_book_ratings=DEFAULT_MIN_BOOK_RATINGS,
+        max_books=DEFAULT_MAX_BOOKS,
+        max_content_books=DEFAULT_MAX_CONTENT_BOOKS,
         random_state=42,
     )
-
-
-@st.cache_resource(show_spinner="Building content model")
-def load_content_model(max_books: int, min_user_ratings: int, min_book_ratings: int):
-    if uses_default_artifact_params(max_books, min_user_ratings, min_book_ratings):
-        if CONTENT_ARTIFACT.exists():
-            return ContentBasedRecommender.load(CONTENT_ARTIFACT)
-    dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
-    return ContentBasedRecommender().fit(dataset.books)
-
-
-@st.cache_resource(show_spinner="Building collaborative model")
-def load_collab_model(max_books: int, min_user_ratings: int, min_book_ratings: int):
-    if uses_default_artifact_params(max_books, min_user_ratings, min_book_ratings):
-        if COLLAB_ARTIFACT.exists():
-            return ItemBasedCollaborativeRecommender.load(COLLAB_ARTIFACT)
-    dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
-    return ItemBasedCollaborativeRecommender(n_neighbors=50).fit(dataset.books, dataset.ratings)
-
-
-@st.cache_resource(show_spinner="Building hybrid model")
-def load_hybrid_model(max_books: int, min_user_ratings: int, min_book_ratings: int):
-    dataset = load_dataset(max_books, min_user_ratings, min_book_ratings)
-    return HybridRecommender(n_neighbors=50).fit(dataset.books, dataset.ratings)
-
-
-def uses_default_artifact_params(max_books: int, min_user_ratings: int, min_book_ratings: int) -> bool:
-    return (
-        max_books == DEFAULT_MAX_BOOKS
-        and min_user_ratings == DEFAULT_MIN_USER_RATINGS
-        and min_book_ratings == DEFAULT_MIN_BOOK_RATINGS
+    model = HybridRecommender(n_neighbors=50).fit(dataset.books, dataset.ratings)
+    save_model_bundle(
+        model,
+        HYBRID_ARTIFACT,
+        model_type="hybrid",
+        dataset_fingerprint=fingerprint_dataset(
+            dataset.books,
+            dataset.ratings,
+            dataset.users,
+        ),
+        training_config={
+            "max_books": DEFAULT_MAX_BOOKS,
+            "max_content_books": DEFAULT_MAX_CONTENT_BOOKS,
+            "min_user_ratings": DEFAULT_MIN_USER_RATINGS,
+            "min_book_ratings": DEFAULT_MIN_BOOK_RATINGS,
+            "n_neighbors": 50,
+            "runtime_training": True,
+        },
     )
+    return RecommenderService.load(HYBRID_ARTIFACT)
 
 
 def ensure_dataset_available() -> str | None:
@@ -193,9 +215,6 @@ def secret_value(container, key: str):
 
 
 def download_kaggle_dataset(username: str, key: str) -> None:
-    os.environ["KAGGLE_USERNAME"] = username
-    os.environ["KAGGLE_KEY"] = key
-
     try:
         from kaggle.api.kaggle_api_extended import KaggleApi
     except ImportError as exc:
@@ -203,14 +222,92 @@ def download_kaggle_dataset(username: str, key: str) -> None:
             "Package `kaggle` is not installed. Add `kaggle` to deployment dependencies."
         ) from exc
 
+    DATA_DIR.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = DATA_DIR.parent / ".kaggle-download.lock"
+    lock_fd = acquire_download_lock(lock_path)
+
+    previous_username = os.environ.get("KAGGLE_USERNAME")
+    previous_key = os.environ.get("KAGGLE_KEY")
+    os.environ["KAGGLE_USERNAME"] = username
+    os.environ["KAGGLE_KEY"] = key
     try:
-        api = KaggleApi()
-        api.authenticate()
-        api.dataset_download_files(KAGGLE_DATASET, path=str(DATA_DIR), unzip=True, quiet=True)
+        with tempfile.TemporaryDirectory(prefix="book-rec-download-", dir=DATA_DIR.parent) as tmp:
+            staging = Path(tmp)
+            api = KaggleApi()
+            api.authenticate()
+            api.dataset_download_files(
+                KAGGLE_DATASET,
+                path=str(staging),
+                unzip=True,
+                quiet=True,
+            )
+            validate_data_dir(staging)
+            # Parse and enforce the complete raw-data contract before publishing anything.
+            staged_dataset = load_clean_dataset(staging)
+            del staged_dataset
+            manifest = {
+                "dataset": KAGGLE_DATASET,
+                "files": {
+                    name: {
+                        "sha256": sha256_file(staging / name),
+                        "bytes": (staging / name).stat().st_size,
+                    }
+                    for name in DATASET_FILES
+                },
+            }
+            (staging / "dataset_manifest.json").write_text(
+                json.dumps(manifest, indent=2, sort_keys=True, allow_nan=False),
+                encoding="utf-8",
+            )
+            publish_staged_dataset(staging)
     except Exception as exc:
         raise RuntimeError(
-            "Failed to download Kaggle dataset. Check Streamlit secrets and Kaggle API access."
+            "Failed to download and validate the Kaggle dataset in staging."
         ) from exc
+    finally:
+        os.close(lock_fd)
+        lock_path.unlink(missing_ok=True)
+        if previous_username is None:
+            os.environ.pop("KAGGLE_USERNAME", None)
+        else:
+            os.environ["KAGGLE_USERNAME"] = previous_username
+        if previous_key is None:
+            os.environ.pop("KAGGLE_KEY", None)
+        else:
+            os.environ["KAGGLE_KEY"] = previous_key
+
+
+def acquire_download_lock(lock_path: Path) -> int:
+    try:
+        return os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError as exc:
+        try:
+            age_seconds = time.time() - lock_path.stat().st_mtime
+        except OSError:
+            age_seconds = 0.0
+        if age_seconds <= DOWNLOAD_LOCK_STALE_SECONDS:
+            raise RuntimeError("Another dataset download is already in progress.") from exc
+        try:
+            lock_path.unlink()
+            return os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except (FileExistsError, OSError) as retry_exc:
+            raise RuntimeError("Another dataset download is already in progress.") from retry_exc
+
+
+def publish_staged_dataset(staging: Path) -> None:
+    backup = DATA_DIR.parent / f".raw-backup-{uuid4().hex}"
+    had_existing = DATA_DIR.exists()
+    try:
+        if had_existing:
+            os.replace(DATA_DIR, backup)
+        os.replace(staging, DATA_DIR)
+    except Exception:
+        if had_existing and backup.exists() and not DATA_DIR.exists():
+            os.replace(backup, DATA_DIR)
+        raise
+    finally:
+        if backup.exists():
+            shutil.rmtree(backup)
 
 
 def render_summary(dataset) -> None:
@@ -332,9 +429,15 @@ def render_recommendation_grid(recommendations: pd.DataFrame) -> None:
 
 def render_cover(container, row) -> None:
     image_url = value_from_row(row, "image_m_url")
-    title = value_from_row(row, "book_title") or "Book cover"
+    title = value_from_row(row, "book_title")
+    if title is None or pd.isna(title):
+        title = "Book cover"
     safe_title = escape(str(title))
-    normalized_url = normalize_cover_url(str(image_url)) if image_url else None
+    normalized_url = (
+        normalize_cover_url(str(image_url))
+        if image_url is not None and not pd.isna(image_url)
+        else None
+    )
     if normalized_url:
         safe_url = escape(normalized_url, quote=True)
         container.markdown(
@@ -375,11 +478,19 @@ def render_cover(container, row) -> None:
 def normalize_cover_url(image_url: str) -> str | None:
     if not image_url or image_url == "<NA>":
         return None
-    if image_url.startswith("http://images.amazon.com/"):
-        return image_url.replace("http://", "https://", 1)
-    if image_url.startswith(("http://", "https://")):
-        return image_url
-    return None
+    try:
+        parsed = urlsplit(image_url)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or parsed.hostname not in ALLOWED_COVER_HOSTS
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.port not in {None, 80, 443}
+        ):
+            return None
+    except ValueError:
+        return None
+    return parsed._replace(scheme="https", netloc=parsed.hostname).geturl()
 
 
 def find_default_title_index(titles: list[str], default_title: str) -> int:

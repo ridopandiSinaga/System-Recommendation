@@ -47,7 +47,7 @@ import pandas as pd
 import seaborn as sns
 
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
-from book_recommender.content_based import ContentBasedRecommender
+from book_recommender.content_based import ContentBasedRecommender, book_work_key
 from book_recommender.data import (
     dataset_summary,
     load_clean_dataset,
@@ -56,9 +56,8 @@ from book_recommender.data import (
     validate_data_dir,
 )
 from book_recommender.evaluation import (
-    prepare_leave_one_out_evaluation,
+    prepare_validation_test_evaluation,
     ranking_metrics_at_k,
-    recommendation_diagnostics_at_k,
 )
 from book_recommender.hybrid import HybridRecommender
 
@@ -344,31 +343,32 @@ display(
 
 
 # %% [markdown]
-# ## 7. Evaluasi Sederhana
+# ## 7. Evaluasi Ranking
 #
-# Untuk gambaran awal, notebook ini memakai evaluasi leave-one-out kecil:
+# Notebook memakai versi kecil dari protokol evaluasi formal CLI:
 #
-# - pilih sebagian user yang punya minimal 3 rating
-# - tahan satu buku dengan rating tinggi sebagai data relevan
+# - pilih user yang punya minimal 3 karya dan tahan seluruh edisi dari satu karya
+# - pisahkan user validation dan test agar tuning tidak memakai test set
 # - lakukan filtering dan pemilihan candidate books dari train split saja
 # - latih recommender tanpa rating yang ditahan
-# - cek apakah buku yang ditahan muncul di Top-K rekomendasi
+# - jalankan semua holdout test, termasuk cold-user dan target di luar katalog
 # - bandingkan hybrid, collaborative filtering, dan popularity baseline
 #
-# Evaluasi ini belum sekuat eksperimen produksi, tetapi lebih baik daripada
-# klaim akurasi manual tanpa target yang jelas. Karena dataset sangat sparse,
-# Top-50 dipakai untuk membaca sinyal baseline awal. Metrik yang dipakai:
-# Precision@K, Recall@K, HitRate@K, MAP@K, MRR@K, NDCG@K, coverage, novelty,
-# diversity, dan popularity share.
+# `conditional` hanya memakai target yang tersedia dan user dengan positive seed.
+# `end_to_end` memakai semua target; target yang tidak dapat ditemukan menjadi miss,
+# sementara cold-user tetap menjalankan fallback model. CLI menambahkan bootstrap CI,
+# segment metrics, coverage, novelty, diversity, dan popularity-share ke artefak JSON.
 
 # %%
 clean_dataset = load_clean_dataset(DATA_DIR)
-evaluation_data = prepare_leave_one_out_evaluation(
+evaluation_data = prepare_validation_test_evaluation(
     clean_dataset,
     sample_users=20,
+    validation_fraction=0.5,
     min_user_ratings=MIN_USER_RATINGS,
     min_book_ratings=MIN_BOOK_RATINGS,
     max_books=MAX_BOOKS,
+    max_content_books=20_000,
     random_state=RANDOM_STATE,
 )
 train_dataset = evaluation_data.train_dataset
@@ -378,39 +378,63 @@ eval_hybrid_model = HybridRecommender(n_neighbors=100).fit(
     train_dataset.ratings,
 )
 eval_model = eval_hybrid_model.collaborative_model
-eval_content_model = eval_hybrid_model.content_model
-
 k = 50
 metric_rows = []
-recommendation_lists = {"hybrid": [], "collaborative": [], "popularity": []}
-for row in evaluation_data.evaluable_holdout_ratings.itertuples(index=False):
-    user_id = int(row.user_id)
-    relevant = [str(row.isbn)]
-    hybrid_recommended = [
-        str(isbn) for isbn in eval_hybrid_model.recommend_for_user(user_id, top_n=k)["isbn"].tolist()
-    ]
-    collab_recommended = [
-        str(isbn) for isbn in eval_model.recommend_for_user(user_id, top_n=k)["isbn"].tolist()
-    ]
-    train_history = train_dataset.ratings[train_dataset.ratings["user_id"] == user_id]
-    popularity_recommended = eval_model.recommend_popular(
-        top_n=k,
-        exclude_isbns=set(train_history["isbn"]),
-    )["isbn"].tolist()
-    popularity_recommended = [str(isbn) for isbn in popularity_recommended]
+isbn_to_work = {
+    str(row.isbn): book_work_key(row.book_title, row.book_author, row.isbn)
+    for row in train_dataset.books.itertuples(index=False)
+}
+catalog_works = set(isbn_to_work.values())
+positive_users = set(
+    train_dataset.ratings.loc[
+        train_dataset.ratings["book_rating"] >= 8.0,
+        "user_id",
+    ].astype(int)
+)
 
-    metric_rows.append(
-        {"model": "hybrid", "user_id": user_id, **ranking_metrics_at_k(hybrid_recommended, relevant, k)}
+
+def recommendation_works(recommendations):
+    return list(
+        dict.fromkeys(
+            isbn_to_work[str(isbn)]
+            for isbn in recommendations["isbn"].astype(str)
+            if str(isbn) in isbn_to_work
+        )
     )
-    metric_rows.append(
-        {"model": "collaborative", "user_id": user_id, **ranking_metrics_at_k(collab_recommended, relevant, k)}
+
+
+for row in evaluation_data.test_holdout_ratings.itertuples(index=False):
+    user_id = int(row.user_id)
+    relevant = [str(row.work_key)]
+    hybrid_recommended = recommendation_works(
+        eval_hybrid_model.recommend_for_user(user_id, top_n=k)
     )
-    metric_rows.append(
-        {"model": "popularity", "user_id": user_id, **ranking_metrics_at_k(popularity_recommended, relevant, k)}
+    collab_recommended = recommendation_works(
+        eval_model.recommend_for_user(user_id, top_n=k)
     )
-    recommendation_lists["hybrid"].append(hybrid_recommended)
-    recommendation_lists["collaborative"].append(collab_recommended)
-    recommendation_lists["popularity"].append(popularity_recommended)
+    train_history = train_dataset.ratings[train_dataset.ratings["user_id"] == user_id]
+    popularity_recommended = recommendation_works(
+        eval_model.recommend_popular(
+            top_n=k,
+            exclude_isbns=set(train_history["isbn"]),
+        )
+    )
+
+    by_model = {
+        "hybrid": hybrid_recommended,
+        "collaborative_with_popularity_fallback": collab_recommended,
+        "popularity": popularity_recommended,
+    }
+    for model_name, recommended in by_model.items():
+        metric_rows.append(
+            {
+                "model": model_name,
+                "user_id": user_id,
+                "candidate_available": str(row.work_key) in catalog_works,
+                "positive_seed_available": user_id in positive_users,
+                **ranking_metrics_at_k(recommended, relevant, k),
+            }
+        )
 
 metrics = pd.DataFrame(metric_rows)
 display(metrics.head())
@@ -422,39 +446,20 @@ metric_columns = [
     f"mrr_at_{k}",
     f"ndcg_at_{k}",
 ]
-display(metrics.groupby("model")[metric_columns].mean())
-
-popularity_counts = train_dataset.ratings["isbn"].astype(str).value_counts()
-item_to_index = {
-    str(isbn): index
-    for index, isbn in enumerate(train_dataset.books["isbn"].astype(str).tolist())
-}
-diagnostics = pd.DataFrame(
-    [
-        {
-            "model": model,
-            **recommendation_diagnostics_at_k(
-                recommendations,
-                catalog_items=train_dataset.books["isbn"].astype(str).tolist(),
-                popularity_counts=popularity_counts,
-                k=k,
-                item_features=eval_content_model.matrix,
-                item_to_index=item_to_index,
-            ),
-        }
-        for model, recommendations in recommendation_lists.items()
-    ]
-)
-display(diagnostics)
+end_to_end = metrics.groupby("model")[metric_columns].mean()
+conditional = metrics[
+    metrics["candidate_available"] & metrics["positive_seed_available"]
+].groupby("model")[metric_columns].mean()
+display({"end_to_end": end_to_end, "conditional": conditional})
 
 
 # %% [markdown]
 # ### Interpretasi Hasil Evaluasi
 #
-# Pada sampel evaluasi ini, hybrid, collaborative filtering, dan popularity
-# baseline dibandingkan pada user dan holdout item yang sama. Model hybrid
-# ditambahkan untuk melihat apakah gabungan metadata, pola rating, dan popularity
-# dapat memperbaiki trade-off relevance, coverage, dan novelty.
+# Pada sampel ini, model dibandingkan pada user dan karya holdout yang sama.
+# Jangan membandingkan angka notebook ini dengan artefak evaluasi protokol lama:
+# unit relevansinya sekarang canonical work dan denominator end-to-end mencakup
+# target yang tidak tersedia serta cold-user.
 #
 # Nilai Precision@50 tetap kecil karena skenario leave-one-out hanya memiliki
 # satu item relevan untuk setiap user. Jika satu item relevan berhasil muncul di
@@ -500,9 +505,8 @@ display(diagnostics)
 #
 # Pengembangan lanjutan yang masuk akal:
 #
-# - simpan model sebagai artifact di `models/`
-# - tambah Streamlit demo dengan cover buku
-# - tuning bobot hybrid berdasarkan hasil evaluasi ranking
-# - perluas evaluasi ranking dengan split temporal dan sampel user yang lebih
-#   besar
+# - repeated user splits atau paired bootstrap untuk menguji stabilitas bobot
+# - split temporal jika data interaksi bertimestamp sudah tersedia
+# - learned-to-rank atau matrix factorization sebagai challenger baseline
+# - monitoring drift dan feedback online setelah ada traffic produksi
 # - eksplorasi strategi cold-start dan mitigasi popularity bias

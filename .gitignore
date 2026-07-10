@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+.coverage
+build/
+dist/
 .ipynb_checkpoints/
 logs/
 
@@ -17,3 +20,16 @@ artifacts/
 
 # Kaggle credentials must stay outside git.
 kaggle.json
+
+# Local secrets and private credentials must never be committed.
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+.streamlit/credentials.toml
+credentials.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx

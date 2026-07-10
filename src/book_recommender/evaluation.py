@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 import math
 
@@ -8,7 +8,165 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
-from book_recommender.data import BookDataset, prepare_interaction_dataset
+from book_recommender.content_based import book_work_key
+from book_recommender.data import BookDataset, prepare_interaction_dataset, select_content_catalog
+
+
+@dataclass(frozen=True)
+class HoldoutAvailability:
+    """Availability counts for sampled holdouts after train-only filtering."""
+
+    sampled_holdouts: int
+    candidate_available_holdouts: int
+    user_history_available_holdouts: int
+    evaluable_holdouts: int
+
+    def __post_init__(self) -> None:
+        counts = {
+            "sampled_holdouts": self.sampled_holdouts,
+            "candidate_available_holdouts": self.candidate_available_holdouts,
+            "user_history_available_holdouts": self.user_history_available_holdouts,
+            "evaluable_holdouts": self.evaluable_holdouts,
+        }
+        for name, value in counts.items():
+            _validate_non_negative_integer(value, name)
+            if name != "sampled_holdouts" and value > self.sampled_holdouts:
+                raise ValueError(f"{name} cannot exceed sampled_holdouts.")
+        if self.evaluable_holdouts > self.candidate_available_holdouts:
+            raise ValueError("evaluable_holdouts cannot exceed candidate_available_holdouts.")
+        if self.evaluable_holdouts > self.user_history_available_holdouts:
+            raise ValueError("evaluable_holdouts cannot exceed user_history_available_holdouts.")
+
+    @property
+    def dropped_holdouts(self) -> int:
+        return self.sampled_holdouts - self.evaluable_holdouts
+
+    @property
+    def candidate_retention_rate(self) -> float:
+        return _safe_ratio(self.candidate_available_holdouts, self.sampled_holdouts)
+
+    @property
+    def user_history_retention_rate(self) -> float:
+        return _safe_ratio(self.user_history_available_holdouts, self.sampled_holdouts)
+
+    @property
+    def evaluation_retention_rate(self) -> float:
+        return _safe_ratio(self.evaluable_holdouts, self.sampled_holdouts)
+
+    def to_dict(self) -> dict[str, int | float]:
+        return {
+            "sampled_holdouts": self.sampled_holdouts,
+            "candidate_available_holdouts": self.candidate_available_holdouts,
+            "user_history_available_holdouts": self.user_history_available_holdouts,
+            "evaluable_holdouts": self.evaluable_holdouts,
+            "dropped_holdouts": self.dropped_holdouts,
+            "candidate_retention_rate": self.candidate_retention_rate,
+            "user_history_retention_rate": self.user_history_retention_rate,
+            "evaluation_retention_rate": self.evaluation_retention_rate,
+        }
+
+
+@dataclass(frozen=True)
+class RankingMetricsSummary:
+    """Conditional and all-holdout ranking metrics for one evaluation run."""
+
+    k: int
+    sampled_holdouts: int
+    evaluable_holdouts: int
+    conditional_metrics: dict[str, float]
+    unconditional_metrics: dict[str, float]
+
+    @property
+    def dropped_holdouts(self) -> int:
+        return self.sampled_holdouts - self.evaluable_holdouts
+
+    @property
+    def evaluation_retention_rate(self) -> float:
+        return _safe_ratio(self.evaluable_holdouts, self.sampled_holdouts)
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "k": self.k,
+            "sampled_holdouts": self.sampled_holdouts,
+            "evaluable_holdouts": self.evaluable_holdouts,
+            "dropped_holdouts": self.dropped_holdouts,
+            "evaluation_retention_rate": self.evaluation_retention_rate,
+            "conditional_metrics": dict(self.conditional_metrics),
+            "unconditional_metrics": dict(self.unconditional_metrics),
+        }
+
+
+@dataclass(frozen=True)
+class LeaveOneOutValidationTestSplit:
+    """Disjoint validation/test holdouts plus the histories used for model training."""
+
+    train_ratings: pd.DataFrame
+    validation_holdout_ratings: pd.DataFrame
+    test_holdout_ratings: pd.DataFrame
+
+    @property
+    def validation_users(self) -> int:
+        return int(self.validation_holdout_ratings["user_id"].nunique())
+
+    @property
+    def test_users(self) -> int:
+        return int(self.test_holdout_ratings["user_id"].nunique())
+
+    @property
+    def sampled_users(self) -> int:
+        return self.validation_users + self.test_users
+
+
+@dataclass(frozen=True)
+class ValidationTestEvaluationDataset:
+    """Prepared train catalog plus disjoint validation and test evaluation partitions."""
+
+    train_dataset: BookDataset
+    train_ratings_before_filter: pd.DataFrame
+    validation_holdout_ratings: pd.DataFrame
+    validation_evaluable_holdout_ratings: pd.DataFrame
+    test_holdout_ratings: pd.DataFrame
+    test_evaluable_holdout_ratings: pd.DataFrame
+
+    @property
+    def validation_availability(self) -> HoldoutAvailability:
+        return summarize_holdout_availability(
+            self.validation_holdout_ratings,
+            candidate_items=_catalog_work_keys(self.train_dataset.books),
+            history_users=self.train_dataset.ratings["user_id"],
+            item_column="work_key",
+        )
+
+    @property
+    def test_availability(self) -> HoldoutAvailability:
+        return summarize_holdout_availability(
+            self.test_holdout_ratings,
+            candidate_items=_catalog_work_keys(self.train_dataset.books),
+            history_users=self.train_dataset.ratings["user_id"],
+            item_column="work_key",
+        )
+
+
+@dataclass(frozen=True)
+class BootstrapConfidenceInterval:
+    """Percentile bootstrap interval for an arithmetic mean."""
+
+    mean: float
+    lower: float
+    upper: float
+    confidence_level: float
+    sample_size: int
+    n_resamples: int
+
+    def to_dict(self) -> dict[str, int | float]:
+        return {
+            "mean": self.mean,
+            "lower": self.lower,
+            "upper": self.upper,
+            "confidence_level": self.confidence_level,
+            "sample_size": self.sample_size,
+            "n_resamples": self.n_resamples,
+        }
 
 
 @dataclass(frozen=True)
@@ -18,6 +176,30 @@ class LeaveOneOutEvaluationDataset:
     holdout_ratings: pd.DataFrame
     evaluable_holdout_ratings: pd.DataFrame
     dropped_holdouts: int
+
+    @property
+    def availability(self) -> HoldoutAvailability:
+        return summarize_holdout_availability(
+            self.holdout_ratings,
+            candidate_items=self.train_dataset.books["isbn"],
+            history_users=self.train_dataset.ratings["user_id"],
+        )
+
+    @property
+    def sampled_holdouts(self) -> int:
+        return int(len(self.holdout_ratings))
+
+    @property
+    def evaluable_holdouts(self) -> int:
+        return int(len(self.evaluable_holdout_ratings))
+
+    @property
+    def candidate_retention_rate(self) -> float:
+        return self.availability.candidate_retention_rate
+
+    @property
+    def evaluation_retention_rate(self) -> float:
+        return self.availability.evaluation_retention_rate
 
 
 def precision_at_k(recommended: Iterable[str], relevant: Iterable[str], k: int) -> float:
@@ -103,11 +285,155 @@ def ranking_metrics_at_k(recommended: Iterable[str], relevant: Iterable[str], k:
     }
 
 
+def mean_ranking_metrics_at_k(
+    metric_rows: Iterable[Mapping[str, float]] | pd.DataFrame,
+    *,
+    k: int,
+) -> dict[str, float]:
+    """Return the arithmetic mean for rows that explicitly define the evaluation scope."""
+
+    _validate_k(k)
+    rows = _coerce_ranking_metric_rows(metric_rows, k)
+    metric_names = _ranking_metric_names(k)
+    if not rows:
+        return {metric: 0.0 for metric in metric_names}
+    return {
+        metric: float(np.mean([row[metric] for row in rows]))
+        for metric in metric_names
+    }
+
+
+def summarize_ranking_metrics_at_k(
+    metric_rows: Iterable[Mapping[str, float]] | pd.DataFrame,
+    *,
+    k: int,
+    sampled_holdouts: int,
+) -> RankingMetricsSummary:
+    """Aggregate evaluable rows and count unavailable holdouts as all-zero rows.
+
+    ``conditional_metrics`` describes only rows for which the held-out item and user
+    history survived train-only filtering. ``unconditional_metrics`` uses every sampled
+    holdout as the denominator, so each unavailable holdout is an explicit miss.
+    """
+
+    _validate_k(k)
+    _validate_positive_integer(sampled_holdouts, "sampled_holdouts")
+    rows = _coerce_ranking_metric_rows(metric_rows, k)
+    if len(rows) > sampled_holdouts:
+        raise ValueError("The number of metric rows cannot exceed sampled_holdouts.")
+
+    metric_names = _ranking_metric_names(k)
+    conditional_metrics = {}
+    unconditional_metrics = {}
+    for metric_name in metric_names:
+        values = np.asarray([row[metric_name] for row in rows], dtype=float)
+        conditional_metrics[metric_name] = float(values.mean()) if len(values) else 0.0
+        unconditional_metrics[metric_name] = float(values.sum() / sampled_holdouts)
+
+    return RankingMetricsSummary(
+        k=int(k),
+        sampled_holdouts=int(sampled_holdouts),
+        evaluable_holdouts=len(rows),
+        conditional_metrics=conditional_metrics,
+        unconditional_metrics=unconditional_metrics,
+    )
+
+
+def bootstrap_mean_confidence_interval(
+    values: Iterable[float],
+    *,
+    confidence_level: float = 0.95,
+    n_resamples: int = 2_000,
+    random_state: int = 42,
+) -> BootstrapConfidenceInterval:
+    """Return a deterministic percentile-bootstrap confidence interval for a mean."""
+
+    if isinstance(confidence_level, bool) or not isinstance(
+        confidence_level, (int, float, np.integer, np.floating)
+    ):
+        raise ValueError("confidence_level must be a number between 0 and 1.")
+    confidence_level = float(confidence_level)
+    if not math.isfinite(confidence_level) or not 0 < confidence_level < 1:
+        raise ValueError("confidence_level must be greater than 0 and less than 1.")
+    _validate_positive_integer(n_resamples, "n_resamples")
+    _validate_random_state(random_state)
+
+    try:
+        observed = np.asarray(list(values), dtype=float)
+    except (TypeError, ValueError) as error:
+        raise ValueError("values must contain only numeric values.") from error
+    if observed.ndim != 1 or observed.size == 0:
+        raise ValueError("values must be a non-empty one-dimensional collection.")
+    if not np.isfinite(observed).all():
+        raise ValueError("values must contain only finite values.")
+
+    rng = np.random.default_rng(int(random_state))
+    bootstrap_means = np.empty(int(n_resamples), dtype=float)
+    # Keep temporary index arrays bounded for large evaluation samples.
+    batch_size = max(1, min(int(n_resamples), 1_000_000 // len(observed)))
+    for start in range(0, int(n_resamples), batch_size):
+        stop = min(start + batch_size, int(n_resamples))
+        indices = rng.integers(0, len(observed), size=(stop - start, len(observed)))
+        bootstrap_means[start:stop] = observed[indices].mean(axis=1)
+
+    alpha = (1.0 - confidence_level) / 2.0
+    lower, upper = np.quantile(bootstrap_means, [alpha, 1.0 - alpha])
+    return BootstrapConfidenceInterval(
+        mean=float(observed.mean()),
+        lower=float(lower),
+        upper=float(upper),
+        confidence_level=confidence_level,
+        sample_size=int(len(observed)),
+        n_resamples=int(n_resamples),
+    )
+
+
+def bootstrap_ranking_metrics_at_k(
+    metric_rows: Iterable[Mapping[str, float]] | pd.DataFrame,
+    *,
+    k: int,
+    sampled_holdouts: int | None = None,
+    confidence_level: float = 0.95,
+    n_resamples: int = 2_000,
+    random_state: int = 42,
+) -> dict[str, BootstrapConfidenceInterval]:
+    """Bootstrap ranking means, optionally padding unavailable holdouts with zeros.
+
+    When ``sampled_holdouts`` is omitted, intervals are conditional on evaluability.
+    Supplying it produces unconditional intervals over all sampled holdouts.
+    """
+
+    _validate_k(k)
+    rows = _coerce_ranking_metric_rows(metric_rows, k)
+    if sampled_holdouts is None:
+        if not rows:
+            raise ValueError("metric_rows cannot be empty when sampled_holdouts is omitted.")
+        sample_size = len(rows)
+    else:
+        _validate_positive_integer(sampled_holdouts, "sampled_holdouts")
+        sample_size = int(sampled_holdouts)
+        if len(rows) > sample_size:
+            raise ValueError("The number of metric rows cannot exceed sampled_holdouts.")
+
+    intervals = {}
+    for metric_name in _ranking_metric_names(k):
+        values = [row[metric_name] for row in rows]
+        values.extend([0.0] * (sample_size - len(values)))
+        intervals[metric_name] = bootstrap_mean_confidence_interval(
+            values,
+            confidence_level=confidence_level,
+            n_resamples=n_resamples,
+            random_state=random_state,
+        )
+    return intervals
+
+
 def catalog_coverage_at_k(
     recommendation_lists: Iterable[Iterable[str]],
     catalog_items: Iterable[str],
     k: int,
 ) -> float:
+    _validate_k(k)
     catalog_set = {str(item) for item in catalog_items}
     if not catalog_set:
         return 0.0
@@ -124,8 +450,10 @@ def novelty_at_k(
     total_interactions: int,
     k: int,
 ) -> float:
+    _validate_k(k)
+    _validate_non_negative_integer(total_interactions, "total_interactions")
     recommended_k = _unique_top_k(recommended, k)
-    if not recommended_k or total_interactions <= 0:
+    if not recommended_k or total_interactions == 0:
         return 0.0
 
     item_count = max(int(len(popularity_counts)), 1)
@@ -144,6 +472,8 @@ def mean_novelty_at_k(
     total_interactions: int,
     k: int,
 ) -> float:
+    _validate_k(k)
+    _validate_non_negative_integer(total_interactions, "total_interactions")
     values = [
         novelty_at_k(recommendations, popularity_counts, total_interactions, k)
         for recommendations in recommendation_lists
@@ -157,10 +487,16 @@ def popularity_share_at_k(
     top_percent: float,
     k: int,
 ) -> float:
+    _validate_k(k)
+    if isinstance(top_percent, bool) or not isinstance(
+        top_percent, (int, float, np.integer, np.floating)
+    ):
+        raise ValueError("top_percent must be a number greater than 0 and at most 1.")
+    top_percent = float(top_percent)
+    if not math.isfinite(top_percent) or not 0 < top_percent <= 1:
+        raise ValueError("top_percent must be greater than 0 and less than or equal to 1.")
     if popularity_counts.empty:
         return 0.0
-    if not 0 < top_percent <= 1:
-        raise ValueError("top_percent must be greater than 0 and less than or equal to 1.")
 
     top_n = max(1, math.ceil(len(popularity_counts) * top_percent))
     top_items = set(popularity_counts.sort_values(ascending=False).head(top_n).index)
@@ -182,6 +518,7 @@ def intra_list_diversity_at_k(
     item_to_index: dict[str, int],
     k: int,
 ) -> float:
+    _validate_k(k)
     indices = [item_to_index[str(item)] for item in _unique_top_k(recommended, k) if str(item) in item_to_index]
     if len(indices) < 2:
         return 0.0
@@ -198,6 +535,7 @@ def mean_intra_list_diversity_at_k(
     item_to_index: dict[str, int],
     k: int,
 ) -> float:
+    _validate_k(k)
     values = [
         intra_list_diversity_at_k(recommendations, item_features, item_to_index, k)
         for recommendations in recommendation_lists
@@ -213,6 +551,7 @@ def recommendation_diagnostics_at_k(
     item_features=None,
     item_to_index: dict[str, int] | None = None,
 ) -> dict[str, float]:
+    _validate_k(k)
     total_interactions = int(popularity_counts.sum())
     diagnostics = {
         f"catalog_coverage_at_{k}": catalog_coverage_at_k(recommendation_lists, catalog_items, k),
@@ -246,6 +585,40 @@ def recommendation_diagnostics_at_k(
     return diagnostics
 
 
+def summarize_holdout_availability(
+    holdout_ratings: pd.DataFrame,
+    *,
+    candidate_items: Iterable[str],
+    history_users: Iterable[object],
+    item_column: str = "isbn",
+) -> HoldoutAvailability:
+    """Count why sampled holdouts can or cannot be used for ranking evaluation."""
+
+    required_columns = {"user_id", item_column}
+    missing_columns = required_columns.difference(holdout_ratings.columns)
+    if missing_columns:
+        raise ValueError(
+            f"Holdout data is missing columns: {', '.join(sorted(missing_columns))}"
+        )
+
+    candidate_set = {str(item) for item in candidate_items if pd.notna(item)}
+    history_user_set = {str(user_id) for user_id in history_users if pd.notna(user_id)}
+    candidate_mask = holdout_ratings[item_column].notna() & holdout_ratings[
+        item_column
+    ].astype(str).isin(candidate_set)
+    history_mask = holdout_ratings["user_id"].notna() & holdout_ratings[
+        "user_id"
+    ].astype(str).isin(history_user_set)
+    evaluable_mask = candidate_mask & history_mask
+
+    return HoldoutAvailability(
+        sampled_holdouts=int(len(holdout_ratings)),
+        candidate_available_holdouts=int(candidate_mask.sum()),
+        user_history_available_holdouts=int(history_mask.sum()),
+        evaluable_holdouts=int(evaluable_mask.sum()),
+    )
+
+
 def build_leave_one_out_split(
     ratings: pd.DataFrame,
     sample_users: int = 100,
@@ -257,10 +630,12 @@ def build_leave_one_out_split(
     missing_columns = required_columns.difference(ratings.columns)
     if missing_columns:
         raise ValueError(f"Ratings data is missing columns: {', '.join(sorted(missing_columns))}")
-    if sample_users <= 0:
-        raise ValueError("sample_users must be positive.")
+    _validate_positive_integer(sample_users, "sample_users")
+    _validate_positive_integer(min_interactions, "min_interactions")
     if min_interactions <= 1:
         raise ValueError("min_interactions must be greater than 1.")
+    _validate_finite_number(min_relevant_rating, "min_relevant_rating")
+    _validate_random_state(random_state)
 
     indexed = ratings.reset_index().rename(columns={"index": "_row_id"})
     user_counts = indexed["user_id"].value_counts()
@@ -273,12 +648,13 @@ def build_leave_one_out_split(
         raise ValueError("No eligible holdout ratings found for the requested evaluation settings.")
 
     users = candidates["user_id"].drop_duplicates()
-    users = users.sample(n=min(sample_users, len(users)), random_state=random_state)
+    users = users.sample(n=min(int(sample_users), len(users)), random_state=int(random_state))
 
     holdout_rows = []
     for offset, user_id in enumerate(users):
         user_candidates = candidates[candidates["user_id"] == user_id]
-        holdout_rows.append(user_candidates.sample(n=1, random_state=random_state + offset))
+        per_user_seed = (int(random_state) + offset) % (2**32)
+        holdout_rows.append(user_candidates.sample(n=1, random_state=per_user_seed))
 
     holdout = pd.concat(holdout_rows, ignore_index=True)
     train = indexed[~indexed["_row_id"].isin(holdout["_row_id"])]
@@ -286,6 +662,152 @@ def build_leave_one_out_split(
     return (
         train.drop(columns=["_row_id"]).reset_index(drop=True),
         holdout.drop(columns=["_row_id"]).reset_index(drop=True),
+    )
+
+
+def build_validation_test_leave_one_out_split(
+    ratings: pd.DataFrame,
+    sample_users: int = 100,
+    validation_fraction: float = 0.5,
+    min_interactions: int = 3,
+    min_relevant_rating: float = 8.0,
+    random_state: int = 42,
+) -> LeaveOneOutValidationTestSplit:
+    """Create disjoint user-level validation and untouched test holdouts.
+
+    One relevant interaction is removed for every sampled user. Sampled users are then
+    deterministically partitioned between validation and test, while all remaining user
+    histories stay in ``train_ratings``. Model choices can therefore be made solely on
+    validation users and reported once on a disjoint set of test users.
+    """
+
+    _validate_positive_integer(sample_users, "sample_users")
+    if sample_users < 2:
+        raise ValueError("sample_users must be at least 2 for validation/test partitioning.")
+    _validate_fraction(validation_fraction, "validation_fraction")
+    _validate_random_state(random_state)
+
+    train_ratings, holdout_ratings = build_leave_one_out_split(
+        ratings,
+        sample_users=sample_users,
+        min_interactions=min_interactions,
+        min_relevant_rating=min_relevant_rating,
+        random_state=random_state,
+    )
+    if len(holdout_ratings) < 2:
+        raise ValueError(
+            "At least two eligible users are required for validation/test partitioning."
+        )
+
+    rng = np.random.default_rng(int(random_state))
+    order = rng.permutation(len(holdout_ratings))
+    validation_size = int(math.floor(len(holdout_ratings) * float(validation_fraction) + 0.5))
+    validation_size = max(1, min(validation_size, len(holdout_ratings) - 1))
+    validation_indices = order[:validation_size]
+    test_indices = order[validation_size:]
+
+    return LeaveOneOutValidationTestSplit(
+        train_ratings=train_ratings.reset_index(drop=True),
+        validation_holdout_ratings=holdout_ratings.iloc[validation_indices].reset_index(drop=True),
+        test_holdout_ratings=holdout_ratings.iloc[test_indices].reset_index(drop=True),
+    )
+
+
+def build_validation_test_work_level_split(
+    ratings: pd.DataFrame,
+    books: pd.DataFrame,
+    sample_users: int = 100,
+    validation_fraction: float = 0.5,
+    min_interactions: int = 3,
+    min_relevant_rating: float = 8.0,
+    random_state: int = 42,
+) -> LeaveOneOutValidationTestSplit:
+    """Hold out a complete canonical work and partition users into validation/test.
+
+    A user may have rated multiple ISBN editions of one work. All such editions are
+    removed from that user's training history, and the holdout carries ``work_key`` so
+    evaluation can treat any recommended edition of that work as the same relevant item.
+    """
+
+    _validate_positive_integer(sample_users, "sample_users")
+    if sample_users < 2:
+        raise ValueError("sample_users must be at least 2 for validation/test partitioning.")
+    _validate_positive_integer(min_interactions, "min_interactions")
+    if min_interactions <= 1:
+        raise ValueError("min_interactions must be greater than 1.")
+    _validate_fraction(validation_fraction, "validation_fraction")
+    _validate_finite_number(min_relevant_rating, "min_relevant_rating")
+    _validate_random_state(random_state)
+    required_ratings = {"user_id", "isbn", "book_rating"}
+    required_books = {"isbn", "book_title", "book_author"}
+    missing_ratings = required_ratings.difference(ratings.columns)
+    missing_books = required_books.difference(books.columns)
+    if missing_ratings:
+        raise ValueError(
+            f"Ratings data is missing columns: {', '.join(sorted(missing_ratings))}"
+        )
+    if missing_books:
+        raise ValueError(f"Books data is missing columns: {', '.join(sorted(missing_books))}")
+
+    work_map = _book_work_map(books)
+    enriched = ratings.copy()
+    enriched["isbn"] = enriched["isbn"].astype(str)
+    enriched["work_key"] = enriched["isbn"].map(work_map)
+    if enriched["work_key"].isna().any():
+        raise ValueError("Every rating ISBN must have book metadata for work-level splitting.")
+
+    work_counts = enriched.groupby("user_id")["work_key"].nunique()
+    eligible_users = work_counts[work_counts >= min_interactions].index
+    relevant = enriched[
+        enriched["user_id"].isin(eligible_users)
+        & (enriched["book_rating"].astype(float) >= min_relevant_rating)
+    ]
+    candidate_works = relevant[["user_id", "work_key"]].drop_duplicates()
+    if candidate_works.empty:
+        raise ValueError("No eligible work-level holdouts found for the requested settings.")
+
+    users = candidate_works["user_id"].drop_duplicates()
+    users = users.sample(n=min(int(sample_users), len(users)), random_state=int(random_state))
+    holdout_rows = []
+    target_pairs: set[tuple[object, str]] = set()
+    for offset, user_id in enumerate(users):
+        user_candidates = candidate_works[candidate_works["user_id"] == user_id]
+        per_user_seed = (int(random_state) + offset) % (2**32)
+        target_work = str(
+            user_candidates.sample(n=1, random_state=per_user_seed).iloc[0]["work_key"]
+        )
+        target_pairs.add((user_id, target_work))
+        representative = (
+            relevant[
+                (relevant["user_id"] == user_id) & (relevant["work_key"] == target_work)
+            ]
+            .sort_values(["book_rating", "isbn"], ascending=[False, True], kind="stable")
+            .iloc[0]
+            .copy()
+        )
+        holdout_rows.append(representative)
+
+    pair_index = pd.MultiIndex.from_arrays(
+        [enriched["user_id"], enriched["work_key"]],
+        names=["user_id", "work_key"],
+    )
+    target_index = pd.MultiIndex.from_tuples(
+        sorted(target_pairs, key=lambda pair: (str(pair[0]), pair[1])),
+        names=["user_id", "work_key"],
+    )
+    train_ratings = enriched.loc[~pair_index.isin(target_index)].drop(columns="work_key")
+    holdouts = pd.DataFrame(holdout_rows).reset_index(drop=True)
+    if len(holdouts) < 2:
+        raise ValueError("At least two eligible users are required for validation/test splitting.")
+
+    rng = np.random.default_rng(int(random_state))
+    order = rng.permutation(len(holdouts))
+    validation_size = int(math.floor(len(holdouts) * float(validation_fraction) + 0.5))
+    validation_size = max(1, min(validation_size, len(holdouts) - 1))
+    return LeaveOneOutValidationTestSplit(
+        train_ratings=train_ratings.reset_index(drop=True),
+        validation_holdout_ratings=holdouts.iloc[order[:validation_size]].reset_index(drop=True),
+        test_holdout_ratings=holdouts.iloc[order[validation_size:]].reset_index(drop=True),
     )
 
 
@@ -319,24 +841,113 @@ def prepare_leave_one_out_evaluation(
     )
 
     candidate_isbns = set(train_dataset.books["isbn"].astype(str))
-    users_with_history = set(train_dataset.ratings["user_id"].astype(int))
+    users_with_history = set(train_dataset.ratings["user_id"].astype(str))
     evaluable_holdout_ratings = holdout_ratings[
         holdout_ratings["isbn"].astype(str).isin(candidate_isbns)
-        & holdout_ratings["user_id"].astype(int).isin(users_with_history)
+        & holdout_ratings["user_id"].astype(str).isin(users_with_history)
     ].reset_index(drop=True)
+
+    availability = summarize_holdout_availability(
+        holdout_ratings,
+        candidate_items=candidate_isbns,
+        history_users=users_with_history,
+    )
 
     return LeaveOneOutEvaluationDataset(
         train_dataset=train_dataset,
         train_ratings_before_filter=train_ratings.reset_index(drop=True),
         holdout_ratings=holdout_ratings.reset_index(drop=True),
         evaluable_holdout_ratings=evaluable_holdout_ratings,
-        dropped_holdouts=int(len(holdout_ratings) - len(evaluable_holdout_ratings)),
+        dropped_holdouts=availability.dropped_holdouts,
     )
 
 
+def prepare_validation_test_evaluation(
+    dataset: BookDataset,
+    sample_users: int = 200,
+    validation_fraction: float = 0.5,
+    min_interactions: int = 3,
+    min_relevant_rating: float = 8.0,
+    min_user_ratings: int = 1,
+    min_book_ratings: int = 1,
+    max_books: int | None = None,
+    max_ratings: int | None = None,
+    max_content_books: int | None = None,
+    random_state: int = 42,
+) -> ValidationTestEvaluationDataset:
+    """Prepare one shared train catalog with disjoint validation and test targets."""
+
+    split = build_validation_test_work_level_split(
+        dataset.ratings,
+        dataset.books,
+        sample_users=sample_users,
+        validation_fraction=validation_fraction,
+        min_interactions=min_interactions,
+        min_relevant_rating=min_relevant_rating,
+        random_state=random_state,
+    )
+    interaction_dataset = prepare_interaction_dataset(
+        books=dataset.books,
+        ratings=split.train_ratings,
+        users=dataset.users,
+        min_user_ratings=min_user_ratings,
+        min_book_ratings=min_book_ratings,
+        max_books=max_books,
+        max_ratings=max_ratings,
+        random_state=random_state,
+    )
+    train_dataset = BookDataset(
+        books=select_content_catalog(
+            dataset.books,
+            required_books=interaction_dataset.books,
+            max_content_books=max_content_books,
+        ),
+        ratings=interaction_dataset.ratings,
+        users=interaction_dataset.users,
+    )
+    validation_evaluable = _evaluable_holdouts(
+        split.validation_holdout_ratings,
+        train_dataset,
+    )
+    test_evaluable = _evaluable_holdouts(split.test_holdout_ratings, train_dataset)
+
+    return ValidationTestEvaluationDataset(
+        train_dataset=train_dataset,
+        train_ratings_before_filter=split.train_ratings.reset_index(drop=True),
+        validation_holdout_ratings=split.validation_holdout_ratings.reset_index(drop=True),
+        validation_evaluable_holdout_ratings=validation_evaluable,
+        test_holdout_ratings=split.test_holdout_ratings.reset_index(drop=True),
+        test_evaluable_holdout_ratings=test_evaluable,
+    )
+
+
+def _evaluable_holdouts(holdouts: pd.DataFrame, train_dataset: BookDataset) -> pd.DataFrame:
+    item_column = "work_key" if "work_key" in holdouts.columns else "isbn"
+    candidate_items = (
+        set(_catalog_work_keys(train_dataset.books))
+        if item_column == "work_key"
+        else set(train_dataset.books["isbn"].astype(str))
+    )
+    users_with_history = set(train_dataset.ratings["user_id"].astype(str))
+    return holdouts[
+        holdouts[item_column].astype(str).isin(candidate_items)
+        & holdouts["user_id"].astype(str).isin(users_with_history)
+    ].reset_index(drop=True)
+
+
+def _book_work_map(books: pd.DataFrame) -> dict[str, str]:
+    return {
+        str(row.isbn): book_work_key(row.book_title, row.book_author, row.isbn)
+        for row in books[["isbn", "book_title", "book_author"]].itertuples(index=False)
+    }
+
+
+def _catalog_work_keys(books: pd.DataFrame) -> list[str]:
+    return list(dict.fromkeys(_book_work_map(books).values()))
+
+
 def _unique_top_k(items: Iterable[str], k: int) -> list[str]:
-    if k <= 0:
-        raise ValueError("k must be positive.")
+    _validate_k(k)
 
     result = []
     seen = set()
@@ -348,3 +959,91 @@ def _unique_top_k(items: Iterable[str], k: int) -> list[str]:
         if len(result) >= k:
             break
     return result
+
+
+def _ranking_metric_names(k: int) -> tuple[str, ...]:
+    return (
+        f"precision_at_{k}",
+        f"recall_at_{k}",
+        f"hit_rate_at_{k}",
+        f"map_at_{k}",
+        f"mrr_at_{k}",
+        f"ndcg_at_{k}",
+    )
+
+
+def _coerce_ranking_metric_rows(
+    metric_rows: Iterable[Mapping[str, float]] | pd.DataFrame,
+    k: int,
+) -> list[dict[str, float]]:
+    if isinstance(metric_rows, pd.DataFrame):
+        raw_rows: list[object] = metric_rows.to_dict(orient="records")
+    else:
+        raw_rows = list(metric_rows)
+
+    metric_names = _ranking_metric_names(k)
+    rows = []
+    for row_index, raw_row in enumerate(raw_rows):
+        if not isinstance(raw_row, Mapping):
+            raise ValueError(f"metric_rows[{row_index}] must be a mapping.")
+        missing_metrics = [name for name in metric_names if name not in raw_row]
+        if missing_metrics:
+            raise ValueError(
+                f"metric_rows[{row_index}] is missing metrics: {', '.join(missing_metrics)}"
+            )
+
+        row = {}
+        for metric_name in metric_names:
+            raw_value = raw_row[metric_name]
+            if isinstance(raw_value, bool) or not isinstance(
+                raw_value, (int, float, np.integer, np.floating)
+            ):
+                raise ValueError(f"{metric_name} must be a numeric value between 0 and 1.")
+            value = float(raw_value)
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+                raise ValueError(f"{metric_name} must be a finite value between 0 and 1.")
+            row[metric_name] = value
+        rows.append(row)
+    return rows
+
+
+def _safe_ratio(numerator: int, denominator: int) -> float:
+    return float(numerator / denominator) if denominator else 0.0
+
+
+def _validate_k(k: int) -> None:
+    _validate_positive_integer(k, "k")
+
+
+def _validate_positive_integer(value: int, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, np.integer)) or int(value) <= 0:
+        raise ValueError(f"{name} must be a positive integer.")
+
+
+def _validate_non_negative_integer(value: int, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, np.integer)) or int(value) < 0:
+        raise ValueError(f"{name} must be a non-negative integer.")
+
+
+def _validate_finite_number(value: float, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(
+        value, (int, float, np.integer, np.floating)
+    ):
+        raise ValueError(f"{name} must be a finite number.")
+    if not math.isfinite(float(value)):
+        raise ValueError(f"{name} must be a finite number.")
+
+
+def _validate_fraction(value: float, name: str) -> None:
+    _validate_finite_number(value, name)
+    if not 0.0 < float(value) < 1.0:
+        raise ValueError(f"{name} must be greater than 0 and less than 1.")
+
+
+def _validate_random_state(random_state: int) -> None:
+    if (
+        isinstance(random_state, bool)
+        or not isinstance(random_state, (int, np.integer))
+        or not 0 <= int(random_state) < 2**32
+    ):
+        raise ValueError("random_state must be an integer between 0 and 2**32 - 1.")

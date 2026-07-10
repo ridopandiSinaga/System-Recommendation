@@ -1,362 +1,290 @@
 # Book Recommender System
 
-Project ini membangun sistem rekomendasi buku yang bisa dijalankan ulang secara
-lokal dan tersedia sebagai demo Streamlit. Fokus project:
+Portfolio project Machine Learning Engineering untuk rekomendasi buku berbasis
+Book-Crossing/Kaggle. Project ini sudah melampaui notebook prototype: ada data
+contract, model content/collaborative/hybrid, evaluasi bebas leakage, artifact
+lineage, CLI, API, Streamlit, test, CI, dan container.
 
-- memproses Kaggle Book Recommendation Dataset dari file mentah
-- membuat rekomendasi buku berbasis metadata buku
-- membuat rekomendasi buku berbasis histori rating user
-- menyediakan notebook end-to-end dan demo Streamlit
+Statusnya tetap **production-oriented offline system**, bukan layanan production
+yang sudah terbukti oleh traffic nyata. Belum ada event timestamp, online feedback,
+drift monitoring, canary, atau SLA operasional.
 
-## Tech Stack
-
-- Python 3.10 sampai 3.12
-- uv untuk virtual environment dan dependency management
-- pandas, numpy, scipy, scikit-learn
-- Streamlit untuk demo app
-- pytest dan ruff untuk verifikasi
-
-## Struktur Project
+## Arsitektur
 
 ```text
-.
-|-- app/
-|   `-- streamlit_app.py
-|-- data/
-|   |-- raw/
-|   `-- processed/
-|-- docs/
-|   |-- DATASET.md
-|   `-- images/
-|-- models/
-|-- notebooks/
-|   |-- 01_end_to_end_book_recommender.ipynb
-|   `-- 01_end_to_end_book_recommender.py
-|-- src/
-|   `-- book_recommender/
-|-- tests/
-|-- pyproject.toml
-`-- uv.lock
+Books/Ratings/Users CSV
+        |
+        v
+cleaning + schema validation + convergent k-core
+        |
+        +--> interaction catalog ------> adjusted-cosine item CF
+        |
+        +--> content catalog ----------> TF-IDF metadata neighbors
+                         \               /
+                          hybrid ranking + popularity fallback
+                                      |
+                         verified joblib + manifest JSON
+                                      |
+                         Streamlit UI / FastAPI API
 ```
+
+Komponen penting:
+
+- `src/book_recommender/data.py`: cleaning, invariant, deterministic sampling,
+  interaction catalog, dan cold content catalog.
+- `content_based.py`: TF-IDF/cosine dengan deduplikasi canonical work.
+- `collaborative.py`: adjusted-cosine item CF dengan positive-preference seed.
+- `hybrid.py`: penggabungan collaborative, content profile, dan popularity.
+- `evaluation.py` dan `cli.py`: split validation/test, metrik ranking, bootstrap,
+  segment, diagnostics, dan artifact evaluasi.
+- `artifacts.py` dan `service.py`: lineage, checksum, compatibility, dan serving
+  invariant.
+- `app/api.py` dan `app/streamlit_app.py`: adapter serving yang memuat satu bundle.
+
+Audit teknis dan backlog tersisa ada di
+[`docs/AUDIT_RECOMMENDER_SYSTEM.md`](docs/AUDIT_RECOMMENDER_SYSTEM.md).
 
 ## Setup
 
-Buat virtual environment dan install dependency:
+Project mendukung Python 3.10–3.12 dan memakai lockfile `uv`.
 
 ```bash
-uv venv .venv
-uv sync --dev --extra app
+uv sync --frozen --dev --extra app --extra api
 ```
 
-Aktifkan environment di Windows PowerShell:
+Verifikasi environment:
 
-```powershell
-.\.venv\Scripts\Activate.ps1
+```bash
+uv run book-rec --help
+uv run pytest
+uv run ruff check src tests app notebooks/01_end_to_end_book_recommender.py
 ```
 
-## Dataset
+`requirements.txt` adalah export production yang ter-pin dan ber-hash, bukan
+sumber dependency utama:
 
-Dataset yang digunakan:
+```bash
+uv export --frozen --no-dev --extra app --extra api \
+  --format requirements-txt --output-file requirements.txt
+```
 
-https://www.kaggle.com/datasets/arashnic/book-recommendation-dataset
+## Dataset dan data contract
 
-File yang dibutuhkan:
+Dataset: [Kaggle Book Recommendation Dataset](https://www.kaggle.com/datasets/arashnic/book-recommendation-dataset).
+
+File berikut wajib berada di `data/raw/`:
 
 - `Books.csv`
 - `Ratings.csv`
 - `Users.csv`
 
-Letakkan ketiga file tersebut di `data/raw/`.
-
-Download dengan Kaggle CLI:
-
 ```bash
-uv run kaggle datasets download -d arashnic/book-recommendation-dataset -p data/raw --unzip
-```
-
-Detail dataset ada di [`docs/DATASET.md`](docs/DATASET.md). Folder `data/raw/`
-diabaikan oleh git agar dataset besar dan file eksternal Kaggle tidak ikut
-ter-commit.
-
-## Cara Menjalankan CLI
-
-Cek dataset:
-
-```bash
+uv run kaggle datasets download \
+  -d arashnic/book-recommendation-dataset \
+  -p data/raw --unzip
 uv run book-rec check-data --data-dir data/raw
+uv run book-rec summary --data-dir data/raw
 ```
 
-Lihat ringkasan data setelah cleaning:
+Kontrak preprocessing utama:
+
+- ISBN dan user ID dinormalisasi serta divalidasi.
+- Rating harus finite pada rentang 0–10; nilai `0` adalah implicit/no-rating dan
+  tidak masuk training explicit-feedback.
+- Duplikat `(user_id, isbn)` diagregasi dengan mean yang deterministik.
+- Semua rating setelah cleaning wajib memiliki metadata buku.
+- Filter minimum user/item dijalankan sampai konvergen.
+- Batas `max_books`/`max_ratings` diterapkan deterministik lalu invariant dicek ulang.
+- Interaction catalog dan content catalog dipisahkan. Content catalog dapat memuat
+  buku cold-item tanpa rating; seluruh item interaksi selalu dipertahankan.
+
+Detail sumber dan manifest checksum ada di [`docs/DATASET.md`](docs/DATASET.md).
+Data mentah dan artifact hasil training tidak disimpan di git.
+
+## Menjalankan rekomendasi
 
 ```bash
-uv run book-rec summary --data-dir data/raw --max-books 10000
-```
+# Buku serupa; query dipertahankan walau catalog dibatasi.
+uv run book-rec recommend-content \
+  --data-dir data/raw \
+  --title "Adventures of Huckleberry Finn"
 
-Rekomendasi content-based berdasarkan judul:
-
-```bash
-uv run book-rec recommend-content --data-dir data/raw --title "Adventures of Huckleberry Finn"
-```
-
-Rekomendasi collaborative filtering berdasarkan histori user:
-
-```bash
+# Personalized recommendation.
 uv run book-rec recommend-collab --data-dir data/raw --user-id 5709
-```
-
-Rekomendasi hybrid berdasarkan histori user:
-
-```bash
 uv run book-rec recommend-hybrid --data-dir data/raw --user-id 5709
 ```
 
-Evaluasi ranking recommender:
+Semua output dideduplikasi pada canonical work, sehingga edisi paperback/hardcover
+dari karya yang sama tidak memenuhi beberapa slot Top-N. Rating di bawah
+`positive_rating_threshold` tetap tercatat sebagai feedback tetapi tidak dipakai
+sebagai sinyal suka.
+
+Unknown user atau user tanpa positive seed memakai popularity fallback pada mode
+serving. Ablation `strict` di evaluator mematikan fallback agar kontribusi sinyal
+personalized tidak tersamarkan.
+
+## Evaluasi yang benar
+
+Jalankan tuning hanya pada partition validation:
 
 ```bash
-uv run book-rec evaluate-collab --data-dir data/raw --sample-users 100 --k 50 --output artifacts/evaluation/recommender_evaluation.json
+uv run book-rec tune-hybrid \
+  --data-dir data/raw \
+  --sample-users 200 \
+  --k 50 \
+  --output artifacts/evaluation/hybrid_weight_tuning.json
 ```
 
-Command evaluasi memakai split leave-one-out dengan filtering dan pemilihan
-candidate books berdasarkan train split saja. Hasilnya membandingkan hybrid,
-collaborative filtering, dan popularity baseline pada holdout user yang sama
-serta menyimpan parameter, metrik, diagnostics, dan hasil per user ke JSON.
-
-Tuning bobot hybrid:
+Setelah memilih konfigurasi, jalankan test partition yang tidak disentuh tuning:
 
 ```bash
-uv run book-rec tune-hybrid --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/hybrid_weight_tuning_sample200.json
+uv run book-rec evaluate-collab \
+  --data-dir data/raw \
+  --sample-users 200 \
+  --k 50 \
+  --hybrid-collaborative-weight 0.40 \
+  --hybrid-content-weight 0.45 \
+  --hybrid-popularity-weight 0.15 \
+  --output artifacts/evaluation/recommender_evaluation.json
 ```
 
-Command tuning mencoba beberapa kombinasi bobot hybrid pada split evaluasi yang
-sama. Default hybrid saat ini memakai bobot hasil tuning awal:
+Protokol aktif:
+
+- user validation dan test disjoint;
+- satu canonical work relevan ditahan dan seluruh edisinya dihapus dari history;
+- filter dan pemilihan candidate dilakukan dari train saja;
+- `conditional` memakai target yang tersedia dan user dengan positive seed;
+- `end_to_end` memakai seluruh holdout, menjalankan cold-user fallback sungguhan,
+  dan menghitung unavailable target sebagai miss;
+- per-user row menyimpan status availability dan segment positive-work history;
+- confidence interval bootstrap dipisahkan per scope;
+- relevance, coverage, dan candidate count memakai canonical work.
+
+Metrik: Precision/Recall/HitRate/MAP/MRR/NDCG@K, catalog coverage, novelty,
+intra-list diversity, serta popularity share top 1/5/10%.
+
+Angka dari protocol evaluasi lama berbasis ISBN atau hanya `evaluable_holdouts`
+tidak comparable dan sengaja tidak dicantumkan di README. Regenerasi artifact
+sebelum membuat klaim performa.
+
+## Training dan artifact lineage
+
+Bundle serving utama:
+
+```bash
+uv run book-rec train-hybrid \
+  --data-dir data/raw \
+  --evaluation-artifact artifacts/evaluation/recommender_evaluation.json \
+  --output models/hybrid.joblib
+
+uv run book-rec artifact-info models/hybrid.joblib
+```
+
+Attachment artifact evaluasi bersifat fail-closed. Protocol, partition, unit
+relevance/split, source dataset fingerprint, algorithm version, preprocessing,
+neighbor count, candidate-pool size, bobot, threshold, dan random seed harus
+kompatibel dengan model yang dilatih.
+
+Setiap `.joblib` memiliki sidecar `.joblib.manifest.json` berisi:
+
+- SHA-256 artifact dan unique artifact ID;
+- source/training dataset fingerprint, row count, dan schema;
+- Python, project, serta dependency versions;
+- Git SHA dan dirty-worktree flag;
+- training config dan metrik evaluasi terverifikasi.
+
+Checksum mendeteksi korupsi, bukan membuktikan authenticity. Joblib/pickle dapat
+mengeksekusi kode: hanya muat artifact dari pipeline/storage terpercaya dan mount
+artifact read-only saat serving.
+
+## FastAPI
+
+```bash
+uv run uvicorn app.api:app --host 0.0.0.0 --port 8000
+```
+
+Environment variable:
 
 ```text
-collaborative=0.40, content=0.45, popularity=0.15
+BOOK_RECOMMENDER_ARTIFACT=/absolute/path/models/hybrid.joblib
 ```
 
-Simpan model artifact untuk setting default app:
+Endpoint:
+
+- `GET /healthz`: process liveness.
+- `GET /readyz`: readiness dan artifact identity; `503` bila model gagal dimuat.
+- `GET /model-info`: lineage ringkas.
+- `GET /metrics`: in-process request/error/latency counters.
+- `GET /v1/recommendations/users/{user_id}?top_n=10`.
+- `GET /v1/recommendations/similar?isbn=...&top_n=10` atau `title=...`.
+
+Response error publik memakai stable error code; detail internal hanya ditulis ke
+structured log. `x-request-id` divalidasi/dibuat oleh middleware.
+
+## Docker
 
 ```bash
-uv run book-rec train-content --data-dir data/raw --output models/content.joblib
-uv run book-rec train-collab --data-dir data/raw --output models/collab.joblib
+docker build -t book-recommender .
+docker run --rm -p 8000:8000 \
+  --mount type=bind,src="$(pwd)/models",dst=/opt/app/models,readonly \
+  book-recommender
 ```
 
-Artifact di folder `models/` diabaikan oleh git. Streamlit app akan memakai
-artifact tersebut jika tersedia dan setting sidebar masih default.
+Container berjalan sebagai non-root user, membatasi thread BLAS, dan healthcheck
+memakai `/readyz`. Directory yang di-mount harus memuat `hybrid.joblib` dan
+sidecar manifest-nya.
 
-## Demo Streamlit
-
-Jalankan app:
+## Streamlit
 
 ```bash
 uv run streamlit run app/streamlit_app.py
 ```
 
-Lalu buka:
+UI load-only secara default dan memakai bundle yang sama dengan API. Untuk
+eksperimen lokal saja, runtime training dapat diaktifkan:
 
 ```text
-http://localhost:8501
+BOOK_RECOMMENDER_ALLOW_RUNTIME_TRAINING=1
 ```
 
-Fitur app:
+Jika data belum ada, jalur development dapat mengambil Kaggle credential dari
+Streamlit secrets, memvalidasi schema/isi di staging, membuat checksum manifest,
+dan mem-publish dataset directory secara atomik. Jangan mengaktifkan jalur ini
+sebagai pola production serving.
 
-- pilih judul buku dan lihat rekomendasi buku serupa
-- masukkan `user_id` dan lihat rekomendasi collaborative atau hybrid dari
-  histori rating
-- tampilkan cover buku dari URL dataset
-- atur ukuran sample dan jumlah rekomendasi dari sidebar
+## Quality gates
 
-Preview:
+CI menjalankan Python 3.10, 3.11, dan 3.12:
 
-![Streamlit demo](docs/images/streamlit-demo.png)
+- frozen dependency/requirements check;
+- Ruff;
+- pytest dengan branch coverage minimal 75% untuk package dan adapters;
+- wheel build serta import/CLI smoke dari directory di luar checkout;
+- Docker build.
 
-### Deploy ke Streamlit Community Cloud
-
-Entry point app:
-
-```text
-app/streamlit_app.py
-```
-
-Dataset Kaggle tidak ikut disimpan di git. Saat deploy, app akan mencoba
-download dataset dari Kaggle jika `data/raw/Books.csv`, `Ratings.csv`, dan
-`Users.csv` belum tersedia. Tambahkan secret berikut di Streamlit Cloud:
-
-```toml
-username = "KAGGLE_USERNAME_ANDA"
-key = "KAGGLE_API_KEY_ANDA"
-```
-
-Credential tersebut hanya dipakai saat runtime untuk mengunduh dataset ke
-folder `data/raw/` pada environment Streamlit Cloud.
-
-## Notebook End-to-End
-
-Notebook utama:
-
-```text
-notebooks/01_end_to_end_book_recommender.ipynb
-```
-
-Notebook ini memperlihatkan alur dari awal sampai akhir:
-
-- data understanding
-- missing value dan distribusi rating
-- preprocessing
-- content-based recommendation
-- collaborative filtering
-- hybrid recommendation
-- evaluasi Top-K sederhana
-- kesimpulan dan keterbatasan
-
-File Jupytext pasangan notebook:
-
-```text
-notebooks/01_end_to_end_book_recommender.py
-```
-
-Generate ulang notebook beserta output:
+Verifikasi lokal ekuivalen:
 
 ```bash
-uv run jupytext --to ipynb --execute notebooks/01_end_to_end_book_recommender.py
-```
-
-## Pendekatan Model
-
-### Content-Based Recommendation
-
-Model content-based memakai metadata:
-
-```text
-book_title + book_author + publisher
-```
-
-Metadata diubah menjadi TF-IDF vector, lalu rekomendasi dicari dengan cosine
-nearest neighbors. Pendekatan ini cocok ketika user belum punya histori rating
-dan hanya tersedia buku referensi.
-
-### Collaborative Filtering
-
-Model collaborative filtering memakai sparse item-user matrix dari rating
-eksplisit. Rating `0` dibuang karena diperlakukan sebagai belum memberi rating.
-Model mencari buku dengan pola rating yang mirip, lalu merekomendasikan buku
-yang mirip dengan buku-buku yang disukai user.
-
-Pendekatan ini digunakan sebagai baseline ringan berbasis scikit-learn agar alur
-rekomendasi mudah direproduksi, diuji, dan dijelaskan. Fokusnya adalah membangun
-sistem rekomendasi yang jelas dari preprocessing, modeling, evaluasi ranking,
-hingga demo aplikasi.
-
-### Hybrid Recommendation
-
-Model hybrid menggabungkan tiga sinyal:
-
-- skor collaborative dari kemiripan item berdasarkan histori rating
-- skor content profile dari metadata buku yang disukai user
-- skor popularity sebagai fallback kecil dan stabilizer
-
-Setiap skor dinormalisasi sebelum digabung. Bobot hybrid disesuaikan secara
-sederhana berdasarkan jumlah histori user: user dengan histori sedikit mendapat
-bobot content/popularity lebih besar, sedangkan user dengan histori lebih banyak
-mendapat bobot collaborative lebih besar. Bobot dasar default hasil tuning awal
-adalah `0.40` collaborative, `0.45` content, dan `0.15` popularity.
-
-Output hybrid juga menyertakan `source` dan `reason` agar rekomendasi dapat
-dijelaskan sebagai sinyal collaborative, content profile, atau popularity
-fallback.
-
-## Evaluasi
-
-Notebook dan CLI memakai evaluasi leave-one-out untuk ranking recommender:
-
-- pilih beberapa user dengan minimal jumlah rating tertentu
-- tahan satu buku dengan rating tinggi sebagai target
-- lakukan filtering sparsity dan pemilihan candidate books dari train split saja
-- latih recommender tanpa target tersebut
-- rekomendasikan Top-K buku untuk user tersebut
-- bandingkan hybrid, collaborative filtering, dan popularity baseline
-
-Metrik yang tersedia:
-
-- `Precision@K`: proporsi Top-K rekomendasi yang relevan
-- `Recall@K`: proporsi item relevan yang berhasil ditemukan di Top-K
-- `HitRate@K`: apakah minimal satu item relevan muncul di Top-K
-- `MAP@K`: rata-rata precision pada posisi item relevan
-- `MRR@K`: posisi reciprocal item relevan pertama di Top-K
-- `NDCG@K`: kualitas urutan ranking, item relevan di posisi atas bernilai lebih
-- `Coverage@K`: proporsi katalog kandidat yang muncul dalam rekomendasi
-- `Novelty@K`: rata-rata inverse popularity item yang direkomendasikan
-- `Intra-list Diversity@K`: keragaman item dalam satu daftar rekomendasi
-- popularity share pada top 1%, 5%, dan 10% item populer
-
-Evaluasi ini adalah benchmark ranking awal, bukan klaim performa final. Untuk
-eksperimen produksi, gunakan split temporal dan jumlah user evaluasi yang lebih
-besar. Dataset tidak memiliki timestamp, sehingga split temporal belum dapat
-dilakukan tanpa data tambahan.
-
-Artifact evaluasi default tersimpan di:
-
-```text
-artifacts/evaluation/recommender_evaluation.json
-```
-
-Folder `artifacts/` diabaikan oleh git karena berisi output eksperimen lokal.
-
-Contoh hasil evaluasi lokal dengan `--sample-users 200 --k 50 --max-books 5000`:
-
-| model | HitRate@50 | MAP@50 | MRR@50 | NDCG@50 | Coverage@50 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| hybrid | 0.2027 | 0.0323 | 0.0323 | 0.0667 | 0.4106 |
-| collaborative | 0.1081 | 0.0405 | 0.0405 | 0.0555 | 0.4072 |
-| popularity | 0.1216 | 0.0326 | 0.0326 | 0.0503 | 0.0108 |
-
-Interpretasinya: hybrid memberi HitRate@50 dan NDCG@50 terbaik pada sampel ini,
-sementara collaborative masih unggul pada MAP/MRR. Popularity baseline memiliki
-coverage sangat rendah karena terkonsentrasi pada buku populer.
-
-## Verifikasi
-
-Jalankan test:
-
-```bash
-uv run pytest
-```
-
-Jalankan lint:
-
-```bash
+uv lock --check
 uv run ruff check src tests app notebooks/01_end_to_end_book_recommender.py
+uv run pytest --cov=book_recommender --cov=app --cov-report=term-missing
+uv build
 ```
 
-Verifikasi yang sudah dilakukan pada project ini:
+## Batasan dan langkah berikutnya
 
-- `uv run pytest` berhasil
-- `uv run ruff check src tests app notebooks/01_end_to_end_book_recommender.py` berhasil
-- `uv run book-rec check-data --data-dir data/raw` berhasil setelah dataset diunduh
-- `uv run book-rec recommend-hybrid --data-dir data/raw --user-id 5709 --top-n 5 --max-books 5000` berhasil
-- `uv run book-rec tune-hybrid --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/hybrid_weight_tuning_sample200.json` berhasil
-- `uv run book-rec evaluate-collab --data-dir data/raw --sample-users 200 --k 50 --max-books 5000 --output artifacts/evaluation/recommender_eval_tuned_sample200.json` berhasil
-- Streamlit app berhasil berjalan di `http://localhost:8501`
+- Dataset tidak memiliki timestamp interaksi; user-disjoint holdout bukan pengganti
+  temporal backtest.
+- Tuning masih grid search pada satu validation split. Tambahkan repeated split
+  atau paired-bootstrap delta sebelum menganggap satu konfigurasi unggul stabil.
+- Adjusted-cosine item CF dan TF-IDF adalah baseline interpretable, bukan learned
+  ranker/state-of-the-art recommender.
+- Cold-user sudah punya fallback dan cold-item masuk content catalog, tetapi item
+  baru tetap sulit mendapat exposure pada jalur collaborative.
+- Belum ada online feedback, business KPI, fairness slices, drift alert, model
+  registry, canary, rollback automation, rate limiting, atau shared metrics backend.
+- Cover hanya diizinkan dari host image dataset yang dikenal dan tetap bergantung
+  pada availability pihak ketiga.
 
-## Batasan Saat Ini
-
-- Dataset sangat sparse, sehingga collaborative filtering baseline belum optimal
-  dan hasil evaluasi ranking masih perlu dibaca sebagai sinyal awal.
-- Rekomendasi collaborative filtering cenderung terpengaruh popularity bias:
-  buku yang sering dirating lebih mudah muncul dibanding buku niche atau buku
-  dengan sedikit interaksi.
-- Cold-start belum diselesaikan penuh. User baru tanpa histori rating memakai
-  popularity fallback, sedangkan buku baru tanpa rating sulit direkomendasikan
-  oleh collaborative filtering.
-- Content-based recommendation dan collaborative filtering masih berjalan sebagai
-  pendekatan yang bisa diuji terpisah. Model hybrid sudah tersedia, tetapi masih
-  berupa penggabungan skor baseline, bukan model latent factor atau deep learning.
-- Fitur demografis seperti `age` dan `location` dibersihkan untuk eksplorasi,
-  tetapi belum dipakai dalam model agar baseline tetap sederhana dan mudah
-  direproduksi.
-- Evaluasi ranking masih memakai leave-one-out pada sampel user, belum memakai
-  split temporal yang lebih dekat dengan skenario produksi.
-- Cover buku berasal dari URL eksternal dataset dan bisa gagal tampil jika URL
-  sumber tidak tersedia.
-- Streamlit app membangun model saat startup dan menyimpan hasilnya di cache jika
-  artifact default di `models/` belum tersedia.
+Notebook naratif tersedia di
+[`notebooks/01_end_to_end_book_recommender.ipynb`](notebooks/01_end_to_end_book_recommender.ipynb).

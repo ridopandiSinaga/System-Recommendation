@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+.coverage
+artifacts
+data
+legacy
+models/*.joblib
+models/*.json
+notebooks
+tests

@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install frozen environment
+        run: uv sync --frozen --dev --extra app --extra api
+
+      - name: Verify lock and production requirements
+        run: |
+          uv lock --check
+          uv export --frozen --no-dev --extra app --extra api --format requirements-txt --output-file requirements.txt
+          git diff --exit-code -- requirements.txt
+
+      - name: Lint
+        run: uv run ruff check src tests app notebooks/01_end_to_end_book_recommender.py
+
+      - name: Test with coverage
+        run: uv run pytest --cov=book_recommender --cov=app --cov-report=term-missing
+
+      - name: Build package
+        if: matrix.python-version == '3.12'
+        run: uv build
+
+      - name: Smoke-test built wheel outside checkout
+        if: matrix.python-version == '3.12'
+        run: |
+          python -m venv /tmp/book-rec-wheel
+          WHEEL=$(ls "$GITHUB_WORKSPACE"/dist/*.whl)
+          /tmp/book-rec-wheel/bin/python -m pip install "${WHEEL}[api]"
+          cd /tmp
+          /tmp/book-rec-wheel/bin/python -c "import book_recommender; import app.api"
+          /tmp/book-rec-wheel/bin/book-rec --help
+
+      - name: Build API container
+        if: matrix.python-version == '3.12'
+        run: docker build --tag book-recommender:ci .
