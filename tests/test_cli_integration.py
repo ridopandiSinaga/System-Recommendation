@@ -79,6 +79,38 @@ def evaluation_args(tmp_path, output_name: str) -> Namespace:
     )
 
 
+def benchmark_args(tmp_path, output_name: str) -> Namespace:
+    return Namespace(
+        data_dir=tmp_path,
+        validation_users=4,
+        test_users=4,
+        repetitions=2,
+        seed_stride=7,
+        min_interactions=3,
+        min_relevant_rating=8.0,
+        min_user_ratings=1,
+        min_book_ratings=1,
+        max_books=None,
+        max_ratings=None,
+        max_content_books=None,
+        k=3,
+        neighbors=3,
+        hybrid_candidate_pool_size=8,
+        positive_rating_threshold=8.0,
+        disable_hybrid_dynamic_weights=False,
+        weight_grid="0.4,0.45,0.15;0.3,0.6,0.1",
+        baseline_weights="0.4,0.45,0.15",
+        selection_metric="ndcg",
+        min_delta=0.0,
+        min_selection_rate=0.5,
+        random_state=7,
+        test_random_state=19,
+        bootstrap_resamples=20,
+        confidence_level=0.95,
+        output=tmp_path / output_name,
+    )
+
+
 def valid_evaluation_payload() -> dict:
     metrics = {
         "precision_at_3": 0.1,
@@ -114,6 +146,114 @@ def valid_evaluation_payload() -> dict:
         },
         "confidence_intervals": {},
         "per_user_rows": [],
+    }
+
+
+def valid_benchmark_payload() -> dict:
+    metrics = {
+        "precision_at_3": 0.1,
+        "recall_at_3": 0.3,
+        "hit_rate_at_3": 0.3,
+        "map_at_3": 0.2,
+        "mrr_at_3": 0.2,
+        "ndcg_at_3": 0.25,
+    }
+    weights = {
+        "collaborative_weight": 0.4,
+        "content_weight": 0.45,
+        "popularity_weight": 0.15,
+    }
+    config_id = cli.weight_config_id(weights)
+    configuration = {
+        "config_id": config_id,
+        **weights,
+        "end_to_end_metrics": metrics,
+        "conditional_metrics": metrics,
+    }
+    validation_aggregate = {
+        **configuration,
+        "repetitions": 2,
+    }
+    fixed_test_aggregate = {
+        **configuration,
+        "repetitions": 1,
+    }
+    return {
+        "schema_version": cli.BENCHMARK_ARTIFACT_SCHEMA_VERSION,
+        "artifact_type": "repeated_split_benchmark",
+        "protocol": cli.BENCHMARK_PROTOCOL,
+        "relevance_unit": "canonical_work",
+        "split_unit": "user_work",
+        "algorithms": cli.evaluation_algorithm_contract(),
+        "parameters": {
+            "neighbors": 3,
+            "k": 3,
+            "repetitions": 2,
+            "selection_metric": "ndcg",
+            "min_delta": 0.0,
+            "min_selection_rate": 0.6,
+            "confidence_level": 0.95,
+            "selection_confidence_level": 0.95,
+            "selection_multiplicity_adjustment": "none",
+            "baseline_config_id": config_id,
+            "weight_configs": [{"config_id": config_id, **weights}],
+        },
+        "dataset": {"source_fingerprint": "a" * 64},
+        "selection": {
+            "partition": "validation",
+            "scope": "end_to_end",
+            "metric": "ndcg_at_3",
+            "baseline_config_id": config_id,
+            "selected_config_id": config_id,
+            "decision": "retain_baseline",
+            "min_delta": 0.0,
+            "min_selection_rate": 0.6,
+            "confidence_level": 0.95,
+            "multiplicity_adjustment": "none",
+        },
+        "validation": {
+            "partition": "validation",
+            "repetitions": 2,
+            "repeats": [
+                {"split_id": "validation-01", "configurations": [configuration]},
+                {"split_id": "validation-02", "configurations": [configuration]},
+            ],
+            "aggregate_by_config": [validation_aggregate],
+            "paired_deltas_vs_baseline": {},
+            "per_user_rows": [
+                {
+                    "partition": "validation",
+                    "config_id": config_id,
+                    "split_id": "validation-01",
+                    "user_id": 1,
+                    "holdout_work_key": "validation-work-1",
+                },
+                {
+                    "partition": "validation",
+                    "config_id": config_id,
+                    "split_id": "validation-02",
+                    "user_id": 2,
+                    "holdout_work_key": "validation-work-2",
+                },
+            ],
+        },
+        "fixed_test": {
+            "partition": "test",
+            "evaluated_after_selection": True,
+            "evaluated_config_ids": [config_id],
+            "configurations": [configuration],
+            "aggregate_by_config": [fixed_test_aggregate],
+            "paired_delta_selected_vs_baseline": None,
+            "per_user_rows": [
+                {
+                    "partition": "test",
+                    "config_id": config_id,
+                    "split_id": "fixed-test",
+                    "user_id": 3,
+                    "holdout_work_key": "test-work",
+                }
+            ],
+        },
     }
 
 
@@ -195,6 +335,38 @@ def test_evaluation_metric_reader_rejects_dataset_config_and_nonfinite_values(tm
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="non-finite"):
         cli.read_evaluation_metrics(path)
+
+
+def test_benchmark_metric_reader_requires_compatible_selection_and_fixed_test(tmp_path):
+    payload = valid_benchmark_payload()
+    path = tmp_path / "benchmark.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    expected_weights = {
+        "collaborative_weight": 0.4,
+        "content_weight": 0.45,
+        "popularity_weight": 0.15,
+    }
+
+    metrics = cli.read_benchmark_metrics(
+        path,
+        expected_source_dataset_fingerprint="a" * 64,
+        expected_parameters={"neighbors": 3},
+        expected_weights=expected_weights,
+    )
+
+    assert metrics["protocol"] == cli.BENCHMARK_PROTOCOL
+    assert len(metrics["artifact_sha256"]) == 64
+    payload = valid_benchmark_payload()
+    payload.pop("validation")
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="validation"):
+        cli.read_benchmark_metrics(path)
+
+    payload = valid_benchmark_payload()
+    payload["fixed_test"]["evaluated_config_ids"].append("unselected")
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="restricted"):
+        cli.read_benchmark_metrics(path)
 
 
 def test_evaluate_cli_writes_independent_test_metrics(monkeypatch, tmp_path):
@@ -294,6 +466,91 @@ def test_tuning_cli_uses_validation_partition(monkeypatch, tmp_path):
     assert payload["dataset"]["test_sampled_holdouts_reserved"] == 4
     assert len(payload["results"]) == 2
     assert payload["best_config"]["end_to_end_metrics"]
+
+
+def test_repeated_benchmark_keeps_fixed_test_out_of_validation_selection(monkeypatch, tmp_path):
+    dataset = evaluation_dataset()
+    monkeypatch.setattr(cli, "load_clean_dataset", lambda _: dataset)
+    args = benchmark_args(tmp_path, "benchmark.json")
+    args.hybrid_candidate_pool_size = cli.DEFAULT_HYBRID_CANDIDATE_POOL_SIZE
+
+    cli.benchmark_hybrid_weights(args)
+
+    payload = json.loads(args.output.read_text(encoding="utf-8"))
+    assert payload["artifact_type"] == "repeated_split_benchmark"
+    assert payload["protocol"] == cli.BENCHMARK_PROTOCOL
+    assert payload["selection"]["partition"] == "validation"
+    assert payload["fixed_test"]["evaluated_after_selection"] is True
+    assert len(payload["validation"]["repeats"]) == 2
+    assert payload["dataset"]["fixed_test_users"] == 4
+
+    test_users = {row["user_id"] for row in payload["fixed_test"]["per_user_rows"]}
+    validation_users = {row["user_id"] for row in payload["validation"]["per_user_rows"]}
+    assert test_users.isdisjoint(validation_users)
+
+    baseline = payload["selection"]["baseline_config_id"]
+    selected = payload["selection"]["selected_config_id"]
+    assert set(payload["fixed_test"]["evaluated_config_ids"]) == {baseline, selected}
+    assert set(row["config_id"] for row in payload["fixed_test"]["per_user_rows"]) == {
+        baseline,
+        selected,
+    }
+    assert len(payload["validation"]["aggregate_by_config"]) == 2
+    verified = cli.read_benchmark_metrics(args.output)
+    assert verified["selection"]["selected_config_id"] == selected
+
+    selected_weights = next(
+        config for config in payload["parameters"]["weight_configs"] if config["config_id"] == selected
+    )
+    monkeypatch.setattr(cli, "load_hybrid_prepared_dataset", lambda _: dataset)
+    model_output = tmp_path / "benchmark-lineage.joblib"
+    cli.train_hybrid_model(
+        Namespace(
+            data_dir=tmp_path,
+            min_user_ratings=1,
+            min_book_ratings=1,
+            max_books=None,
+            max_ratings=None,
+            max_content_books=None,
+            neighbors=3,
+            collaborative_weight=selected_weights["collaborative_weight"],
+            content_weight=selected_weights["content_weight"],
+            popularity_weight=selected_weights["popularity_weight"],
+            positive_rating_threshold=8.0,
+            disable_dynamic_weights=False,
+            random_state=42,
+            evaluation_artifact=None,
+            benchmark_artifact=args.output,
+            output=model_output,
+        )
+    )
+    _, manifest = load_model_bundle(model_output)
+    assert manifest.metrics["protocol"] == cli.BENCHMARK_PROTOCOL
+    assert manifest.metrics["artifact_sha256"] == verified["artifact_sha256"]
+
+
+def test_benchmark_weight_configs_are_order_independent() -> None:
+    forward, forward_baseline = cli.benchmark_weight_configs(
+        weight_grid="0.4,0.45,0.15;0.3,0.6,0.1",
+        baseline_weights="0.4,0.45,0.15",
+    )
+    reverse, reverse_baseline = cli.benchmark_weight_configs(
+        weight_grid="0.3,0.6,0.1;0.4,0.45,0.15",
+        baseline_weights="0.4,0.45,0.15",
+    )
+
+    assert forward == reverse
+    assert forward_baseline == reverse_baseline
+
+
+def test_repeated_benchmark_rejects_underpowered_requested_cohorts(monkeypatch, tmp_path):
+    dataset = evaluation_dataset()
+    monkeypatch.setattr(cli, "load_clean_dataset", lambda _: dataset)
+    args = benchmark_args(tmp_path, "underpowered.json")
+    args.test_users = 50
+
+    with pytest.raises(ValueError, match="fixed test cohort"):
+        cli.benchmark_hybrid_weights(args)
 
 
 def test_train_hybrid_writes_verified_composite_bundle(monkeypatch, tmp_path):
