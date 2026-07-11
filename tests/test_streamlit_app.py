@@ -1,6 +1,7 @@
 from pathlib import Path
 import hashlib
 from io import BytesIO
+import os
 
 import pandas as pd
 import pytest
@@ -84,6 +85,61 @@ def test_streamlit_app_hides_artifact_failure_details(monkeypatch, tmp_path):
     assert app.error
     assert "Model service is unavailable" in app.error[0].value
     assert "secret-model-path" not in app.error[0].value
+
+
+def test_streamlit_hybrid_user_change_requires_submit_and_handles_unknown_user(monkeypatch, tmp_path):
+    artifact = _serving_artifact(tmp_path)
+    monkeypatch.setenv("BOOK_RECOMMENDER_ARTIFACT", str(artifact))
+    st.cache_resource.clear()
+    app_path = Path(__file__).parents[1] / "app" / "streamlit_app.py"
+
+    app = AppTest.from_file(str(app_path)).run(timeout=30)
+    hybrid_input = app.number_input[1]
+    submit = app.button[0]
+
+    hybrid_input.set_value(2)
+    submit.click().run(timeout=30)
+
+    assert not app.exception
+    assert app.number_input[1].value == 2
+
+    app.number_input[1].set_value(999_999)
+    app.button[0].click().run(timeout=30)
+
+    assert not app.exception
+    assert any("User history is not available" in warning.value for warning in app.warning)
+
+
+def test_native_inference_guard_applies_configured_limit(monkeypatch):
+    seen: dict[str, int] = {}
+
+    class _LimitContext:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+    def fake_threadpool_limits(*, limits):
+        seen["limit"] = limits
+        return _LimitContext()
+
+    monkeypatch.setattr(streamlit_app, "threadpool_limits", fake_threadpool_limits)
+
+    assert streamlit_app.run_native_inference(lambda: "ok") == "ok"
+    assert seen["limit"] == streamlit_app.NATIVE_THREAD_LIMIT
+
+
+def test_native_thread_configuration_overrides_inherited_thread_counts(monkeypatch):
+    monkeypatch.setenv("BOOK_RECOMMENDER_NATIVE_THREADS", "2")
+    monkeypatch.setenv("OPENBLAS_NUM_THREADS", "16")
+    monkeypatch.setenv("OMP_NUM_THREADS", "16")
+
+    assert streamlit_app.configure_native_thread_limit() == 2
+    assert os.environ["OPENBLAS_NUM_THREADS"] == "2"
+    assert os.environ["OMP_NUM_THREADS"] == "2"
+    assert os.environ["MKL_NUM_THREADS"] == "2"
+    assert os.environ["NUMEXPR_NUM_THREADS"] == "2"
 
 
 def test_remote_artifact_bootstrap_downloads_and_verifies_pair(monkeypatch, tmp_path):

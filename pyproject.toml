@@ -15,12 +15,12 @@ dependencies = [
     "scikit-learn>=1.4",
     "scipy>=1.12",
     "seaborn>=0.13",
+    "streamlit>=1.36",
+    "threadpoolctl>=3.6",
 ]
 
 [project.optional-dependencies]
-app = [
-    "streamlit>=1.36",
-]
+app = []
 api = [
     "fastapi>=0.115,<1",
     "uvicorn>=0.34,<1",

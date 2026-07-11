@@ -145,15 +145,14 @@ dependencies = [
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "seaborn" },
+    { name = "streamlit" },
+    { name = "threadpoolctl" },
 ]
 
 [package.optional-dependencies]
 api = [
     { name = "fastapi" },
     { name = "uvicorn" },
-]
-app = [
-    { name = "streamlit" },
 ]
 
 [package.dev-dependencies]
@@ -178,7 +177,8 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.4" },
     { name = "scipy", specifier = ">=1.12" },
     { name = "seaborn", specifier = ">=0.13" },
-    { name = "streamlit", marker = "extra == 'app'", specifier = ">=1.36" },
+    { name = "streamlit", specifier = ">=1.36" },
+    { name = "threadpoolctl", specifier = ">=3.6" },
     { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.34,<1" },
 ]
 provides-extras = ["app", "api"]

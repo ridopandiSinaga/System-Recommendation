@@ -271,6 +271,20 @@ Streamlit akan memuat `models/hybrid.joblib` secara load-only saat startup.
 Model dan dataset-derived metadata boleh terlihat publik; yang tetap tidak boleh
 masuk repository adalah credential, token, dan secret.
 
+Untuk deployment Streamlit Cloud, `streamlit` merupakan dependency utama yang
+dikunci di `uv.lock`, bukan instalasi tambahan dari platform. Inference native
+(NumPy/SciPy/sklearn) dibatasi ke satu thread secara default dan diserialkan
+antar-session agar instance kecil tidak mengalami oversubscription saat user
+mengganti rekomendasi. Nilai tersebut dapat diubah secara eksplisit bila
+diperlukan:
+
+```text
+BOOK_RECOMMENDER_NATIVE_THREADS=1
+```
+
+Pada tab Hybrid, masukkan User ID lalu tekan **Update hybrid recommendations**.
+Form ini mencegah setiap perubahan angka sementara memicu inference native baru.
+
 Jika pada deployment lain bundle tidak ingin disimpan di checkout, jalur
 bootstrap HTTPS berikut tetap tersedia. Upload bundle hasil `train-hybrid`
 (`hybrid.joblib` dan `hybrid.joblib.manifest.json`) ke artifact storage, lalu
