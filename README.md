@@ -259,6 +259,22 @@ eksperimen lokal saja, runtime training dapat diaktifkan:
 BOOK_RECOMMENDER_ALLOW_RUNTIME_TRAINING=1
 ```
 
+Pada Streamlit Cloud, jangan melatih model saat startup. Upload bundle hasil
+`train-hybrid` (`hybrid.joblib` dan `hybrid.joblib.manifest.json`) ke artifact
+storage atau release privat, lalu konfigurasi secrets berikut:
+
+```text
+BOOK_RECOMMENDER_ARTIFACT_URL=https://.../hybrid.joblib
+BOOK_RECOMMENDER_ARTIFACT_SHA256=<sha256-joblib>
+BOOK_RECOMMENDER_MANIFEST_URL=https://.../hybrid.joblib.manifest.json
+BOOK_RECOMMENDER_MANIFEST_SHA256=<sha256-manifest>
+```
+
+Saat startup, aplikasi mengunduh bundle secara atomik, membatasi ukuran file,
+memverifikasi SHA-256 kedua file, dan baru memuat `RecommenderService`. URL
+harus HTTPS; tanpa URL dan checksum lengkap, aplikasi tetap fail-closed. Jangan
+menaruh bundle binary atau checksum secret di source repository.
+
 Jika data belum ada, jalur development dapat mengambil Kaggle credential dari
 Streamlit secrets, memvalidasi schema/isi di staging, membuat checksum manifest,
 dan mem-publish dataset directory secara atomik. Jangan mengaktifkan jalur ini
