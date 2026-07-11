@@ -1,6 +1,9 @@
+# ruff: noqa: E402  # Native thread limits must be configured before numerical imports.
 from __future__ import annotations
 
+import faulthandler
 import os
+import threading
 from html import escape
 import hashlib
 import json
@@ -9,15 +12,43 @@ from pathlib import Path
 import shutil
 import tempfile
 import time
+from collections.abc import Callable
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
-os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
-os.environ.setdefault("OMP_NUM_THREADS", "1")
+
+def configure_native_thread_limit() -> int:
+    """Set a safe native-thread cap before NumPy, SciPy, or sklearn are imported."""
+
+    configured = os.getenv("BOOK_RECOMMENDER_NATIVE_THREADS", "1")
+    try:
+        limit = int(configured)
+    except ValueError as exc:
+        raise RuntimeError("BOOK_RECOMMENDER_NATIVE_THREADS must be a positive integer.") from exc
+    if limit < 1:
+        raise RuntimeError("BOOK_RECOMMENDER_NATIVE_THREADS must be a positive integer.")
+
+    for variable in (
+        "OPENBLAS_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "NUMEXPR_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+    ):
+        # Streamlit Cloud preserves its manager environment for the app process.  Assign rather
+        # than use setdefault so a platform-provided high thread count cannot oversubscribe a
+        # small shared instance.
+        os.environ[variable] = str(limit)
+    return limit
+
+
+NATIVE_THREAD_LIMIT = configure_native_thread_limit()
+faulthandler.enable(all_threads=True)
 
 import pandas as pd
 import streamlit as st
+from threadpoolctl import threadpool_limits
 
 from book_recommender.artifacts import (
     ArtifactError,
@@ -66,6 +97,7 @@ ALLOWED_COVER_HOSTS = {
     "images-na.ssl-images-amazon.com",
 }
 logger = logging.getLogger("book_recommender.streamlit")
+NATIVE_INFERENCE_LOCK = threading.RLock()
 
 
 st.set_page_config(
@@ -480,7 +512,9 @@ def render_content_tab(
         st.caption(f"{query_book['book_author']} - {query_book['publisher']}")
         st.code(str(query_book["isbn"]), language=None)
 
-    recommendations = content_model.recommend_similar(title=selected_title, top_n=top_n)
+    recommendations = run_native_inference(
+        lambda: content_model.recommend_similar(title=selected_title, top_n=top_n)
+    )
     render_recommendation_grid(recommendations)
 
 
@@ -506,7 +540,9 @@ def render_collab_tab(
         st.subheader("Highest rated books")
         render_history(user_history.head(5))
 
-    recommendations = collab_model.recommend_for_user(int(user_id), top_n=top_n)
+    recommendations = run_native_inference(
+        lambda: collab_model.recommend_for_user(int(user_id), top_n=top_n)
+    )
     st.subheader("Recommendations")
     render_recommendation_grid(recommendations)
 
@@ -519,7 +555,19 @@ def render_hybrid_tab(
 ) -> None:
     active_users = ratings["user_id"].value_counts()
     default_user = int(active_users.index[0])
-    user_id = st.number_input("User ID", min_value=1, value=default_user, step=1, key="hybrid_user_id")
+    with st.form("hybrid_recommendation_form"):
+        requested_user_id = st.number_input(
+            "User ID",
+            min_value=1,
+            value=default_user,
+            step=1,
+            key="hybrid_user_id",
+        )
+        submitted = st.form_submit_button("Update hybrid recommendations")
+
+    if submitted:
+        st.session_state["submitted_hybrid_user_id"] = int(requested_user_id)
+    user_id = int(st.session_state.get("submitted_hybrid_user_id", default_user))
 
     user_history = (
         ratings[ratings["user_id"] == int(user_id)]
@@ -533,9 +581,23 @@ def render_hybrid_tab(
         st.subheader("Highest rated books")
         render_history(user_history.head(5))
 
-    recommendations = hybrid_model.recommend_for_user(int(user_id), top_n=top_n)
+    recommendations = run_native_inference(
+        lambda: hybrid_model.recommend_for_user(user_id, top_n=top_n)
+    )
     st.subheader("Recommendations")
     render_recommendation_grid(recommendations)
+
+
+def run_native_inference(operation: Callable[[], pd.DataFrame]) -> pd.DataFrame:
+    """Serialize native recommendation work and cap loaded BLAS/OpenMP pools.
+
+    Thread-pool limits are process-wide.  The lock prevents concurrently running
+    Streamlit sessions from changing those limits while another inference is active.
+    """
+
+    with NATIVE_INFERENCE_LOCK:
+        with threadpool_limits(limits=NATIVE_THREAD_LIMIT):
+            return operation()
 
 
 def render_history(history: pd.DataFrame) -> None:
