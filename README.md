@@ -259,9 +259,22 @@ eksperimen lokal saja, runtime training dapat diaktifkan:
 BOOK_RECOMMENDER_ALLOW_RUNTIME_TRAINING=1
 ```
 
-Pada Streamlit Cloud, jangan melatih model saat startup. Upload bundle hasil
-`train-hybrid` (`hybrid.joblib` dan `hybrid.joblib.manifest.json`) ke artifact
-storage atau release privat, lalu konfigurasi secrets berikut:
+Pada deployment publik ini, bundle serving yang dihasilkan dari dataset open
+source disimpan langsung di repository:
+
+```text
+models/hybrid.joblib
+models/hybrid.joblib.manifest.json
+```
+
+Streamlit akan memuat `models/hybrid.joblib` secara load-only saat startup.
+Model dan dataset-derived metadata boleh terlihat publik; yang tetap tidak boleh
+masuk repository adalah credential, token, dan secret.
+
+Jika pada deployment lain bundle tidak ingin disimpan di checkout, jalur
+bootstrap HTTPS berikut tetap tersedia. Upload bundle hasil `train-hybrid`
+(`hybrid.joblib` dan `hybrid.joblib.manifest.json`) ke artifact storage, lalu
+konfigurasi secrets berikut:
 
 ```text
 BOOK_RECOMMENDER_ARTIFACT_URL=https://.../hybrid.joblib
@@ -270,10 +283,10 @@ BOOK_RECOMMENDER_MANIFEST_URL=https://.../hybrid.joblib.manifest.json
 BOOK_RECOMMENDER_MANIFEST_SHA256=<sha256-manifest>
 ```
 
-Saat startup, aplikasi mengunduh bundle secara atomik, membatasi ukuran file,
-memverifikasi SHA-256 kedua file, dan baru memuat `RecommenderService`. URL
-harus HTTPS; tanpa URL dan checksum lengkap, aplikasi tetap fail-closed. Jangan
-menaruh bundle binary atau checksum secret di source repository.
+Saat startup pada mode HTTPS, aplikasi mengunduh bundle secara atomik,
+membatasi ukuran file, memverifikasi SHA-256 kedua file, dan baru memuat
+`RecommenderService`. URL harus HTTPS; tanpa URL dan checksum lengkap, aplikasi
+tetap fail-closed. Mode repository-bundled tidak memerlukan secrets artifact.
 
 Jika data belum ada, jalur development dapat mengambil Kaggle credential dari
 Streamlit secrets, memvalidasi schema/isi di staging, membuat checksum manifest,

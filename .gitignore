@@ -16,6 +16,8 @@ data/processed/*
 !data/processed/.gitkeep
 models/*
 !models/.gitkeep
+!models/hybrid.joblib
+!models/hybrid.joblib.manifest.json
 artifacts/
 
 # Kaggle credentials must stay outside git.
