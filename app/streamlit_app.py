@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from html import escape
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -9,6 +10,7 @@ import shutil
 import tempfile
 import time
 from urllib.parse import urlsplit
+from urllib.request import Request, urlopen
 from uuid import uuid4
 
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
@@ -51,6 +53,13 @@ HYBRID_ARTIFACT = Path(
     os.getenv("BOOK_RECOMMENDER_ARTIFACT", str(MODELS_DIR / "hybrid.joblib"))
 )
 ALLOW_RUNTIME_TRAINING = os.getenv("BOOK_RECOMMENDER_ALLOW_RUNTIME_TRAINING", "0") == "1"
+ARTIFACT_URL_SETTING = "BOOK_RECOMMENDER_ARTIFACT_URL"
+ARTIFACT_SHA256_SETTING = "BOOK_RECOMMENDER_ARTIFACT_SHA256"
+MANIFEST_URL_SETTING = "BOOK_RECOMMENDER_MANIFEST_URL"
+MANIFEST_SHA256_SETTING = "BOOK_RECOMMENDER_MANIFEST_SHA256"
+ARTIFACT_DOWNLOAD_TIMEOUT_SECONDS = 60
+ARTIFACT_MAX_BYTES = 256 * 1024 * 1024
+MANIFEST_MAX_BYTES = 4 * 1024 * 1024
 DOWNLOAD_LOCK_STALE_SECONDS = 30 * 60
 ALLOWED_COVER_HOSTS = {
     "images.amazon.com",
@@ -85,7 +94,9 @@ def main() -> None:
         st.error(f"Model service is unavailable. Reference: {reference_id}")
         st.info(
             "Build a verified serving bundle with `uv run book-rec train-hybrid`. "
-            "For local development only, set BOOK_RECOMMENDER_ALLOW_RUNTIME_TRAINING=1."
+            "For hosted deployment, configure BOOK_RECOMMENDER_ARTIFACT_URL and "
+            "the matching SHA-256 secrets. For local development only, set "
+            "BOOK_RECOMMENDER_ALLOW_RUNTIME_TRAINING=1."
         )
         st.stop()
 
@@ -121,7 +132,8 @@ def main() -> None:
 
 @st.cache_resource(show_spinner="Loading verified hybrid artifact")
 def load_service() -> RecommenderService:
-    if HYBRID_ARTIFACT.is_file() and manifest_path(HYBRID_ARTIFACT).is_file():
+    ensure_remote_artifact_available()
+    if _local_bundle_is_ready():
         return RecommenderService.load(HYBRID_ARTIFACT)
     if not ALLOW_RUNTIME_TRAINING:
         raise RuntimeError(
@@ -158,6 +170,136 @@ def load_service() -> RecommenderService:
         },
     )
     return RecommenderService.load(HYBRID_ARTIFACT)
+
+
+def ensure_remote_artifact_available() -> None:
+    """Download a configured model bundle atomically, verifying both SHA-256 digests."""
+
+    artifact_url = deployment_setting(ARTIFACT_URL_SETTING)
+    if not artifact_url:
+        return
+    manifest_url = deployment_setting(MANIFEST_URL_SETTING) or f"{artifact_url}.manifest.json"
+    artifact_sha256 = deployment_setting(ARTIFACT_SHA256_SETTING)
+    manifest_sha256 = deployment_setting(MANIFEST_SHA256_SETTING)
+    _validate_artifact_url(artifact_url, ARTIFACT_URL_SETTING)
+    _validate_artifact_url(manifest_url, MANIFEST_URL_SETTING)
+    _validate_sha256(artifact_sha256, ARTIFACT_SHA256_SETTING)
+    _validate_sha256(manifest_sha256, MANIFEST_SHA256_SETTING)
+
+    if _local_bundle_matches_checksums(artifact_sha256, manifest_sha256):
+        return
+
+    HYBRID_ARTIFACT.parent.mkdir(parents=True, exist_ok=True)
+    manifest_target = manifest_path(HYBRID_ARTIFACT)
+    token = uuid4().hex
+    artifact_tmp = HYBRID_ARTIFACT.with_name(f".{HYBRID_ARTIFACT.name}.{token}.download")
+    manifest_tmp = manifest_target.with_name(f".{manifest_target.name}.{token}.download")
+    try:
+        _download_verified_file(
+            artifact_url,
+            artifact_tmp,
+            expected_sha256=artifact_sha256,
+            max_bytes=ARTIFACT_MAX_BYTES,
+        )
+        _download_verified_file(
+            manifest_url,
+            manifest_tmp,
+            expected_sha256=manifest_sha256,
+            max_bytes=MANIFEST_MAX_BYTES,
+        )
+        # Publish the manifest last so a failed download cannot make a new model appear
+        # valid against an older sidecar. RecommenderService still verifies the pair.
+        os.replace(artifact_tmp, HYBRID_ARTIFACT)
+        os.replace(manifest_tmp, manifest_target)
+    finally:
+        artifact_tmp.unlink(missing_ok=True)
+        manifest_tmp.unlink(missing_ok=True)
+
+
+def deployment_setting(name: str) -> str | None:
+    value = os.getenv(name)
+    if value:
+        return value.strip()
+    try:
+        secret = secret_value(st.secrets, name)
+    except Exception:
+        secret = None
+    if secret is None:
+        return None
+    normalized = str(secret).strip()
+    return normalized or None
+
+
+def _local_bundle_is_ready() -> bool:
+    return HYBRID_ARTIFACT.is_file() and manifest_path(HYBRID_ARTIFACT).is_file()
+
+
+def _local_bundle_matches_checksums(
+    artifact_sha256: str,
+    manifest_sha256: str,
+) -> bool:
+    if not _local_bundle_is_ready():
+        return False
+    try:
+        return (
+            _sha256_file(HYBRID_ARTIFACT) == artifact_sha256
+            and _sha256_file(manifest_path(HYBRID_ARTIFACT)) == manifest_sha256
+        )
+    except OSError:
+        return False
+
+
+def _download_verified_file(
+    url: str,
+    destination: Path,
+    *,
+    expected_sha256: str,
+    max_bytes: int,
+) -> None:
+    request = Request(url, headers={"User-Agent": "book-recommender-artifact-bootstrap/1"})
+    try:
+        with urlopen(request, timeout=ARTIFACT_DOWNLOAD_TIMEOUT_SECONDS) as response:
+            content = response.read(max_bytes + 1)
+    except Exception as exc:
+        raise ArtifactError("Unable to download the configured serving artifact.") from exc
+    if len(content) > max_bytes:
+        raise ArtifactError(f"Downloaded serving artifact exceeds the {max_bytes} byte limit.")
+    actual_sha256 = hashlib.sha256(content).hexdigest()
+    if actual_sha256 != expected_sha256:
+        raise ArtifactError(
+            f"Downloaded serving artifact checksum mismatch for {destination.name}."
+        )
+    temporary = destination.with_name(f".{destination.name}.{uuid4().hex}.tmp")
+    try:
+        temporary.write_bytes(content)
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _validate_artifact_url(value: str | None, name: str) -> None:
+    if not value:
+        raise ArtifactError(f"{name} must be configured when artifact bootstrap is enabled.")
+    parsed = urlsplit(value)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise ArtifactError(f"{name} must be an https:// URL.")
+
+
+def _validate_sha256(value: str | None, name: str) -> None:
+    if (
+        not value
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value.lower())
+    ):
+        raise ArtifactError(f"{name} must be a SHA-256 hexadecimal digest.")
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def ensure_dataset_available() -> str | None:

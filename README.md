@@ -125,32 +125,33 @@ personalized tidak tersamarkan.
 
 ## Evaluasi yang benar
 
-Jalankan tuning hanya pada partition validation:
+Jalankan benchmark repeated-split untuk memilih bobot hybrid. Command ini membuat
+satu cohort test eksternal yang tetap, lalu mengulang validation hanya pada user
+development yang bukan anggota cohort test:
 
 ```bash
-uv run book-rec tune-hybrid \
+uv run book-rec benchmark-hybrid \
   --data-dir data/raw \
-  --sample-users 200 \
+  --validation-users 200 \
+  --test-users 200 \
+  --repetitions 3 \
   --k 50 \
-  --output artifacts/evaluation/hybrid_weight_tuning.json
-```
-
-Setelah memilih konfigurasi, jalankan test partition yang tidak disentuh tuning:
-
-```bash
-uv run book-rec evaluate-collab \
-  --data-dir data/raw \
-  --sample-users 200 \
-  --k 50 \
-  --hybrid-collaborative-weight 0.40 \
-  --hybrid-content-weight 0.45 \
-  --hybrid-popularity-weight 0.15 \
-  --output artifacts/evaluation/recommender_evaluation.json
+  --output artifacts/evaluation/repeated_split_hybrid_benchmark.json
 ```
 
 Protokol aktif:
 
-- user validation dan test disjoint;
+- cohort test dipilih sekali dan user test tidak pernah menjadi kandidat validation;
+- setiap repeat menahan satu canonical work validation per user development dan
+  melatih ulang dari train-only data;
+- konfigurasi dipilih **hanya** dari agregat `end_to_end` validation;
+- nilai repeat diagregasi secara macro (setiap split berbobot sama), lalu kandidat
+  dibandingkan terhadap baseline dengan paired hierarchical bootstrap; CI selection
+  dikoreksi Bonferroni bila grid memuat lebih dari satu challenger;
+- kandidat dipromosikan hanya jika lower bound CI delta melewati `--min-delta`
+  dan cukup banyak repeat (`--min-selection-rate`) menunjukkan perbaikan;
+- fixed test baru dievaluasi setelah keputusan beku, dan hanya membandingkan
+  baseline dengan konfigurasi terpilih;
 - satu canonical work relevan ditahan dan seluruh edisinya dihapus dari history;
 - filter dan pemilihan candidate dilakukan dari train saja;
 - `conditional` memakai target yang tersedia dan user dengan positive seed;
@@ -163,6 +164,12 @@ Protokol aktif:
 Metrik: Precision/Recall/HitRate/MAP/MRR/NDCG@K, catalog coverage, novelty,
 intra-list diversity, serta popularity share top 1/5/10%.
 
+`tune-hybrid` dan `evaluate-collab` tetap tersedia untuk diagnosis satu split,
+tetapi bukan bukti yang cukup untuk mempromosikan konfigurasi karena hasilnya lebih
+mudah bergantung pada seed. Untuk smoke test cepat, kecilkan `--validation-users`,
+`--test-users`, `--repetitions`, dan `--bootstrap-resamples`; jangan gunakan
+artifact kecil tersebut untuk klaim performa.
+
 Angka dari protocol evaluasi lama berbasis ISBN atau hanya `evaluable_holdouts`
 tidak comparable dan sengaja tidak dicantumkan di README. Regenerasi artifact
 sebelum membuat klaim performa.
@@ -174,16 +181,21 @@ Bundle serving utama:
 ```bash
 uv run book-rec train-hybrid \
   --data-dir data/raw \
-  --evaluation-artifact artifacts/evaluation/recommender_evaluation.json \
+  --benchmark-artifact artifacts/evaluation/repeated_split_hybrid_benchmark.json \
+  --collaborative-weight <bobot_collaborative_terpilih> \
+  --content-weight <bobot_content_terpilih> \
+  --popularity-weight <bobot_popularity_terpilih> \
   --output models/hybrid.joblib
 
 uv run book-rec artifact-info models/hybrid.joblib
 ```
 
-Attachment artifact evaluasi bersifat fail-closed. Protocol, partition, unit
-relevance/split, source dataset fingerprint, algorithm version, preprocessing,
-neighbor count, candidate-pool size, bobot, threshold, dan random seed harus
-kompatibel dengan model yang dilatih.
+Attachment artifact evaluasi/benchmark bersifat fail-closed. Protocol, partition,
+unit relevance/split, source dataset fingerprint, algorithm version,
+preprocessing, neighbor count, candidate-pool size, bobot, serta threshold harus
+kompatibel dengan model yang dilatih. Untuk benchmark, artifact juga harus
+menunjukkan bahwa fixed test hanya dibuka setelah selection dan hanya memuat
+baseline + konfigurasi terpilih.
 
 Setiap `.joblib` memiliki sidecar `.joblib.manifest.json` berisi:
 
@@ -247,6 +259,35 @@ eksperimen lokal saja, runtime training dapat diaktifkan:
 BOOK_RECOMMENDER_ALLOW_RUNTIME_TRAINING=1
 ```
 
+Pada deployment publik ini, bundle serving yang dihasilkan dari dataset open
+source disimpan langsung di repository:
+
+```text
+models/hybrid.joblib
+models/hybrid.joblib.manifest.json
+```
+
+Streamlit akan memuat `models/hybrid.joblib` secara load-only saat startup.
+Model dan dataset-derived metadata boleh terlihat publik; yang tetap tidak boleh
+masuk repository adalah credential, token, dan secret.
+
+Jika pada deployment lain bundle tidak ingin disimpan di checkout, jalur
+bootstrap HTTPS berikut tetap tersedia. Upload bundle hasil `train-hybrid`
+(`hybrid.joblib` dan `hybrid.joblib.manifest.json`) ke artifact storage, lalu
+konfigurasi secrets berikut:
+
+```text
+BOOK_RECOMMENDER_ARTIFACT_URL=https://.../hybrid.joblib
+BOOK_RECOMMENDER_ARTIFACT_SHA256=<sha256-joblib>
+BOOK_RECOMMENDER_MANIFEST_URL=https://.../hybrid.joblib.manifest.json
+BOOK_RECOMMENDER_MANIFEST_SHA256=<sha256-manifest>
+```
+
+Saat startup pada mode HTTPS, aplikasi mengunduh bundle secara atomik,
+membatasi ukuran file, memverifikasi SHA-256 kedua file, dan baru memuat
+`RecommenderService`. URL harus HTTPS; tanpa URL dan checksum lengkap, aplikasi
+tetap fail-closed. Mode repository-bundled tidak memerlukan secrets artifact.
+
 Jika data belum ada, jalur development dapat mengambil Kaggle credential dari
 Streamlit secrets, memvalidasi schema/isi di staging, membuat checksum manifest,
 dan mem-publish dataset directory secara atomik. Jangan mengaktifkan jalur ini
@@ -275,8 +316,9 @@ uv build
 
 - Dataset tidak memiliki timestamp interaksi; user-disjoint holdout bukan pengganti
   temporal backtest.
-- Tuning masih grid search pada satu validation split. Tambahkan repeated split
-  atau paired-bootstrap delta sebelum menganggap satu konfigurasi unggul stabil.
+- Repeated validation dan paired bootstrap menurunkan risiko keputusan dari satu
+  split, tetapi bukan pengganti temporal backtest atau eksperimen online. Jalankan
+  benchmark pada cohort yang cukup besar sebelum menganggap satu konfigurasi unggul.
 - Adjusted-cosine item CF dan TF-IDF adalah baseline interpretable, bukan learned
   ranker/state-of-the-art recommender.
 - Cold-user sudah punya fallback dan cold-item masuk content catalog, tetapi item

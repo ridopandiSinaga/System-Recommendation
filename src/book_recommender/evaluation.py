@@ -148,6 +148,23 @@ class ValidationTestEvaluationDataset:
 
 
 @dataclass(frozen=True)
+class FixedTestWorkLevelSplit:
+    """A fixed external test target set and the development ratings left after hiding it.
+
+    The test users remain in ``development_ratings`` with their held-out canonical work
+    removed. This preserves their pre-holdout history for the final personalized test
+    while callers can exclude those users from repeated validation sampling.
+    """
+
+    development_ratings: pd.DataFrame
+    test_holdout_ratings: pd.DataFrame
+
+    @property
+    def test_users(self) -> set[object]:
+        return set(self.test_holdout_ratings["user_id"].tolist())
+
+
+@dataclass(frozen=True)
 class BootstrapConfidenceInterval:
     """Percentile bootstrap interval for an arithmetic mean."""
 
@@ -421,6 +438,133 @@ def bootstrap_ranking_metrics_at_k(
         values.extend([0.0] * (sample_size - len(values)))
         intervals[metric_name] = bootstrap_mean_confidence_interval(
             values,
+            confidence_level=confidence_level,
+            n_resamples=n_resamples,
+            random_state=random_state,
+        )
+    return intervals
+
+
+def bootstrap_paired_ranking_deltas_at_k(
+    baseline_rows: Iterable[Mapping[str, object]] | pd.DataFrame,
+    challenger_rows: Iterable[Mapping[str, object]] | pd.DataFrame,
+    *,
+    k: int,
+    scope: str = "end_to_end",
+    pair_columns: tuple[str, ...] = ("split_id", "user_id", "holdout_work_key"),
+    cluster_column: str | None = "split_id",
+    confidence_level: float = 0.95,
+    n_resamples: int = 2_000,
+    random_state: int = 42,
+) -> dict[str, BootstrapConfidenceInterval]:
+    """Estimate paired challenger-minus-baseline ranking deltas.
+
+    A paired comparison prevents different holdout availability from being mistaken for a
+    model improvement. When ``cluster_column`` is supplied, bootstrap samples first draw
+    repeated split IDs and then user-work pairs within every selected split. The point
+    estimate is therefore a macro average over splits rather than a pooled row average.
+    """
+
+    _validate_k(k)
+    _validate_fraction(confidence_level, "confidence_level")
+    _validate_positive_integer(n_resamples, "n_resamples")
+    _validate_random_state(random_state)
+    if scope not in {"end_to_end", "conditional"}:
+        raise ValueError("scope must be either 'end_to_end' or 'conditional'.")
+    if not pair_columns or len(set(pair_columns)) != len(pair_columns):
+        raise ValueError("pair_columns must contain one or more unique column names.")
+    if cluster_column is not None and not isinstance(cluster_column, str):
+        raise ValueError("cluster_column must be a string or None.")
+
+    metric_names = _ranking_metric_names(k)
+    status_columns = (
+        "candidate_available",
+        "history_available",
+        "positive_seed_available",
+        "evaluation_status",
+    )
+    baseline = _coerce_paired_ranking_rows(
+        baseline_rows,
+        name="baseline_rows",
+        metric_names=metric_names,
+        required_columns=(*pair_columns, *status_columns),
+    )
+    challenger = _coerce_paired_ranking_rows(
+        challenger_rows,
+        name="challenger_rows",
+        metric_names=metric_names,
+        required_columns=(*pair_columns, *status_columns),
+    )
+    if cluster_column is not None:
+        for name, frame in (("baseline_rows", baseline), ("challenger_rows", challenger)):
+            if cluster_column not in frame.columns:
+                raise ValueError(f"{name} is missing cluster column {cluster_column!r}.")
+            if frame[cluster_column].isna().any():
+                raise ValueError(f"{name} contains a missing cluster value.")
+
+    _validate_unique_pair_keys(baseline, pair_columns, "baseline_rows")
+    _validate_unique_pair_keys(challenger, pair_columns, "challenger_rows")
+    try:
+        paired = baseline.merge(
+            challenger,
+            on=list(pair_columns),
+            how="outer",
+            suffixes=("_baseline", "_challenger"),
+            indicator=True,
+            validate="one_to_one",
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("Paired ranking rows cannot be aligned by pair_columns.") from error
+    if not paired["_merge"].eq("both").all():
+        raise ValueError("baseline_rows and challenger_rows must contain identical pair keys.")
+
+    paired_cluster_column = cluster_column
+    if cluster_column is not None and cluster_column not in pair_columns:
+        baseline_cluster = f"{cluster_column}_baseline"
+        challenger_cluster = f"{cluster_column}_challenger"
+        if not paired[baseline_cluster].eq(paired[challenger_cluster]).all():
+            raise ValueError(f"Paired rows disagree on {cluster_column!r}.")
+        paired_cluster_column = baseline_cluster
+
+    for column in status_columns:
+        baseline_column = f"{column}_baseline"
+        challenger_column = f"{column}_challenger"
+        if not paired[baseline_column].eq(paired[challenger_column]).all():
+            raise ValueError(f"Paired rows disagree on {column!r}.")
+    for column in status_columns[:3]:
+        if not _series_contains_only_booleans(paired[f"{column}_baseline"]):
+            raise ValueError(f"Paired rows must contain boolean {column!r} values.")
+
+    sort_columns = list(pair_columns)
+    if paired_cluster_column is not None and paired_cluster_column not in sort_columns:
+        sort_columns.insert(0, paired_cluster_column)
+    paired = paired.sort_values(sort_columns, kind="stable").reset_index(drop=True)
+    if scope == "conditional":
+        paired = paired.loc[
+            paired["candidate_available_baseline"]
+            & paired["positive_seed_available_baseline"]
+        ].reset_index(drop=True)
+    if paired.empty:
+        raise ValueError(f"No paired rows are available for the {scope!r} scope.")
+
+    intervals = {}
+    for metric_name in metric_names:
+        deltas = (
+            paired[f"{metric_name}_challenger"].to_numpy(dtype=float)
+            - paired[f"{metric_name}_baseline"].to_numpy(dtype=float)
+        )
+        if cluster_column is None:
+            intervals[metric_name] = bootstrap_mean_confidence_interval(
+                deltas,
+                confidence_level=confidence_level,
+                n_resamples=n_resamples,
+                random_state=random_state,
+            )
+            continue
+
+        intervals[metric_name] = _hierarchical_bootstrap_mean_confidence_interval(
+            deltas,
+            paired[paired_cluster_column].tolist(),
             confidence_level=confidence_level,
             n_resamples=n_resamples,
             random_state=random_state,
@@ -713,6 +857,181 @@ def build_validation_test_leave_one_out_split(
     )
 
 
+def build_work_level_holdouts(
+    ratings: pd.DataFrame,
+    books: pd.DataFrame,
+    *,
+    sample_users: int = 100,
+    min_interactions: int = 3,
+    min_relevant_rating: float = 8.0,
+    random_state: int = 42,
+    excluded_user_ids: Iterable[object] | None = None,
+) -> pd.DataFrame:
+    """Sample one relevant canonical work per eligible user without changing ratings.
+
+    ``excluded_user_ids`` makes it possible to reserve an outer test cohort while
+    repeatedly drawing validation targets from the remaining development users.
+    """
+
+    _validate_positive_integer(sample_users, "sample_users")
+    _validate_positive_integer(min_interactions, "min_interactions")
+    if min_interactions <= 1:
+        raise ValueError("min_interactions must be greater than 1.")
+    _validate_finite_number(min_relevant_rating, "min_relevant_rating")
+    _validate_random_state(random_state)
+    _validate_work_level_split_inputs(ratings, books)
+
+    work_map = _book_work_map(books)
+    enriched = ratings.copy()
+    enriched["isbn"] = enriched["isbn"].astype(str)
+    enriched["work_key"] = enriched["isbn"].map(work_map)
+    if enriched["work_key"].isna().any():
+        raise ValueError("Every rating ISBN must have book metadata for work-level splitting.")
+
+    excluded_users = set(excluded_user_ids) if excluded_user_ids is not None else set()
+    work_counts = enriched.groupby("user_id")["work_key"].nunique()
+    eligible_users = set(work_counts[work_counts >= min_interactions].index).difference(
+        excluded_users
+    )
+    relevant = enriched[
+        enriched["user_id"].isin(eligible_users)
+        & (enriched["book_rating"].astype(float) >= min_relevant_rating)
+    ]
+    candidate_works = relevant[["user_id", "work_key"]].drop_duplicates()
+    if candidate_works.empty:
+        raise ValueError("No eligible work-level holdouts found for the requested settings.")
+
+    candidate_users = candidate_works["user_id"].drop_duplicates().sort_values(kind="stable")
+    users = candidate_users.sample(
+        n=min(int(sample_users), len(candidate_users)),
+        random_state=int(random_state),
+    )
+    holdout_rows = []
+    for offset, user_id in enumerate(users):
+        user_candidates = candidate_works[
+            candidate_works["user_id"] == user_id
+        ].sort_values("work_key", kind="stable")
+        per_user_seed = (int(random_state) + offset) % (2**32)
+        target_work = str(
+            user_candidates.sample(n=1, random_state=per_user_seed).iloc[0]["work_key"]
+        )
+        representative = (
+            relevant[
+                (relevant["user_id"] == user_id) & (relevant["work_key"] == target_work)
+            ]
+            .sort_values(["book_rating", "isbn"], ascending=[False, True], kind="stable")
+            .iloc[0]
+            .copy()
+        )
+        holdout_rows.append(representative)
+    return pd.DataFrame(holdout_rows).reset_index(drop=True)
+
+
+def remove_work_level_holdouts(
+    ratings: pd.DataFrame,
+    books: pd.DataFrame,
+    holdout_ratings: pd.DataFrame,
+) -> pd.DataFrame:
+    """Remove every edition of each sampled user-work target from training ratings."""
+
+    _validate_work_level_split_inputs(ratings, books)
+    required_holdout_columns = {"user_id", "work_key"}
+    missing_holdout_columns = required_holdout_columns.difference(holdout_ratings.columns)
+    if missing_holdout_columns:
+        raise ValueError(
+            "holdout_ratings is missing columns: "
+            f"{', '.join(sorted(missing_holdout_columns))}"
+        )
+    if holdout_ratings.empty:
+        return ratings.reset_index(drop=True).copy()
+    if holdout_ratings[["user_id", "work_key"]].isna().any().any():
+        raise ValueError("holdout_ratings contains missing user_id or work_key values.")
+
+    work_map = _book_work_map(books)
+    enriched = ratings.copy()
+    enriched["isbn"] = enriched["isbn"].astype(str)
+    enriched["work_key"] = enriched["isbn"].map(work_map)
+    if enriched["work_key"].isna().any():
+        raise ValueError("Every rating ISBN must have book metadata for work-level splitting.")
+    target_pairs = {
+        (user_id, str(work_key))
+        for user_id, work_key in holdout_ratings[["user_id", "work_key"]].itertuples(
+            index=False,
+            name=None,
+        )
+    }
+    pair_index = pd.MultiIndex.from_arrays(
+        [enriched["user_id"], enriched["work_key"]],
+        names=["user_id", "work_key"],
+    )
+    target_index = pd.MultiIndex.from_tuples(
+        sorted(target_pairs, key=lambda pair: (str(pair[0]), pair[1])),
+        names=["user_id", "work_key"],
+    )
+    return enriched.loc[~pair_index.isin(target_index)].drop(columns="work_key").reset_index(
+        drop=True
+    )
+
+
+def build_fixed_test_work_level_split(
+    ratings: pd.DataFrame,
+    books: pd.DataFrame,
+    *,
+    test_users: int = 100,
+    min_interactions: int = 3,
+    min_relevant_rating: float = 8.0,
+    random_state: int = 42,
+) -> FixedTestWorkLevelSplit:
+    """Create a fixed outer test cohort before any repeated validation tuning."""
+
+    test_holdouts = build_work_level_holdouts(
+        ratings,
+        books,
+        sample_users=test_users,
+        min_interactions=min_interactions,
+        min_relevant_rating=min_relevant_rating,
+        random_state=random_state,
+    )
+    return FixedTestWorkLevelSplit(
+        development_ratings=remove_work_level_holdouts(ratings, books, test_holdouts),
+        test_holdout_ratings=test_holdouts,
+    )
+
+
+def prepare_work_level_evaluation_train_dataset(
+    dataset: BookDataset,
+    train_ratings: pd.DataFrame,
+    *,
+    min_user_ratings: int = 1,
+    min_book_ratings: int = 1,
+    max_books: int | None = None,
+    max_ratings: int | None = None,
+    max_content_books: int | None = None,
+    random_state: int = 42,
+) -> BookDataset:
+    """Apply train-only interaction and content-catalog filtering for work holdouts."""
+
+    interaction_dataset = prepare_interaction_dataset(
+        books=dataset.books,
+        ratings=train_ratings,
+        users=dataset.users,
+        min_user_ratings=min_user_ratings,
+        min_book_ratings=min_book_ratings,
+        max_books=max_books,
+        max_ratings=max_ratings,
+        random_state=random_state,
+    )
+    return BookDataset(
+        books=select_content_catalog(
+            dataset.books,
+            required_books=interaction_dataset.books,
+            max_content_books=max_content_books,
+        ),
+        ratings=interaction_dataset.ratings,
+        users=interaction_dataset.users,
+    )
+
+
 def build_validation_test_work_level_split(
     ratings: pd.DataFrame,
     books: pd.DataFrame,
@@ -935,6 +1254,19 @@ def _evaluable_holdouts(holdouts: pd.DataFrame, train_dataset: BookDataset) -> p
     ].reset_index(drop=True)
 
 
+def _validate_work_level_split_inputs(ratings: pd.DataFrame, books: pd.DataFrame) -> None:
+    required_ratings = {"user_id", "isbn", "book_rating"}
+    required_books = {"isbn", "book_title", "book_author"}
+    missing_ratings = required_ratings.difference(ratings.columns)
+    missing_books = required_books.difference(books.columns)
+    if missing_ratings:
+        raise ValueError(
+            f"Ratings data is missing columns: {', '.join(sorted(missing_ratings))}"
+        )
+    if missing_books:
+        raise ValueError(f"Books data is missing columns: {', '.join(sorted(missing_books))}")
+
+
 def _book_work_map(books: pd.DataFrame) -> dict[str, str]:
     return {
         str(row.isbn): book_work_key(row.book_title, row.book_author, row.isbn)
@@ -1005,6 +1337,108 @@ def _coerce_ranking_metric_rows(
             row[metric_name] = value
         rows.append(row)
     return rows
+
+
+def _coerce_paired_ranking_rows(
+    rows: Iterable[Mapping[str, object]] | pd.DataFrame,
+    *,
+    name: str,
+    metric_names: tuple[str, ...],
+    required_columns: tuple[str, ...],
+) -> pd.DataFrame:
+    if isinstance(rows, pd.DataFrame):
+        frame = rows.copy()
+    else:
+        raw_rows = list(rows)
+        if not all(isinstance(row, Mapping) for row in raw_rows):
+            raise ValueError(f"{name} must contain only mappings.")
+        frame = pd.DataFrame(raw_rows)
+    if frame.empty:
+        raise ValueError(f"{name} must be non-empty.")
+
+    missing = [column for column in (*required_columns, *metric_names) if column not in frame]
+    if missing:
+        raise ValueError(f"{name} is missing columns: {', '.join(missing)}")
+    if frame[list(required_columns)].isna().any().any():
+        raise ValueError(f"{name} contains missing pair or availability values.")
+
+    for metric_name in metric_names:
+        values = frame[metric_name].tolist()
+        for value in values:
+            if isinstance(value, bool) or not isinstance(
+                value, (int, float, np.integer, np.floating)
+            ):
+                raise ValueError(f"{name}.{metric_name} must contain numeric values between 0 and 1.")
+            if not math.isfinite(float(value)) or not 0.0 <= float(value) <= 1.0:
+                raise ValueError(
+                    f"{name}.{metric_name} must contain finite values between 0 and 1."
+                )
+        frame[metric_name] = frame[metric_name].astype(float)
+    return frame
+
+
+def _validate_unique_pair_keys(
+    frame: pd.DataFrame,
+    pair_columns: tuple[str, ...],
+    name: str,
+) -> None:
+    if frame[list(pair_columns)].isna().any().any():
+        raise ValueError(f"{name} contains a missing pair key.")
+    if frame.duplicated(list(pair_columns)).any():
+        raise ValueError(f"{name} contains duplicate pair keys.")
+
+
+def _series_contains_only_booleans(values: pd.Series) -> bool:
+    return bool(
+        values.map(lambda value: isinstance(value, (bool, np.bool_))).all()
+    )
+
+
+def _hierarchical_bootstrap_mean_confidence_interval(
+    values: np.ndarray,
+    clusters: list[object],
+    *,
+    confidence_level: float,
+    n_resamples: int,
+    random_state: int,
+) -> BootstrapConfidenceInterval:
+    """Bootstrap a macro mean by resampling clusters and rows within clusters."""
+
+    if len(values) != len(clusters) or len(values) == 0:
+        raise ValueError("values and clusters must be non-empty and have matching lengths.")
+    if not np.isfinite(values).all():
+        raise ValueError("values must contain only finite values.")
+    ordered_clusters = sorted(set(clusters), key=lambda value: (type(value).__name__, str(value)))
+    by_cluster = [
+        values[np.asarray([cluster == value for cluster in clusters], dtype=bool)]
+        for value in ordered_clusters
+    ]
+    if not all(len(cluster_values) for cluster_values in by_cluster):
+        raise ValueError("Every bootstrap cluster must contain at least one value.")
+
+    point_mean = float(np.mean([cluster_values.mean() for cluster_values in by_cluster]))
+    rng = np.random.default_rng(int(random_state))
+    bootstrap_means = np.empty(int(n_resamples), dtype=float)
+    cluster_count = len(by_cluster)
+    for sample_index in range(int(n_resamples)):
+        selected_clusters = rng.integers(0, cluster_count, size=cluster_count)
+        sampled_means = []
+        for cluster_index in selected_clusters:
+            cluster_values = by_cluster[int(cluster_index)]
+            row_indices = rng.integers(0, len(cluster_values), size=len(cluster_values))
+            sampled_means.append(float(cluster_values[row_indices].mean()))
+        bootstrap_means[sample_index] = float(np.mean(sampled_means))
+
+    alpha = (1.0 - float(confidence_level)) / 2.0
+    lower, upper = np.quantile(bootstrap_means, [alpha, 1.0 - alpha])
+    return BootstrapConfidenceInterval(
+        mean=point_mean,
+        lower=float(lower),
+        upper=float(upper),
+        confidence_level=float(confidence_level),
+        sample_size=int(len(values)),
+        n_resamples=int(n_resamples),
+    )
 
 
 def _safe_ratio(numerator: int, denominator: int) -> float:

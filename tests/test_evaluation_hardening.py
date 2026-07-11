@@ -8,13 +8,17 @@ import pytest
 from book_recommender.data import BookDataset
 from book_recommender.evaluation import (
     bootstrap_mean_confidence_interval,
+    bootstrap_paired_ranking_deltas_at_k,
     bootstrap_ranking_metrics_at_k,
+    build_fixed_test_work_level_split,
+    build_work_level_holdouts,
     build_validation_test_work_level_split,
     build_validation_test_leave_one_out_split,
     catalog_coverage_at_k,
     popularity_share_at_k,
     prepare_validation_test_evaluation,
     ranking_metrics_at_k,
+    remove_work_level_holdouts,
     summarize_holdout_availability,
     summarize_ranking_metrics_at_k,
 )
@@ -121,6 +125,58 @@ def test_work_level_split_removes_every_edition_of_target_work() -> None:
     for user_id in (1, 2):
         user_train = split.train_ratings[split.train_ratings["user_id"] == user_id]
         assert not set(user_train["isbn"]).intersection({"A-1", "A-2"})
+
+
+def test_fixed_test_cohort_is_excluded_from_repeated_validation_and_training_targets() -> None:
+    ratings = _ratings_for_users(10)
+    isbns = sorted(ratings["isbn"].unique())
+    books = pd.DataFrame(
+        {
+            "isbn": isbns,
+            "book_title": [f"Title {isbn}" for isbn in isbns],
+            "book_author": "Author",
+            "publisher": "Publisher",
+        }
+    )
+
+    outer = build_fixed_test_work_level_split(
+        ratings,
+        books,
+        test_users=3,
+        min_interactions=3,
+        min_relevant_rating=8,
+        random_state=11,
+    )
+    validation = build_work_level_holdouts(
+        outer.development_ratings,
+        books,
+        sample_users=4,
+        min_interactions=3,
+        min_relevant_rating=8,
+        random_state=12,
+        excluded_user_ids=outer.test_users,
+    )
+    assert set(outer.test_holdout_ratings["user_id"]).isdisjoint(validation["user_id"])
+
+    for holdout in outer.test_holdout_ratings.itertuples(index=False):
+        remaining = outer.development_ratings.loc[
+            outer.development_ratings["user_id"] == holdout.user_id,
+            "isbn",
+        ]
+        assert f"relevant-{holdout.user_id}" not in set(remaining)
+
+    validation_train = remove_work_level_holdouts(
+        outer.development_ratings,
+        books,
+        validation,
+    )
+    for holdout in validation.itertuples(index=False):
+        assert f"relevant-{holdout.user_id}" not in set(
+            validation_train.loc[
+                validation_train["user_id"] == holdout.user_id,
+                "isbn",
+            ]
+        )
 
 
 def test_holdout_availability_reports_candidate_and_history_retention() -> None:
@@ -252,6 +308,78 @@ def test_bootstrap_ranking_metrics_can_include_unavailable_holdouts() -> None:
     assert intervals["hit_rate_at_2"].mean == 0.25
     assert intervals["precision_at_2"].mean == 0.125
     assert intervals["hit_rate_at_2"].sample_size == 4
+
+
+def test_paired_bootstrap_uses_macro_mean_over_repeated_splits() -> None:
+    metric_names = ranking_metrics_at_k([], [], k=3).keys()
+    baseline_rows = []
+    challenger_rows = []
+    for split_id, count, challenger_value in (("split-a", 100, 1.0), ("split-b", 1, 0.0)):
+        for user_id in range(count):
+            shared = {
+                "split_id": split_id,
+                "user_id": user_id,
+                "holdout_work_key": f"{split_id}-{user_id}",
+                "candidate_available": True,
+                "history_available": True,
+                "positive_seed_available": True,
+                "evaluation_status": "personalized",
+            }
+            baseline_rows.append({**shared, **{name: 0.0 for name in metric_names}})
+            challenger_rows.append(
+                {**shared, **{name: challenger_value for name in metric_names}}
+            )
+
+    first = bootstrap_paired_ranking_deltas_at_k(
+        baseline_rows,
+        challenger_rows,
+        k=3,
+        n_resamples=200,
+        random_state=13,
+    )
+    second = bootstrap_paired_ranking_deltas_at_k(
+        list(reversed(baseline_rows)),
+        list(reversed(challenger_rows)),
+        k=3,
+        n_resamples=200,
+        random_state=13,
+    )
+
+    assert first == second
+    assert first["ndcg_at_3"].mean == pytest.approx(0.5)
+    assert first["ndcg_at_3"].sample_size == 101
+
+    custom_pair_columns = bootstrap_paired_ranking_deltas_at_k(
+        baseline_rows,
+        challenger_rows,
+        k=3,
+        pair_columns=("user_id", "holdout_work_key"),
+        cluster_column="split_id",
+        n_resamples=50,
+        random_state=13,
+    )
+    assert custom_pair_columns["ndcg_at_3"].mean == pytest.approx(0.5)
+
+
+def test_paired_bootstrap_rejects_mismatched_pair_keys_or_statuses() -> None:
+    metrics = ranking_metrics_at_k([], [], k=2)
+    baseline = {
+        "split_id": "repeat-1",
+        "user_id": 1,
+        "holdout_work_key": "target",
+        "candidate_available": True,
+        "history_available": True,
+        "positive_seed_available": True,
+        "evaluation_status": "personalized",
+        **metrics,
+    }
+    challenger = {**baseline, "holdout_work_key": "different"}
+    with pytest.raises(ValueError, match="identical pair keys"):
+        bootstrap_paired_ranking_deltas_at_k([baseline], [challenger], k=2)
+
+    challenger = {**baseline, "candidate_available": False}
+    with pytest.raises(ValueError, match="disagree"):
+        bootstrap_paired_ranking_deltas_at_k([baseline], [challenger], k=2)
 
 
 @pytest.mark.parametrize("invalid_k", [0, -1, 1.5, True])
