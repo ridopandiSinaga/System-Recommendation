@@ -382,6 +382,98 @@ def test_paired_bootstrap_rejects_mismatched_pair_keys_or_statuses() -> None:
         bootstrap_paired_ranking_deltas_at_k([baseline], [challenger], k=2)
 
 
+def test_paired_bootstrap_can_measure_end_to_end_catalog_availability_gain() -> None:
+    miss = ranking_metrics_at_k([], ["target"], k=2)
+    hit = ranking_metrics_at_k(["target"], ["target"], k=2)
+    baseline = {
+        "split_id": "repeat-1",
+        "user_id": 1,
+        "holdout_work_key": "target",
+        "candidate_available": False,
+        "history_available": True,
+        "positive_seed_available": True,
+        "evaluation_status": "target_not_in_catalog",
+        **miss,
+    }
+    challenger = {
+        **baseline,
+        "candidate_available": True,
+        "evaluation_status": "personalized_rankable",
+        **hit,
+    }
+
+    intervals = bootstrap_paired_ranking_deltas_at_k(
+        [baseline],
+        [challenger],
+        k=2,
+        require_matching_status=False,
+        n_resamples=50,
+    )
+
+    assert intervals["hit_rate_at_2"].mean == 1.0
+    assert intervals["hit_rate_at_2"].sample_size == 1
+    assert intervals["precision_at_2"].mean == 0.5
+
+
+def test_paired_bootstrap_catalog_conditional_scope_uses_common_support() -> None:
+    miss = ranking_metrics_at_k([], ["target"], k=2)
+    hit = ranking_metrics_at_k(["target"], ["target"], k=2)
+
+    def row(
+        user_id: int,
+        *,
+        candidate_available: bool,
+        metrics: dict[str, float],
+    ) -> dict[str, object]:
+        return {
+            "split_id": "repeat-1",
+            "user_id": user_id,
+            "holdout_work_key": f"target-{user_id}",
+            "candidate_available": candidate_available,
+            "history_available": True,
+            "positive_seed_available": True,
+            "evaluation_status": (
+                "personalized_rankable"
+                if candidate_available
+                else "target_not_in_catalog"
+            ),
+            **metrics,
+        }
+
+    baseline = [
+        row(1, candidate_available=False, metrics=miss),
+        row(2, candidate_available=True, metrics=hit),
+        row(3, candidate_available=True, metrics=miss),
+    ]
+    challenger = [
+        row(1, candidate_available=True, metrics=hit),
+        row(2, candidate_available=False, metrics=miss),
+        row(3, candidate_available=True, metrics=hit),
+    ]
+
+    intervals = bootstrap_paired_ranking_deltas_at_k(
+        baseline,
+        challenger,
+        k=2,
+        scope="conditional",
+        require_matching_status=False,
+        n_resamples=50,
+    )
+
+    assert intervals["hit_rate_at_2"].mean == 1.0
+    assert intervals["hit_rate_at_2"].sample_size == 1
+
+
+def test_paired_bootstrap_rejects_non_boolean_status_matching_option() -> None:
+    with pytest.raises(ValueError, match="require_matching_status must be a boolean"):
+        bootstrap_paired_ranking_deltas_at_k(
+            [],
+            [],
+            k=2,
+            require_matching_status=1,  # type: ignore[arg-type]
+        )
+
+
 @pytest.mark.parametrize("invalid_k", [0, -1, 1.5, True])
 def test_k_is_validated_even_for_empty_inputs(invalid_k: object) -> None:
     with pytest.raises(ValueError, match="k must be a positive integer"):
