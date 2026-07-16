@@ -36,10 +36,29 @@ jobs:
           git diff --exit-code -- requirements.txt
 
       - name: Lint
-        run: uv run ruff check src tests app notebooks/01_end_to_end_book_recommender.py
+        run: uv run ruff check src tests app scripts notebooks/01_end_to_end_book_recommender.py
 
       - name: Test with coverage
         run: uv run pytest --cov=book_recommender --cov=app --cov-report=term-missing
+
+      - name: Validate saved notebook contract
+        if: matrix.python-version == '3.12'
+        run: |
+          uv run python scripts/notebook_quality.py check-pair notebooks/01_end_to_end_book_recommender.ipynb notebooks/01_end_to_end_book_recommender.py
+          uv run python scripts/notebook_quality.py check-saved notebooks/01_end_to_end_book_recommender.ipynb
+
+      - name: Smoke-execute notebook
+        if: matrix.python-version == '3.12'
+        env:
+          BOOK_RECOMMENDER_DATA_DIR: tests/fixtures/notebook_data
+          MPLBACKEND: Agg
+          OMP_NUM_THREADS: '1'
+          OPENBLAS_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+        run: |
+          mkdir -p "$RUNNER_TEMP/notebook-smoke"
+          uv run jupyter nbconvert --to notebook --execute notebooks/01_end_to_end_book_recommender.ipynb --output-dir "$RUNNER_TEMP/notebook-smoke" --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=300
+          uv run python scripts/notebook_quality.py check-executed "$RUNNER_TEMP/notebook-smoke/01_end_to_end_book_recommender.ipynb"
 
       - name: Build package
         if: matrix.python-version == '3.12'
