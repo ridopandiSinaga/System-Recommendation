@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ import jupytext
 
 STAMP_NAMESPACE = "book_recommender"
 STAMP_KEY = "executed_code_sha256"
+DEPENDENCIES_STAMP_KEY = "executed_dependencies_sha256"
 
 
 class NotebookQualityError(ValueError):
@@ -43,6 +45,27 @@ def code_source_digest(notebook: dict[str, Any]) -> str:
         if cell.get("cell_type") == "code" and str(cell.get("source", "")).strip()
     ]
     canonical = json.dumps(sources, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def dependency_digest(dependencies: Iterable[str | Path]) -> str:
+    """Hash dependency contents without embedding machine-specific paths."""
+
+    content_digests = []
+    seen_paths: set[Path] = set()
+    for dependency in dependencies:
+        path = Path(dependency)
+        resolved = path.resolve()
+        if resolved in seen_paths:
+            raise NotebookQualityError(f"Notebook dependency is repeated: {path}")
+        seen_paths.add(resolved)
+        try:
+            payload = path.read_bytes()
+        except OSError as exc:
+            raise NotebookQualityError(f"Cannot read notebook dependency {path}: {exc}") from exc
+        content_digests.append(hashlib.sha256(payload).hexdigest())
+
+    canonical = json.dumps(sorted(content_digests), separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -86,14 +109,22 @@ def check_pair(ipynb_path: str | Path, py_path: str | Path) -> None:
         )
 
 
-def stamp(ipynb_path: str | Path) -> str:
+def stamp(
+    ipynb_path: str | Path,
+    dependencies: Iterable[str | Path] = (),
+) -> str:
     path = Path(ipynb_path)
     notebook = read_json_notebook(path)
     validate_executed(notebook)
     digest = code_source_digest(notebook)
+    dependency_paths = tuple(dependencies)
     metadata = notebook.setdefault("metadata", {})
     namespace = metadata.setdefault(STAMP_NAMESPACE, {})
     namespace[STAMP_KEY] = digest
+    if dependency_paths:
+        namespace[DEPENDENCIES_STAMP_KEY] = dependency_digest(dependency_paths)
+    else:
+        namespace.pop(DEPENDENCIES_STAMP_KEY, None)
     path.write_text(
         json.dumps(notebook, ensure_ascii=False, indent=1) + "\n",
         encoding="utf-8",
@@ -101,18 +132,31 @@ def stamp(ipynb_path: str | Path) -> str:
     return digest
 
 
-def check_saved(ipynb_path: str | Path) -> None:
+def check_saved(
+    ipynb_path: str | Path,
+    dependencies: Iterable[str | Path] = (),
+) -> None:
     notebook = read_json_notebook(ipynb_path)
     validate_executed(notebook)
     actual = code_source_digest(notebook)
-    expected = (
-        notebook.get("metadata", {})
-        .get(STAMP_NAMESPACE, {})
-        .get(STAMP_KEY)
-    )
+    namespace = notebook.get("metadata", {}).get(STAMP_NAMESPACE, {})
+    expected = namespace.get(STAMP_KEY)
     if expected != actual:
         raise NotebookQualityError(
             "Saved notebook outputs are stale or unstamped: code source digest does not match."
+        )
+
+    dependency_paths = tuple(dependencies)
+    expected_dependencies = namespace.get(DEPENDENCIES_STAMP_KEY)
+    if dependency_paths:
+        actual_dependencies = dependency_digest(dependency_paths)
+        if expected_dependencies != actual_dependencies:
+            raise NotebookQualityError(
+                "Saved notebook outputs are stale or unstamped: dependency digest does not match."
+            )
+    elif expected_dependencies is not None:
+        raise NotebookQualityError(
+            "Saved notebook outputs have stamped dependencies; pass each --dependency to verify them."
         )
 
 
@@ -127,6 +171,14 @@ def build_parser() -> argparse.ArgumentParser:
     for name in ("stamp", "check-saved", "check-executed"):
         command = subparsers.add_parser(name)
         command.add_argument("ipynb", type=Path)
+        if name in {"stamp", "check-saved"}:
+            command.add_argument(
+                "--dependency",
+                action="append",
+                default=[],
+                type=Path,
+                help="File whose content must match the notebook's saved outputs; repeatable.",
+            )
     return parser
 
 
@@ -136,10 +188,10 @@ def main() -> None:
         check_pair(args.ipynb, args.python)
         print("Jupytext pair is synchronized.")
     elif args.command == "stamp":
-        digest = stamp(args.ipynb)
+        digest = stamp(args.ipynb, dependencies=args.dependency)
         print(f"Stamped executed notebook source: {digest}")
     elif args.command == "check-saved":
-        check_saved(args.ipynb)
+        check_saved(args.ipynb, dependencies=args.dependency)
         print("Saved notebook outputs match the executed source stamp.")
     else:
         validate_executed(read_json_notebook(args.ipynb))

@@ -31,7 +31,8 @@
 # 3. menambahkan content-based ketika pola co-rating lemah;
 # 4. menggabungkan sinyal tersebut dalam hybrid recommender;
 # 5. memisahkan demo, diagnostic validation, dan benchmark formal;
-# 6. memverifikasi bahwa model eksperimen terhubung ke artifact serving.
+# 6. menguji apakah katalog lebih besar memberi reach yang layak terhadap biaya serving;
+# 7. memverifikasi bahwa keputusan eksperimen terhubung ke artifact serving.
 #
 # Kode produksi tetap berada di `src/book_recommender`. Notebook berfungsi sebagai
 # narasi, visualisasi evidence, dan decision record—bukan salinan pipeline kedua.
@@ -50,7 +51,8 @@
 # - relevansi: HitRate, MAP/MRR, dan NDCG@K;
 # - reach: candidate dan personalization availability;
 # - discovery: catalog coverage, novelty, dan diversity;
-# - risiko: popularity concentration, cold-start, dan ketidakpastian antar-split.
+# - risiko: popularity concentration, cold-start, dan ketidakpastian antar-split;
+# - biaya sistem: fit time, latency warm inference, dan ukuran artifact/model proxy.
 
 # %%
 from __future__ import annotations
@@ -69,6 +71,7 @@ for variable in (
 
 import gc
 import json
+from inspect import Parameter, signature
 from pathlib import Path
 from time import perf_counter
 
@@ -86,7 +89,8 @@ import seaborn as sns
 from threadpoolctl import threadpool_limits
 
 from book_recommender.artifacts import fingerprint_dataset
-from book_recommender.cli import read_benchmark_metrics
+from book_recommender.catalog_benchmark import read_catalog_benchmark_summary
+from book_recommender.cli import evaluation_algorithm_contract, read_benchmark_metrics
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender, book_work_key
 from book_recommender.data import (
@@ -106,8 +110,9 @@ from book_recommender.hybrid import HybridRecommender
 from book_recommender.service import RecommenderService
 
 try:
-    from IPython.display import display
+    from IPython.display import Markdown, display
 except ImportError:
+    Markdown = str
     display = print
 
 sns.set_theme(style="whitegrid", context="notebook")
@@ -164,6 +169,30 @@ def weight_label(record: dict[str, object]) -> str:
     )
 
 
+def catalog_label(record: dict[str, object]) -> str:
+    return (
+        f"{int(record['max_interaction_books']):,} / "
+        f"{int(record['max_content_books']):,}"
+    )
+
+
+def parity_value_matches(left: object, right: object) -> bool:
+    """Compare scalar config values while treating two missing values as equal."""
+
+    if pd.isna(left) or pd.isna(right):
+        return bool(pd.isna(left) and pd.isna(right))
+    return bool(left == right)
+
+
+MISSING_CONFIG_VALUE = "<missing>"
+
+
+def required_config_value(config: dict[str, object], key: str) -> object:
+    """Expose missing manifest fields instead of silently replacing them with None."""
+
+    return config[key] if key in config else MISSING_CONFIG_VALUE
+
+
 # %% [markdown]
 # ## 1. Konfigurasi dan Reproducibility
 #
@@ -189,6 +218,11 @@ BENCHMARK_ARTIFACT = configured_path(
     PROJECT_ROOT / "artifacts" / "evaluation" / "repeated_split_hybrid_benchmark.json",
     PROJECT_ROOT,
 )
+CATALOG_BENCHMARK_SUMMARY = configured_path(
+    "BOOK_RECOMMENDER_CATALOG_BENCHMARK_SUMMARY",
+    PROJECT_ROOT / "docs" / "evidence" / "catalog_size_benchmark_summary.json",
+    PROJECT_ROOT,
+)
 
 MAX_BOOKS = int(os.environ.get("BOOK_RECOMMENDER_NOTEBOOK_MAX_BOOKS", "1000"))
 MAX_CONTENT_BOOKS = int(
@@ -209,6 +243,7 @@ configuration = pd.DataFrame(
     {
         "parameter": [
             "data_dir",
+            "catalog_benchmark_summary",
             "max_interaction_books",
             "max_content_books",
             "neighbors",
@@ -219,6 +254,7 @@ configuration = pd.DataFrame(
         ],
         "value": [
             display_path(DATA_DIR, PROJECT_ROOT),
+            display_path(CATALOG_BENCHMARK_SUMMARY, PROJECT_ROOT),
             MAX_BOOKS,
             MAX_CONTENT_BOOKS,
             N_NEIGHBORS,
@@ -972,7 +1008,7 @@ if not diagnostics.empty:
 
 
 # %% [markdown]
-# ## 10. Benchmark Formal: Repeated Validation lalu Fixed Test
+# ## 10. Benchmark Bobot Hybrid: Repeated Validation lalu Fixed Test
 #
 # CLI benchmark menjalankan alur berikut:
 #
@@ -1176,7 +1212,332 @@ if benchmark_payload is not None:
 # kemajuan engineering.
 
 # %% [markdown]
-# ## 11. Experiment-to-Serving: Model yang Sama, Bukan Demo Terpisah
+# ## 11. Eksperimen Kapasitas Katalog: Reach vs Serving Cost
+#
+# Availability funnel di atas menunjukkan bahwa sebagian target relevan bahkan tidak
+# masuk kandidat. Pertanyaan engineering berikutnya bukan memperbesar test set, tetapi
+# memperbesar **interaction/content catalog** sambil menjaga holdout, bobot hybrid,
+# neighbors, candidate pool, filter, dan threshold tetap sama.
+#
+# Benchmark berat tidak dijalankan ulang di notebook. Raw artifact dengan per-user rows
+# tetap di-ignore; notebook membaca compact summary yang dibangun setelah raw artifact
+# lolos schema, fingerprint, cohort-isolation, selection, dan deployment validation.
+
+# %%
+catalog_summary = read_catalog_benchmark_summary(
+    CATALOG_BENCHMARK_SUMMARY,
+    expected_algorithms=evaluation_algorithm_contract(),
+)
+catalog_parameters = catalog_summary["parameters"]
+catalog_source = catalog_summary["source"]
+if int(catalog_parameters["k"]) != TOP_K:
+    raise ValueError(
+        "Catalog benchmark summary k does not match the notebook Top-K configuration."
+    )
+notebook_source_fingerprint = fingerprint_dataset(
+    cleaned.books,
+    cleaned.ratings,
+    cleaned.users,
+).fingerprint
+catalog_fingerprint_matches = (
+    catalog_source["source_dataset_fingerprint"] == notebook_source_fingerprint
+)
+catalog_portfolio_scale = (
+    int(catalog_parameters["validation_users"]) >= 200
+    and int(catalog_parameters["test_users"]) >= 200
+    and int(catalog_parameters["repetitions"]) >= 5
+    and int(catalog_parameters["bootstrap_resamples"]) >= 2_000
+)
+display(
+    pd.DataFrame(
+        {
+            "field": [
+                "summary",
+                "protocol",
+                "raw artifact SHA-256",
+                "source dataset fingerprint",
+                "notebook dataset fingerprint",
+                "dataset lineage",
+                "validation users / repeat",
+                "fixed-test users",
+                "repetitions",
+                "selection confidence",
+                "evidence label",
+            ],
+            "value": [
+                display_path(CATALOG_BENCHMARK_SUMMARY, PROJECT_ROOT),
+                catalog_summary["protocol"],
+                catalog_source["raw_artifact_sha256"],
+                catalog_source["source_dataset_fingerprint"],
+                notebook_source_fingerprint,
+                "MATCH" if catalog_fingerprint_matches else "EXTERNAL EVIDENCE / MISMATCH",
+                catalog_parameters["validation_users"],
+                catalog_parameters["test_users"],
+                catalog_parameters["repetitions"],
+                catalog_parameters["selection_confidence_level"],
+                "PORTFOLIO-SCALE" if catalog_portfolio_scale else "SMOKE/PILOT",
+            ],
+        }
+    )
+)
+if not catalog_fingerprint_matches:
+    display(
+        Markdown(
+            "**Peringatan lineage:** summary berasal dari dataset berbeda. Angka benchmark "
+            "ditampilkan sebagai external evidence dan tidak boleh dianggap sebagai hasil "
+            "pengukuran dataset yang sedang dibuka notebook."
+        )
+    )
+
+
+# %%
+catalog_selection = catalog_summary["selection"]
+catalog_evidence_by_id = {
+    record["config_id"]: record for record in catalog_selection["candidate_evidence"]
+}
+catalog_rows = []
+for record in catalog_summary["validation"]["aggregate_by_config"]:
+    config_id = record["config_id"]
+    evidence = catalog_evidence_by_id.get(config_id, {})
+    is_baseline = config_id == catalog_parameters["baseline_config_id"]
+    resources = record["resources"]
+    diagnostics = record["common_reference_diagnostics"]
+    catalog_rows.append(
+        {
+            "config_id": config_id,
+            "catalog": catalog_label(record),
+            "role": "baseline/reference" if is_baseline else "challenger",
+            f"NDCG@{TOP_K}": record["end_to_end_metrics"][f"ndcg_at_{TOP_K}"],
+            f"HitRate@{TOP_K}": record["end_to_end_metrics"][f"hit_rate_at_{TOP_K}"],
+            "content retention": record["availability"]["content_retention_rate"],
+            "personalization retention": record["availability"][
+                "personalization_retention_rate"
+            ],
+            "unique recommended works": diagnostics["unique_recommended_works_at_k"],
+            "coverage vs common reference": diagnostics[
+                "coverage_vs_common_reference_at_k"
+            ],
+            f"novelty@{TOP_K}": diagnostics[f"novelty_at_{TOP_K}"],
+            "p95 latency ms": resources["warm_inference"]["p95_ms"],
+            "serialized model MB": (
+                resources["model_proxy"]["serialized_model_bytes"] / 1_000_000
+            ),
+            "p95 latency ratio": evidence.get("p95_latency_ratio", 1.0),
+            "serialized model ratio": evidence.get("serialized_model_ratio", 1.0),
+            "quality gate": evidence.get("passes_quality", pd.NA),
+            "reach gate": evidence.get("passes_reach", pd.NA),
+            "resource gate": evidence.get("passes_resources", pd.NA),
+            "promotion status": (
+                "baseline/reference"
+                if is_baseline
+                else ("passed" if evidence["passes"] else "not promoted")
+            ),
+        }
+    )
+catalog_results = pd.DataFrame(catalog_rows)
+display(catalog_results.round(4))
+
+
+# %%
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
+reach_long = catalog_results.melt(
+    id_vars="catalog",
+    value_vars=["content retention", "personalization retention"],
+    var_name="reach metric",
+    value_name="rate",
+)
+sns.barplot(
+    data=reach_long,
+    x="catalog",
+    y="rate",
+    hue="reach metric",
+    ax=axes[0],
+)
+axes[0].set(
+    title="Larger Catalog Meningkatkan Reach",
+    xlabel="Interaction / content books",
+    ylabel="Holdout retention rate",
+)
+axes[0].tick_params(axis="x", rotation=15)
+
+paired_catalog_deltas = catalog_summary["validation"]["paired_deltas_vs_baseline"]
+delta_rows = []
+for config_id, evidence in paired_catalog_deltas.items():
+    interval = evidence["end_to_end"][f"ndcg_at_{TOP_K}"]
+    catalog_record = next(
+        record
+        for record in catalog_summary["parameters"]["catalog_configs"]
+        if record["config_id"] == config_id
+    )
+    delta_rows.append(
+        {
+            "catalog": catalog_label(catalog_record),
+            "mean": interval["mean"],
+            "lower": interval["lower"],
+            "upper": interval["upper"],
+        }
+    )
+delta_frame = pd.DataFrame(delta_rows)
+axes[1].axvline(catalog_selection["min_delta"], color="black", linestyle="--")
+if delta_frame.empty:
+    axes[1].text(
+        0.5,
+        0.5,
+        "Tidak ada challenger pada summary",
+        ha="center",
+        va="center",
+        transform=axes[1].transAxes,
+    )
+    axes[1].set_yticks([])
+else:
+    delta_y = np.arange(len(delta_frame))
+    axes[1].errorbar(
+        delta_frame["mean"],
+        delta_y,
+        xerr=np.vstack(
+            [
+                delta_frame["mean"] - delta_frame["lower"],
+                delta_frame["upper"] - delta_frame["mean"],
+            ]
+        ),
+        fmt="o",
+        color="#4C78A8",
+        capsize=5,
+    )
+    axes[1].set_yticks(delta_y, delta_frame["catalog"])
+axes[1].set(
+    title=f"Paired Delta NDCG@{TOP_K} (Adjusted CI)",
+    xlabel="Challenger minus baseline",
+    ylabel="",
+)
+
+axes[2].add_patch(
+    plt.Rectangle(
+        (0, 0),
+        catalog_selection["max_latency_ratio"],
+        catalog_selection["max_serialized_model_ratio"],
+        color="#59A14F",
+        alpha=0.12,
+        label="resource gate",
+    )
+)
+for _, row in catalog_results.iterrows():
+    axes[2].scatter(
+        row["p95 latency ratio"],
+        row["serialized model ratio"],
+        s=90,
+    )
+    axes[2].annotate(
+        row["catalog"],
+        (
+            row["p95 latency ratio"],
+            row["serialized model ratio"],
+        ),
+        xytext=(5, 5),
+        textcoords="offset points",
+    )
+axes[2].axvline(catalog_selection["max_latency_ratio"], color="black", linestyle="--")
+axes[2].axhline(
+    catalog_selection["max_serialized_model_ratio"],
+    color="black",
+    linestyle="--",
+)
+axes[2].set(
+    title="Resource Gate",
+    xlabel="P95 latency ratio vs baseline",
+    ylabel="Serialized-model ratio vs baseline",
+)
+axes[2].legend(loc="upper left")
+plt.tight_layout()
+plt.show()
+
+
+# %%
+catalog_fixed_test = catalog_summary["fixed_test"]
+catalog_decision_record = pd.DataFrame(
+    {
+        "field": [
+            "validation decision",
+            "validation selected config",
+            "fixed-test evaluated configs",
+            "deployment decision",
+            "deployment config",
+        ],
+        "value": [
+            catalog_selection["decision"],
+            catalog_selection["selected_config_id"],
+            ", ".join(catalog_fixed_test["evaluated_config_ids"]),
+            catalog_summary["deployment"]["decision"],
+            catalog_summary["deployment"]["deployment_config_id"],
+        ],
+    }
+)
+catalog_gate_columns = [
+    "config_id",
+    "paired_delta_lower",
+    "selection_rate",
+    "content_retention_delta",
+    "personalization_retention_delta",
+    "p95_latency_ratio",
+    "serialized_model_ratio",
+    "passes_quality",
+    "passes_reach",
+    "passes_resources",
+    "passes",
+]
+catalog_gate_table = pd.DataFrame(
+    catalog_selection["candidate_evidence"],
+    columns=catalog_gate_columns,
+)
+catalog_fixed_metrics = pd.DataFrame(
+    [
+        {
+            "config_id": record["config_id"],
+            f"NDCG@{TOP_K}": record["end_to_end_metrics"][f"ndcg_at_{TOP_K}"],
+            f"HitRate@{TOP_K}": record["end_to_end_metrics"][f"hit_rate_at_{TOP_K}"],
+            "content retention": record["availability"]["content_retention_rate"],
+            "personalization retention": record["availability"][
+                "personalization_retention_rate"
+            ],
+        }
+        for record in catalog_fixed_test["aggregate_by_config"]
+    ]
+)
+display(catalog_gate_table.round(4))
+display(catalog_decision_record)
+display(catalog_fixed_metrics.round(4))
+
+
+# %%
+if catalog_selection["decision"] == "retain_baseline":
+    catalog_decision_text = (
+        "Tidak ada challenger yang melewati seluruh quality, reach, dan resource gate. "
+        "Fixed test karena itu hanya mengevaluasi baseline. Ini **bukan** bukti bahwa "
+        "baseline mengalahkan challenger di test; challenger memang sengaja tidak dibuka."
+    )
+else:
+    selected_catalog = next(
+        record
+        for record in catalog_parameters["catalog_configs"]
+        if record["config_id"] == catalog_selection["selected_config_id"]
+    )
+    catalog_decision_text = (
+        f"Challenger **{catalog_label(selected_catalog)}** melewati seluruh validation "
+        "gate dan menjadi satu-satunya challenger yang boleh dibuka bersama baseline "
+        "pada fixed test. Keputusan deployment di bawah tetap mengikuti fixed-test evidence."
+    )
+display(
+    Markdown(
+        catalog_decision_text
+        + "\n\nTiming hanya dapat dibandingkan sebagai rasio dalam run yang sama. "
+        "Serialized model bytes dan sparse/dense matrix payload adalah proxy ukuran, "
+        "bukan peak process RAM."
+    )
+)
+
+# %% [markdown]
+# ## 12. Experiment-to-Serving: Model yang Sama, Bukan Demo Terpisah
 #
 # `RecommenderService.load` memverifikasi manifest, checksum SHA-256, tipe model,
 # kompatibilitas runtime, algorithm version, schema, dan dataset fingerprint sebelum
@@ -1246,19 +1607,150 @@ parity = pd.DataFrame(
             notebook_training_fingerprint,
         ],
         "serving": [
-            serving_config.get("max_books"),
-            serving_config.get("max_content_books"),
-            serving_config.get("neighbors"),
-            serving_config.get("positive_rating_threshold"),
-            serving_config.get("collaborative_weight"),
-            serving_config.get("content_weight"),
-            serving_config.get("popularity_weight"),
-            service_manifest.dataset.get("fingerprint"),
+            required_config_value(serving_config, "max_books"),
+            required_config_value(serving_config, "max_content_books"),
+            required_config_value(serving_config, "neighbors"),
+            required_config_value(serving_config, "positive_rating_threshold"),
+            required_config_value(serving_config, "collaborative_weight"),
+            required_config_value(serving_config, "content_weight"),
+            required_config_value(serving_config, "popularity_weight"),
+            required_config_value(service_manifest.dataset, "fingerprint"),
         ],
     }
 )
-parity["matches"] = parity["notebook"].astype(str) == parity["serving"].astype(str)
+parity["matches"] = [
+    parity_value_matches(notebook_value, serving_value)
+    for notebook_value, serving_value in zip(
+        parity["notebook"],
+        parity["serving"],
+        strict=True,
+    )
+]
 display(parity)
+
+
+# %%
+deployment_config_id = catalog_summary["deployment"]["deployment_config_id"]
+deployment_catalog = next(
+    record
+    for record in catalog_parameters["catalog_configs"]
+    if record["config_id"] == deployment_config_id
+)
+deployment_weights = catalog_parameters["hybrid_weights"]
+candidate_pool_parameter = signature(service.model.recommend_for_user).parameters.get(
+    "candidate_pool_size"
+)
+serving_candidate_pool_size = (
+    candidate_pool_parameter.default
+    if candidate_pool_parameter is not None
+    and candidate_pool_parameter.default is not Parameter.empty
+    else MISSING_CONFIG_VALUE
+)
+serving_dynamic_weights = (
+    not bool(serving_config["disable_dynamic_weights"])
+    if "disable_dynamic_weights" in serving_config
+    else MISSING_CONFIG_VALUE
+)
+catalog_serving_parity = pd.DataFrame(
+    {
+        "parameter": [
+            "max_books",
+            "max_content_books",
+            "neighbors",
+            "hybrid_candidate_pool_size",
+            "positive_rating_threshold",
+            "dynamic_weights",
+            "min_user_ratings",
+            "min_book_ratings",
+            "max_ratings",
+            "deployment_random_state",
+            "collaborative_weight",
+            "content_weight",
+            "popularity_weight",
+        ],
+        "benchmark deployment decision": [
+            deployment_catalog["max_interaction_books"],
+            deployment_catalog["max_content_books"],
+            catalog_parameters["neighbors"],
+            catalog_parameters["hybrid_candidate_pool_size"],
+            catalog_parameters["positive_rating_threshold"],
+            catalog_parameters["hybrid_dynamic_weights"],
+            catalog_parameters["min_user_ratings"],
+            catalog_parameters["min_book_ratings"],
+            catalog_parameters["max_ratings"],
+            catalog_parameters["test_random_state"],
+            deployment_weights["collaborative_weight"],
+            deployment_weights["content_weight"],
+            deployment_weights["popularity_weight"],
+        ],
+        "serving bundle": [
+            required_config_value(serving_config, "max_books"),
+            required_config_value(serving_config, "max_content_books"),
+            required_config_value(serving_config, "neighbors"),
+            serving_candidate_pool_size,
+            required_config_value(serving_config, "positive_rating_threshold"),
+            serving_dynamic_weights,
+            required_config_value(serving_config, "min_user_ratings"),
+            required_config_value(serving_config, "min_book_ratings"),
+            required_config_value(serving_config, "max_ratings"),
+            required_config_value(serving_config, "random_state"),
+            required_config_value(serving_config, "collaborative_weight"),
+            required_config_value(serving_config, "content_weight"),
+            required_config_value(serving_config, "popularity_weight"),
+        ],
+    }
+)
+catalog_serving_parity["matches"] = [
+    parity_value_matches(benchmark_value, serving_value)
+    for benchmark_value, serving_value in zip(
+        catalog_serving_parity["benchmark deployment decision"],
+        catalog_serving_parity["serving bundle"],
+        strict=True,
+    )
+]
+display(
+    pd.DataFrame(
+        {
+            "field": [
+                "catalog benchmark raw SHA-256",
+                "catalog benchmark decision",
+                "deployment config",
+                "serving artifact id",
+                "benchmark embedded in serving manifest",
+            ],
+            "value": [
+                catalog_source["raw_artifact_sha256"],
+                catalog_summary["deployment"]["decision"],
+                deployment_config_id,
+                service_info["artifact_id"],
+                (
+                    "no — existing serving bundle retained"
+                    if catalog_summary["deployment"]["decision"] == "retain_baseline"
+                    else "no — benchmark decision post-dates this serving bundle"
+                ),
+            ],
+        }
+    )
+)
+display(catalog_serving_parity)
+
+
+# %%
+catalog_serving_matches = bool(catalog_serving_parity["matches"].all())
+if catalog_summary["deployment"]["decision"] == "retain_baseline":
+    serving_lineage_text = (
+        "Benchmark katalog tidak ditambahkan ke manifest serving lama karena tidak ada "
+        "model baru yang dipromosikan. Decision record tervalidasi menunjuk ke konfigurasi "
+        "baseline; parity konfigurasi dengan bundle aktif: "
+        f"**{'MATCH' if catalog_serving_matches else 'MISMATCH'}**."
+    )
+else:
+    serving_lineage_text = (
+        "Summary memilih challenger. Bundle aktif hanya boleh disebut sinkron jika seluruh "
+        "parameter deployment di atas cocok; status parity: "
+        f"**{'MATCH' if catalog_serving_matches else 'MISMATCH — rebuild/promote required'}**."
+    )
+display(Markdown(serving_lineage_text))
 
 
 # %% [markdown]
@@ -1298,7 +1790,7 @@ display(
 
 
 # %% [markdown]
-# ## 12. Trade-off dan Langkah Online
+# ## 13. Trade-off dan Langkah Online
 #
 # | Pilihan | Kekuatan | Risiko utama |
 # | --- | --- | --- |
@@ -1306,6 +1798,7 @@ display(
 # | Collaborative | personal dari perilaku bersama | sparse/cold-start |
 # | Content | cold item dan item similarity | metadata dangkal/overspecialization |
 # | Hybrid | fallback dan beberapa sumber evidence | bobot serta operasi lebih kompleks |
+# | Katalog lebih besar | reach dan discovery meningkat | latency serta artifact membesar |
 #
 # Jika traffic nyata tersedia, unit randomisasi A/B test harus user-level. Primary
 # metric dapat berupa save-to-list atau read-start; CTR menjadi leading indicator;
@@ -1314,7 +1807,7 @@ display(
 # transaksi dan attribution window didefinisikan lebih dahulu.
 
 # %% [markdown]
-# ## 13. Kesimpulan Jujur
+# ## 14. Kesimpulan Jujur
 #
 # Yang sudah dibuktikan:
 #
@@ -1322,15 +1815,20 @@ display(
 # - popularity, collaborative, content, dan hybrid berjalan pada pipeline yang sama;
 # - work-level holdout dan train-only filtering mencegah leakage edisi;
 # - bundle serving diverifikasi dengan checksum, lineage, schema, dan fingerprint;
-# - benchmark formal memiliki fixed test, repeated validation, paired bootstrap,
-#   selection gate, availability, segment, dan discovery diagnostics.
+# - benchmark bobot memiliki fixed test, repeated validation, paired bootstrap,
+#   selection gate, availability, segment, dan discovery diagnostics;
+# - benchmark kapasitas menguji 1.000 / 3.000 sampai 5.000 / 20.000 buku dengan
+#   cohort identik, common discovery reference, dan quality/reach/resource gates;
+# - decision lineage menghubungkan hasil selection/fixed test ke konfigurasi bundle
+#   serving dan menampilkan mismatch bila keputusan terbaru belum dipromosikan.
 #
 # Yang belum boleh diklaim:
 #
 # - uplift bisnis tanpa impression/click/save/purchase;
 # - generalisasi temporal tanpa timestamp;
 # - kemenangan hybrid jika paired confidence interval dan selection gate tidak lolos;
-# - skalabilitas katalog jutaan item dari eksperimen 1.000–3.000 buku.
+# - perbandingan fixed-test terhadap konfigurasi yang tidak tercantum sebagai evaluated;
+# - skalabilitas jutaan item dari eksperimen hingga 5.000 interaction / 20.000 content books.
 #
 # Engineering yang robust bukan model paling rumit. Ia adalah keputusan yang dapat
 # diulang, evidence yang tidak bocor, failure mode yang terlihat, dan model serving

@@ -3,6 +3,7 @@
 - Status: **retain the deployed 1,000 interaction / 3,000 content catalog**
 - Run date: 2026-07-17
 - Raw artifact: `artifacts/evaluation/catalog_size_benchmark.json`
+- Compact notebook evidence: `docs/evidence/catalog_size_benchmark_summary.json`
 - Artifact SHA-256: `ffeef9e038f50e164097f45a5b8603896ee564d78b9a2b22d0d600913adbfc45`
 
 ## Question
@@ -108,8 +109,20 @@ uv run book-rec benchmark-catalog `
   --max-serialized-model-ratio 4 `
   --bootstrap-resamples 2000 `
   --output artifacts/evaluation/catalog_size_benchmark.json
+
+uv run python scripts/catalog_benchmark_summary.py generate `
+  artifacts/evaluation/catalog_size_benchmark.json `
+  docs/evidence/catalog_size_benchmark_summary.json
+
+uv run python scripts/catalog_benchmark_summary.py check `
+  docs/evidence/catalog_size_benchmark_summary.json
 ```
 
 The artifact reader verifies the schema, algorithm contract, source fingerprint, catalog IDs,
 resource metrics, identical within-split cohorts, validation/test user disjointness, selection,
 deployment decision, and raw-file SHA before lineage can be attached to a serving bundle.
+The committed compact summary excludes per-user rows, raw timing samples, and repeated-split
+payloads, while preserving the validated decision evidence consumed by the notebook. CI checks
+its schema and stamps the saved notebook against this summary, the tracked serving bundle, and
+its manifest. Raw data and heavyweight ignored benchmark artifacts are intentionally outside a
+clean CI checkout; changing either requires a local Run All and a fresh notebook stamp.

@@ -78,3 +78,65 @@ def test_saved_check_detects_code_changed_after_stamp(tmp_path: Path) -> None:
 
     with pytest.raises(notebook_quality.NotebookQualityError, match="stale or unstamped"):
         notebook_quality.check_saved(ipynb_path)
+
+
+def test_saved_check_detects_dependency_drift_without_storing_absolute_path(
+    tmp_path: Path,
+) -> None:
+    ipynb_path, _ = write_pair(tmp_path)
+    dependency = tmp_path / "catalog_size_benchmark_summary.json"
+    dependency.write_text('{"decision":"retain_baseline"}\n', encoding="utf-8")
+
+    notebook_quality.stamp(ipynb_path, dependencies=[dependency])
+    notebook_quality.check_saved(ipynb_path, dependencies=[dependency])
+
+    payload = json.loads(ipynb_path.read_text(encoding="utf-8"))
+    stamp_metadata = payload["metadata"][notebook_quality.STAMP_NAMESPACE]
+    assert str(tmp_path) not in json.dumps(stamp_metadata)
+
+    dependency.write_text('{"decision":"promote_challenger"}\n', encoding="utf-8")
+    with pytest.raises(notebook_quality.NotebookQualityError, match="dependency digest"):
+        notebook_quality.check_saved(ipynb_path, dependencies=[dependency])
+
+
+def test_saved_check_requires_declared_dependencies(tmp_path: Path) -> None:
+    ipynb_path, _ = write_pair(tmp_path)
+    dependency = tmp_path / "evidence.json"
+    dependency.write_text("{}\n", encoding="utf-8")
+    notebook_quality.stamp(ipynb_path, dependencies=[dependency])
+
+    with pytest.raises(notebook_quality.NotebookQualityError, match="pass each --dependency"):
+        notebook_quality.check_saved(ipynb_path)
+
+
+def test_saved_check_detects_drift_in_one_of_multiple_dependencies(tmp_path: Path) -> None:
+    ipynb_path, _ = write_pair(tmp_path)
+    summary = tmp_path / "summary.json"
+    model = tmp_path / "model.joblib"
+    manifest = tmp_path / "model.joblib.manifest.json"
+    summary.write_text('{"decision":"retain_baseline"}\n', encoding="utf-8")
+    model.write_bytes(b"verified model payload")
+    manifest.write_text('{"artifact_sha256":"abc"}\n', encoding="utf-8")
+    dependencies = [summary, model, manifest]
+
+    notebook_quality.stamp(ipynb_path, dependencies=dependencies)
+    notebook_quality.check_saved(ipynb_path, dependencies=dependencies)
+
+    model.write_bytes(b"changed model payload")
+    with pytest.raises(notebook_quality.NotebookQualityError, match="dependency digest"):
+        notebook_quality.check_saved(ipynb_path, dependencies=dependencies)
+
+
+def test_dependency_cli_option_is_repeatable() -> None:
+    args = notebook_quality.build_parser().parse_args(
+        [
+            "stamp",
+            "notebook.ipynb",
+            "--dependency",
+            "first.json",
+            "--dependency",
+            "second.json",
+        ]
+    )
+
+    assert args.dependency == [Path("first.json"), Path("second.json")]

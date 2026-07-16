@@ -44,8 +44,12 @@ jobs:
       - name: Validate saved notebook contract
         if: matrix.python-version == '3.12'
         run: |
+          uv run python scripts/catalog_benchmark_summary.py check docs/evidence/catalog_size_benchmark_summary.json
           uv run python scripts/notebook_quality.py check-pair notebooks/01_end_to_end_book_recommender.ipynb notebooks/01_end_to_end_book_recommender.py
-          uv run python scripts/notebook_quality.py check-saved notebooks/01_end_to_end_book_recommender.ipynb
+          uv run python scripts/notebook_quality.py check-saved notebooks/01_end_to_end_book_recommender.ipynb \
+            --dependency docs/evidence/catalog_size_benchmark_summary.json \
+            --dependency models/hybrid.joblib \
+            --dependency models/hybrid.joblib.manifest.json
 
       - name: Smoke-execute notebook
         if: matrix.python-version == '3.12'
