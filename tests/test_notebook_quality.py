@@ -127,6 +127,33 @@ def test_saved_check_detects_drift_in_one_of_multiple_dependencies(tmp_path: Pat
         notebook_quality.check_saved(ipynb_path, dependencies=dependencies)
 
 
+def test_dependency_digest_normalizes_json_line_endings(tmp_path: Path) -> None:
+    lf_json = tmp_path / "lf.json"
+    crlf_json = tmp_path / "crlf.json"
+    cr_json = tmp_path / "cr.json"
+    lf_json.write_bytes(b'{"decision":"retain_baseline"}\n')
+    crlf_json.write_bytes(b'{"decision":"retain_baseline"}\r\n')
+    cr_json.write_bytes(b'{"decision":"retain_baseline"}\r')
+
+    lf_digest = notebook_quality.dependency_digest([lf_json])
+    crlf_digest = notebook_quality.dependency_digest([crlf_json])
+    cr_digest = notebook_quality.dependency_digest([cr_json])
+
+    assert lf_digest == crlf_digest == cr_digest
+
+
+def test_dependency_digest_keeps_binary_line_endings_byte_exact(tmp_path: Path) -> None:
+    lf_model = tmp_path / "lf.joblib"
+    crlf_model = tmp_path / "crlf.joblib"
+    lf_model.write_bytes(b"model payload\n")
+    crlf_model.write_bytes(b"model payload\r\n")
+
+    lf_digest = notebook_quality.dependency_digest([lf_model])
+    crlf_digest = notebook_quality.dependency_digest([crlf_model])
+
+    assert lf_digest != crlf_digest
+
+
 def test_dependency_cli_option_is_repeatable() -> None:
     args = notebook_quality.build_parser().parse_args(
         [

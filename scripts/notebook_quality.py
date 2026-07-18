@@ -15,6 +15,7 @@ import jupytext
 STAMP_NAMESPACE = "book_recommender"
 STAMP_KEY = "executed_code_sha256"
 DEPENDENCIES_STAMP_KEY = "executed_dependencies_sha256"
+NEWLINE_NORMALIZED_DEPENDENCY_SUFFIXES = frozenset({".json"})
 
 
 class NotebookQualityError(ValueError):
@@ -63,6 +64,11 @@ def dependency_digest(dependencies: Iterable[str | Path]) -> str:
             payload = path.read_bytes()
         except OSError as exc:
             raise NotebookQualityError(f"Cannot read notebook dependency {path}: {exc}") from exc
+        if path.suffix.casefold() in NEWLINE_NORMALIZED_DEPENDENCY_SUFFIXES:
+            # Git may check out text with CRLF on Windows and LF on Linux. Those
+            # platform-only bytes must not make an otherwise identical JSON
+            # dependency look stale; binary artifacts remain byte-exact.
+            payload = payload.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
         content_digests.append(hashlib.sha256(payload).hexdigest())
 
     canonical = json.dumps(sorted(content_digests), separators=(",", ":"))

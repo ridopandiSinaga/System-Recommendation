@@ -1,0 +1,6 @@
+# Keep notebook evidence text stable across Windows and Linux checkouts.
+docs/evidence/catalog_size_benchmark_summary.json text eol=lf
+models/hybrid.joblib.manifest.json text eol=lf
+
+# Model artifacts must never receive text conversion.
+models/hybrid.joblib binary
