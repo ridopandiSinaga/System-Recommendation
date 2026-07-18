@@ -1,0 +1,169 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import jupytext
+import nbformat
+import pytest
+
+from scripts import notebook_quality
+
+
+def write_pair(tmp_path: Path) -> tuple[Path, Path]:
+    notebook = nbformat.v4.new_notebook(
+        cells=[
+            nbformat.v4.new_markdown_cell("# Example"),
+            nbformat.v4.new_code_cell("value = 1", execution_count=1, outputs=[]),
+        ]
+    )
+    ipynb_path = tmp_path / "example.ipynb"
+    py_path = tmp_path / "example.py"
+    jupytext.write(notebook, ipynb_path)
+    jupytext.write(notebook, py_path, fmt="py:percent")
+    return ipynb_path, py_path
+
+
+def test_pair_and_saved_execution_contract(tmp_path: Path) -> None:
+    ipynb_path, py_path = write_pair(tmp_path)
+
+    notebook_quality.check_pair(ipynb_path, py_path)
+    notebook_quality.stamp(ipynb_path)
+    notebook_quality.check_saved(ipynb_path)
+
+
+def test_pair_check_detects_source_drift(tmp_path: Path) -> None:
+    ipynb_path, py_path = write_pair(tmp_path)
+    paired = jupytext.read(py_path)
+    paired.cells[1].source = "value = 2"
+    jupytext.write(paired, py_path, fmt="py:percent")
+
+    with pytest.raises(notebook_quality.NotebookQualityError, match="out of sync"):
+        notebook_quality.check_pair(ipynb_path, py_path)
+
+
+def test_execution_check_requires_restart_and_run_all(tmp_path: Path) -> None:
+    ipynb_path, _ = write_pair(tmp_path)
+    payload = json.loads(ipynb_path.read_text(encoding="utf-8"))
+    payload["cells"][1]["execution_count"] = None
+    ipynb_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(notebook_quality.NotebookQualityError, match="Restart & Run All"):
+        notebook_quality.validate_executed(notebook_quality.read_json_notebook(ipynb_path))
+
+
+def test_execution_check_rejects_error_output(tmp_path: Path) -> None:
+    ipynb_path, _ = write_pair(tmp_path)
+    payload = json.loads(ipynb_path.read_text(encoding="utf-8"))
+    payload["cells"][1]["outputs"] = [
+        {
+            "output_type": "error",
+            "ename": "RuntimeError",
+            "evalue": "boom",
+            "traceback": [],
+        }
+    ]
+    ipynb_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(notebook_quality.NotebookQualityError, match="boom"):
+        notebook_quality.validate_executed(notebook_quality.read_json_notebook(ipynb_path))
+
+
+def test_saved_check_detects_code_changed_after_stamp(tmp_path: Path) -> None:
+    ipynb_path, _ = write_pair(tmp_path)
+    notebook_quality.stamp(ipynb_path)
+    payload = json.loads(ipynb_path.read_text(encoding="utf-8"))
+    payload["cells"][1]["source"] = ["value = 99"]
+    ipynb_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(notebook_quality.NotebookQualityError, match="stale or unstamped"):
+        notebook_quality.check_saved(ipynb_path)
+
+
+def test_saved_check_detects_dependency_drift_without_storing_absolute_path(
+    tmp_path: Path,
+) -> None:
+    ipynb_path, _ = write_pair(tmp_path)
+    dependency = tmp_path / "catalog_size_benchmark_summary.json"
+    dependency.write_text('{"decision":"retain_baseline"}\n', encoding="utf-8")
+
+    notebook_quality.stamp(ipynb_path, dependencies=[dependency])
+    notebook_quality.check_saved(ipynb_path, dependencies=[dependency])
+
+    payload = json.loads(ipynb_path.read_text(encoding="utf-8"))
+    stamp_metadata = payload["metadata"][notebook_quality.STAMP_NAMESPACE]
+    assert str(tmp_path) not in json.dumps(stamp_metadata)
+
+    dependency.write_text('{"decision":"promote_challenger"}\n', encoding="utf-8")
+    with pytest.raises(notebook_quality.NotebookQualityError, match="dependency digest"):
+        notebook_quality.check_saved(ipynb_path, dependencies=[dependency])
+
+
+def test_saved_check_requires_declared_dependencies(tmp_path: Path) -> None:
+    ipynb_path, _ = write_pair(tmp_path)
+    dependency = tmp_path / "evidence.json"
+    dependency.write_text("{}\n", encoding="utf-8")
+    notebook_quality.stamp(ipynb_path, dependencies=[dependency])
+
+    with pytest.raises(notebook_quality.NotebookQualityError, match="pass each --dependency"):
+        notebook_quality.check_saved(ipynb_path)
+
+
+def test_saved_check_detects_drift_in_one_of_multiple_dependencies(tmp_path: Path) -> None:
+    ipynb_path, _ = write_pair(tmp_path)
+    summary = tmp_path / "summary.json"
+    model = tmp_path / "model.joblib"
+    manifest = tmp_path / "model.joblib.manifest.json"
+    summary.write_text('{"decision":"retain_baseline"}\n', encoding="utf-8")
+    model.write_bytes(b"verified model payload")
+    manifest.write_text('{"artifact_sha256":"abc"}\n', encoding="utf-8")
+    dependencies = [summary, model, manifest]
+
+    notebook_quality.stamp(ipynb_path, dependencies=dependencies)
+    notebook_quality.check_saved(ipynb_path, dependencies=dependencies)
+
+    model.write_bytes(b"changed model payload")
+    with pytest.raises(notebook_quality.NotebookQualityError, match="dependency digest"):
+        notebook_quality.check_saved(ipynb_path, dependencies=dependencies)
+
+
+def test_dependency_digest_normalizes_json_line_endings(tmp_path: Path) -> None:
+    lf_json = tmp_path / "lf.json"
+    crlf_json = tmp_path / "crlf.json"
+    cr_json = tmp_path / "cr.json"
+    lf_json.write_bytes(b'{"decision":"retain_baseline"}\n')
+    crlf_json.write_bytes(b'{"decision":"retain_baseline"}\r\n')
+    cr_json.write_bytes(b'{"decision":"retain_baseline"}\r')
+
+    lf_digest = notebook_quality.dependency_digest([lf_json])
+    crlf_digest = notebook_quality.dependency_digest([crlf_json])
+    cr_digest = notebook_quality.dependency_digest([cr_json])
+
+    assert lf_digest == crlf_digest == cr_digest
+
+
+def test_dependency_digest_keeps_binary_line_endings_byte_exact(tmp_path: Path) -> None:
+    lf_model = tmp_path / "lf.joblib"
+    crlf_model = tmp_path / "crlf.joblib"
+    lf_model.write_bytes(b"model payload\n")
+    crlf_model.write_bytes(b"model payload\r\n")
+
+    lf_digest = notebook_quality.dependency_digest([lf_model])
+    crlf_digest = notebook_quality.dependency_digest([crlf_model])
+
+    assert lf_digest != crlf_digest
+
+
+def test_dependency_cli_option_is_repeatable() -> None:
+    args = notebook_quality.build_parser().parse_args(
+        [
+            "stamp",
+            "notebook.ipynb",
+            "--dependency",
+            "first.json",
+            "--dependency",
+            "second.json",
+        ]
+    )
+
+    assert args.dependency == [Path("first.json"), Path("second.json")]

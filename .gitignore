@@ -9,6 +9,13 @@ dist/
 .ipynb_checkpoints/
 logs/
 
+# Local writing drafts and generated blog figures.
+blog-drafts/
+
+# Internal project documentation; keep these local.
+docs/AUDIT_RECOMMENDER_SYSTEM.md
+docs/DATASET.md
+
 # Local datasets and generated artifacts.
 data/raw/*
 !data/raw/.gitkeep

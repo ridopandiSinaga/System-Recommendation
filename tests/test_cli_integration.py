@@ -111,6 +111,41 @@ def benchmark_args(tmp_path, output_name: str) -> Namespace:
     )
 
 
+def catalog_benchmark_args(tmp_path, output_name: str) -> Namespace:
+    return Namespace(
+        data_dir=tmp_path,
+        catalog_grid="4,6;6,8",
+        baseline_catalog="4,6",
+        hybrid_weights="0.4,0.45,0.15",
+        validation_users=4,
+        test_users=4,
+        repetitions=2,
+        seed_stride=7,
+        min_interactions=3,
+        min_relevant_rating=8.0,
+        min_user_ratings=1,
+        min_book_ratings=1,
+        max_ratings=None,
+        k=3,
+        neighbors=3,
+        hybrid_candidate_pool_size=cli.DEFAULT_HYBRID_CANDIDATE_POOL_SIZE,
+        positive_rating_threshold=8.0,
+        disable_hybrid_dynamic_weights=False,
+        selection_metric="ndcg",
+        min_delta=0.0,
+        min_selection_rate=0.5,
+        min_content_retention_delta=0.0,
+        min_personalization_retention_delta=0.0,
+        max_latency_ratio=100.0,
+        max_serialized_model_ratio=100.0,
+        random_state=7,
+        test_random_state=19,
+        bootstrap_resamples=20,
+        confidence_level=0.95,
+        output=tmp_path / output_name,
+    )
+
+
 def valid_evaluation_payload() -> dict:
     metrics = {
         "precision_at_3": 0.1,
@@ -551,6 +586,139 @@ def test_repeated_benchmark_rejects_underpowered_requested_cohorts(monkeypatch, 
 
     with pytest.raises(ValueError, match="fixed test cohort"):
         cli.benchmark_hybrid_weights(args)
+
+
+def test_catalog_benchmark_reuses_cohorts_and_opens_test_after_selection(
+    monkeypatch,
+    tmp_path,
+):
+    dataset = evaluation_dataset()
+    monkeypatch.setattr(cli, "load_clean_dataset", lambda _: dataset)
+    args = catalog_benchmark_args(tmp_path, "catalog-benchmark.json")
+    events = []
+    original_evaluator = cli.evaluate_hybrid_weight_configurations
+
+    def recording_evaluator(**kwargs):
+        events.append((kwargs["partition"], str(kwargs["configs"][0]["config_id"])))
+        return original_evaluator(**kwargs)
+
+    monkeypatch.setattr(cli, "evaluate_hybrid_weight_configurations", recording_evaluator)
+    cli.benchmark_catalog_sizes(args)
+
+    payload = json.loads(args.output.read_text(encoding="utf-8"))
+    assert payload["artifact_type"] == cli.CATALOG_BENCHMARK_ARTIFACT_TYPE
+    assert payload["selection"]["partition"] == "validation"
+    assert payload["fixed_test"]["evaluated_after_selection"] is True
+    assert [partition for partition, _ in events[:4]] == ["validation"] * 4
+    assert all(partition == "test" for partition, _ in events[4:])
+
+    validation = pd.DataFrame(payload["validation"]["per_user_rows"])
+    fixed_test = pd.DataFrame(payload["fixed_test"]["per_user_rows"])
+    assert set(validation["user_id"]).isdisjoint(set(fixed_test["user_id"]))
+    for _, split_rows in validation.groupby("split_id"):
+        cohorts = [
+            set(zip(rows["user_id"], rows["holdout_work_key"]))
+            for _, rows in split_rows.groupby("config_id")
+        ]
+        assert all(cohort == cohorts[0] for cohort in cohorts[1:])
+
+    baseline = payload["selection"]["baseline_config_id"]
+    selected = payload["selection"]["selected_config_id"]
+    assert payload["fixed_test"]["evaluated_config_ids"] == list(
+        dict.fromkeys([baseline, selected])
+    )
+    assert all(
+        record["resources"]["warm_inference"]["measured_calls"] > 0
+        for record in payload["validation"]["aggregate_by_config"]
+    )
+    verified = cli.read_catalog_benchmark_metrics(args.output)
+    assert verified["deployment"] == payload["deployment"]
+    deployment_id = payload["deployment"]["deployment_config_id"]
+    deployment_catalog = next(
+        config
+        for config in payload["parameters"]["catalog_configs"]
+        if config["config_id"] == deployment_id
+    )
+    cli.read_catalog_benchmark_metrics(
+        args.output,
+        expected_catalog={
+            "max_interaction_books": deployment_catalog["max_interaction_books"],
+            "max_content_books": deployment_catalog["max_content_books"],
+        },
+        expected_weights=payload["parameters"]["hybrid_weights"],
+    )
+    with pytest.raises(ValueError, match="serving catalog"):
+        cli.read_catalog_benchmark_metrics(
+            args.output,
+            expected_catalog={
+                "max_interaction_books": 999,
+                "max_content_books": 999,
+            },
+        )
+
+    monkeypatch.setattr(cli, "load_hybrid_prepared_dataset", lambda _: dataset)
+    model_output = tmp_path / "catalog-lineage.joblib"
+    cli.train_hybrid_model(
+        Namespace(
+            data_dir=tmp_path,
+            min_user_ratings=1,
+            min_book_ratings=1,
+            max_books=deployment_catalog["max_interaction_books"],
+            max_ratings=None,
+            max_content_books=deployment_catalog["max_content_books"],
+            neighbors=3,
+            collaborative_weight=0.4,
+            content_weight=0.45,
+            popularity_weight=0.15,
+            positive_rating_threshold=8.0,
+            disable_dynamic_weights=False,
+            random_state=19,
+            evaluation_artifact=None,
+            benchmark_artifact=None,
+            catalog_benchmark_artifact=args.output,
+            output=model_output,
+        )
+    )
+    _, manifest = load_model_bundle(model_output)
+    assert manifest.metrics["protocol"] == cli.CATALOG_BENCHMARK_PROTOCOL
+    assert manifest.metrics["artifact_sha256"] == verified["artifact_sha256"]
+
+
+def test_catalog_benchmark_reader_rejects_tampered_cohort_and_resources(
+    monkeypatch,
+    tmp_path,
+):
+    dataset = evaluation_dataset()
+    monkeypatch.setattr(cli, "load_clean_dataset", lambda _: dataset)
+    args = catalog_benchmark_args(tmp_path, "catalog-benchmark.json")
+    cli.benchmark_catalog_sizes(args)
+    valid_payload = json.loads(args.output.read_text(encoding="utf-8"))
+
+    payload = json.loads(json.dumps(valid_payload))
+    payload["selection"]["partition"] = "test"
+    args.output.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="validation-only"):
+        cli.read_catalog_benchmark_metrics(args.output)
+
+    payload = json.loads(json.dumps(valid_payload))
+    target_config = payload["parameters"]["catalog_configs"][1]["config_id"]
+    target_row = next(
+        row
+        for row in payload["validation"]["per_user_rows"]
+        if row["config_id"] == target_config and row["split_id"] == "validation-01"
+    )
+    target_row["holdout_work_key"] = "tampered-work"
+    args.output.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="do not share cohort"):
+        cli.read_catalog_benchmark_metrics(args.output)
+
+    payload = json.loads(json.dumps(valid_payload))
+    payload["validation"]["aggregate_by_config"][0]["resources"]["fit"][
+        "median_seconds"
+    ] = -1.0
+    args.output.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="finite non-negative"):
+        cli.read_catalog_benchmark_metrics(args.output)
 
 
 def test_train_hybrid_writes_verified_composite_bundle(monkeypatch, tmp_path):

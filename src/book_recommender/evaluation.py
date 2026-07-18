@@ -453,16 +453,23 @@ def bootstrap_paired_ranking_deltas_at_k(
     scope: str = "end_to_end",
     pair_columns: tuple[str, ...] = ("split_id", "user_id", "holdout_work_key"),
     cluster_column: str | None = "split_id",
+    require_matching_status: bool = True,
     confidence_level: float = 0.95,
     n_resamples: int = 2_000,
     random_state: int = 42,
 ) -> dict[str, BootstrapConfidenceInterval]:
     """Estimate paired challenger-minus-baseline ranking deltas.
 
-    A paired comparison prevents different holdout availability from being mistaken for a
-    model improvement. When ``cluster_column`` is supplied, bootstrap samples first draw
-    repeated split IDs and then user-work pairs within every selected split. The point
-    estimate is therefore a macro average over splits rather than a pooled row average.
+    By default, paired rows must have identical availability and evaluation statuses. This
+    prevents a weight-only comparison from mistaking different holdout support for a model
+    improvement. Set ``require_matching_status=False`` when availability is itself allowed
+    to change, such as when comparing catalog configurations. In that mode, ``end_to_end``
+    keeps every paired holdout while ``conditional`` uses only the common rankable support
+    of the baseline and challenger.
+
+    When ``cluster_column`` is supplied, bootstrap samples first draw repeated split IDs and
+    then user-work pairs within every selected split. The point estimate is therefore a macro
+    average over splits rather than a pooled row average.
     """
 
     _validate_k(k)
@@ -475,6 +482,8 @@ def bootstrap_paired_ranking_deltas_at_k(
         raise ValueError("pair_columns must contain one or more unique column names.")
     if cluster_column is not None and not isinstance(cluster_column, str):
         raise ValueError("cluster_column must be a string or None.")
+    if not isinstance(require_matching_status, (bool, np.bool_)):
+        raise ValueError("require_matching_status must be a boolean.")
 
     metric_names = _ranking_metric_names(k)
     status_columns = (
@@ -526,24 +535,32 @@ def bootstrap_paired_ranking_deltas_at_k(
             raise ValueError(f"Paired rows disagree on {cluster_column!r}.")
         paired_cluster_column = baseline_cluster
 
-    for column in status_columns:
-        baseline_column = f"{column}_baseline"
-        challenger_column = f"{column}_challenger"
-        if not paired[baseline_column].eq(paired[challenger_column]).all():
-            raise ValueError(f"Paired rows disagree on {column!r}.")
+    if require_matching_status:
+        for column in status_columns:
+            baseline_column = f"{column}_baseline"
+            challenger_column = f"{column}_challenger"
+            if not paired[baseline_column].eq(paired[challenger_column]).all():
+                raise ValueError(f"Paired rows disagree on {column!r}.")
     for column in status_columns[:3]:
-        if not _series_contains_only_booleans(paired[f"{column}_baseline"]):
-            raise ValueError(f"Paired rows must contain boolean {column!r} values.")
+        for side in ("baseline", "challenger"):
+            if not _series_contains_only_booleans(paired[f"{column}_{side}"]):
+                raise ValueError(f"Paired rows must contain boolean {column!r} values.")
 
     sort_columns = list(pair_columns)
     if paired_cluster_column is not None and paired_cluster_column not in sort_columns:
         sort_columns.insert(0, paired_cluster_column)
     paired = paired.sort_values(sort_columns, kind="stable").reset_index(drop=True)
     if scope == "conditional":
-        paired = paired.loc[
+        conditional_mask = (
             paired["candidate_available_baseline"]
             & paired["positive_seed_available_baseline"]
-        ].reset_index(drop=True)
+        )
+        if not require_matching_status:
+            conditional_mask &= (
+                paired["candidate_available_challenger"]
+                & paired["positive_seed_available_challenger"]
+            )
+        paired = paired.loc[conditional_mask].reset_index(drop=True)
     if paired.empty:
         raise ValueError(f"No paired rows are available for the {scope!r} scope.")
 

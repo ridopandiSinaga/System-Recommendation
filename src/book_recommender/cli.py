@@ -13,12 +13,28 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 import pandas as pd
+from threadpoolctl import threadpool_limits
 
 from book_recommender.artifacts import (
     ArtifactError,
     fingerprint_dataset,
     load_model_bundle,
     save_model_bundle,
+)
+from book_recommender.benchmark_resources import (
+    hybrid_sparse_payload,
+    model_serialized_size_bytes,
+    summarize_latency_ms,
+    timed_call,
+)
+from book_recommender.catalog_benchmark import (
+    CATALOG_BENCHMARK_ARTIFACT_SCHEMA_VERSION,
+    CATALOG_BENCHMARK_ARTIFACT_TYPE,
+    CATALOG_BENCHMARK_PROTOCOL,
+    benchmark_catalog_configs,
+    catalog_config_registry,
+    normalize_hybrid_weights as normalize_catalog_hybrid_weights,
+    validate_resource_metrics,
 )
 from book_recommender.collaborative import ItemBasedCollaborativeRecommender
 from book_recommender.content_based import ContentBasedRecommender, book_work_key
@@ -300,6 +316,97 @@ def build_parser() -> argparse.ArgumentParser:
     )
     benchmark_hybrid.set_defaults(func=benchmark_hybrid_weights)
 
+    benchmark_catalog = subparsers.add_parser(
+        "benchmark-catalog",
+        help=(
+            "Compare interaction/content catalog sizes with repeated validation and one "
+            "fixed untouched test cohort."
+        ),
+    )
+    add_data_dir_arg(benchmark_catalog)
+    benchmark_catalog.add_argument("--min-user-ratings", type=positive_int, default=2)
+    benchmark_catalog.add_argument("--min-book-ratings", type=positive_int, default=2)
+    benchmark_catalog.add_argument("--max-ratings", type=positive_int, default=None)
+    benchmark_catalog.add_argument(
+        "--catalog-grid",
+        default="1000,3000;3000,10000;5000,20000",
+        help="Semicolon-separated interaction,content limits.",
+    )
+    benchmark_catalog.add_argument(
+        "--baseline-catalog",
+        default="1000,3000",
+        help="One interaction,content baseline that must be present in the grid.",
+    )
+    benchmark_catalog.add_argument(
+        "--hybrid-weights",
+        default="0.40,0.45,0.15",
+        help="One fixed collaborative,content,popularity weight triple used by every catalog.",
+    )
+    benchmark_catalog.add_argument("--validation-users", type=positive_int, default=200)
+    benchmark_catalog.add_argument("--test-users", type=positive_int, default=200)
+    benchmark_catalog.add_argument("--repetitions", type=at_least_two_int, default=5)
+    benchmark_catalog.add_argument("--seed-stride", type=positive_int, default=1)
+    benchmark_catalog.add_argument("--min-interactions", type=at_least_two_int, default=3)
+    benchmark_catalog.add_argument("--min-relevant-rating", type=rating_threshold, default=8.0)
+    benchmark_catalog.add_argument("--k", type=positive_int, default=10)
+    benchmark_catalog.add_argument("--neighbors", type=positive_int, default=50)
+    benchmark_catalog.add_argument(
+        "--hybrid-candidate-pool-size",
+        type=positive_int,
+        default=DEFAULT_HYBRID_CANDIDATE_POOL_SIZE,
+    )
+    benchmark_catalog.add_argument(
+        "--positive-rating-threshold",
+        type=rating_threshold,
+        default=DEFAULT_POSITIVE_RATING_THRESHOLD,
+    )
+    benchmark_catalog.add_argument("--disable-hybrid-dynamic-weights", action="store_true")
+    benchmark_catalog.add_argument(
+        "--selection-metric",
+        choices=("precision", "recall", "hit_rate", "map", "mrr", "ndcg"),
+        default="ndcg",
+    )
+    benchmark_catalog.add_argument("--min-delta", type=non_negative_float, default=0.0)
+    benchmark_catalog.add_argument(
+        "--min-selection-rate",
+        type=closed_fraction,
+        default=0.60,
+    )
+    benchmark_catalog.add_argument(
+        "--min-content-retention-delta",
+        type=non_negative_float,
+        default=0.0,
+        help="Minimum validation gain in target availability within the content catalog.",
+    )
+    benchmark_catalog.add_argument(
+        "--min-personalization-retention-delta",
+        type=non_negative_float,
+        default=0.0,
+        help="Minimum validation gain in personalized-rankable holdout retention.",
+    )
+    benchmark_catalog.add_argument(
+        "--max-latency-ratio",
+        type=positive_float,
+        default=3.0,
+        help="Maximum challenger/baseline warm-inference p95 ratio allowed for promotion.",
+    )
+    benchmark_catalog.add_argument(
+        "--max-serialized-model-ratio",
+        type=positive_float,
+        default=4.0,
+        help="Maximum challenger/baseline serialized-model size ratio allowed for promotion.",
+    )
+    benchmark_catalog.add_argument("--random-state", type=random_state_int, default=100)
+    benchmark_catalog.add_argument("--test-random-state", type=random_state_int, default=42)
+    benchmark_catalog.add_argument("--bootstrap-resamples", type=positive_int, default=2000)
+    benchmark_catalog.add_argument("--confidence-level", type=fraction, default=0.95)
+    benchmark_catalog.add_argument(
+        "--output",
+        type=Path,
+        default=Path("artifacts/evaluation/catalog_size_benchmark.json"),
+    )
+    benchmark_catalog.set_defaults(func=benchmark_catalog_sizes)
+
     train_content = subparsers.add_parser("train-content", help="Build and save content model artifact.")
     add_data_dir_arg(train_content)
     train_content.add_argument(
@@ -355,6 +462,15 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Optional repeated-split benchmark JSON; it must select these normalized "
             "weights and is embedded in the model manifest."
+        ),
+    )
+    train_hybrid.add_argument(
+        "--catalog-benchmark-artifact",
+        type=Path,
+        default=None,
+        help=(
+            "Optional catalog-size benchmark JSON; its deployment configuration and fixed "
+            "weights must match this serving bundle."
         ),
     )
     train_hybrid.add_argument("--output", type=Path, default=Path("models/hybrid.joblib"))
@@ -470,9 +586,22 @@ def train_hybrid_model(args: argparse.Namespace) -> None:
     metrics = {}
     evaluation_artifact = getattr(args, "evaluation_artifact", None)
     benchmark_artifact = getattr(args, "benchmark_artifact", None)
-    if evaluation_artifact is not None and benchmark_artifact is not None:
-        raise ValueError("Use either --evaluation-artifact or --benchmark-artifact, not both.")
-    if evaluation_artifact is not None or benchmark_artifact is not None:
+    catalog_benchmark_artifact = getattr(args, "catalog_benchmark_artifact", None)
+    lineage_artifacts = [
+        artifact
+        for artifact in (
+            evaluation_artifact,
+            benchmark_artifact,
+            catalog_benchmark_artifact,
+        )
+        if artifact is not None
+    ]
+    if len(lineage_artifacts) > 1:
+        raise ValueError(
+            "Use only one of --evaluation-artifact, --benchmark-artifact, or "
+            "--catalog-benchmark-artifact."
+        )
+    if lineage_artifacts:
         clean_dataset = load_clean_dataset(args.data_dir)
         source_fingerprint = fingerprint_dataset(
             clean_dataset.books,
@@ -485,11 +614,26 @@ def train_hybrid_model(args: argparse.Namespace) -> None:
                 expected_source_dataset_fingerprint=source_fingerprint,
                 expected_parameters=evaluation_parameters_for_training(args),
             )
-        else:
+        elif benchmark_artifact is not None:
             metrics = read_benchmark_metrics(
                 benchmark_artifact,
                 expected_source_dataset_fingerprint=source_fingerprint,
                 expected_parameters=benchmark_parameters_for_training(args),
+                expected_weights=normalized_hybrid_weights(
+                    args.collaborative_weight,
+                    args.content_weight,
+                    args.popularity_weight,
+                ),
+            )
+        else:
+            metrics = read_catalog_benchmark_metrics(
+                catalog_benchmark_artifact,
+                expected_source_dataset_fingerprint=source_fingerprint,
+                expected_parameters=catalog_benchmark_parameters_for_training(args),
+                expected_catalog={
+                    "max_interaction_books": args.max_books,
+                    "max_content_books": args.max_content_books,
+                },
                 expected_weights=normalized_hybrid_weights(
                     args.collaborative_weight,
                     args.content_weight,
@@ -1190,6 +1334,315 @@ def benchmark_hybrid_weights(args: argparse.Namespace) -> None:
     print(f"saved_benchmark: {args.output.resolve()}")
 
 
+def benchmark_catalog_sizes(args: argparse.Namespace) -> None:
+    """Compare catalog reach/cost on repeated validation, then confirm once on test."""
+
+    _validate_benchmark_seed_range(args)
+    clean_dataset = load_clean_dataset(args.data_dir)
+    catalog_configs, baseline_config_id = benchmark_catalog_configs(
+        catalog_grid=args.catalog_grid,
+        baseline_catalog=args.baseline_catalog,
+    )
+    parsed_weights = parse_weight_grid(args.hybrid_weights)
+    if len(parsed_weights) != 1:
+        raise ValueError("--hybrid-weights must contain exactly one weight configuration.")
+    weights = normalize_catalog_hybrid_weights(
+        parsed_weights[0]["collaborative_weight"],
+        parsed_weights[0]["content_weight"],
+        parsed_weights[0]["popularity_weight"],
+    )
+    configs = [{**config, **weights} for config in catalog_configs]
+
+    fixed_test = build_fixed_test_work_level_split(
+        clean_dataset.ratings,
+        clean_dataset.books,
+        test_users=args.test_users,
+        min_interactions=args.min_interactions,
+        min_relevant_rating=args.min_relevant_rating,
+        random_state=args.test_random_state,
+    )
+    if len(fixed_test.test_holdout_ratings) != args.test_users:
+        raise ValueError(
+            "The requested fixed test cohort is unavailable after work-level eligibility "
+            "filtering; reduce --test-users."
+        )
+
+    validation_rows: list[dict[str, object]] = []
+    validation_repeats: list[dict[str, object]] = []
+    validation_configurations: list[dict[str, object]] = []
+    validation_latencies = {str(config["config_id"]): [] for config in configs}
+    test_user_ids = fixed_test.test_users
+    for repeat_index in range(args.repetitions):
+        split_seed = args.random_state + repeat_index * args.seed_stride
+        split_id = f"validation-{repeat_index + 1:02d}"
+        holdouts = build_work_level_holdouts(
+            fixed_test.development_ratings,
+            clean_dataset.books,
+            sample_users=args.validation_users,
+            min_interactions=args.min_interactions,
+            min_relevant_rating=args.min_relevant_rating,
+            random_state=split_seed,
+            excluded_user_ids=test_user_ids,
+        )
+        if len(holdouts) != args.validation_users:
+            raise ValueError(
+                "The requested validation cohort is unavailable after reserving the fixed "
+                "test cohort; reduce --validation-users or --test-users."
+            )
+        train_ratings = remove_work_level_holdouts(
+            fixed_test.development_ratings,
+            clean_dataset.books,
+            holdouts,
+        )
+        evaluated = evaluate_catalog_configurations(
+            clean_dataset=clean_dataset,
+            train_ratings=train_ratings,
+            holdouts=holdouts,
+            configs=configs,
+            args=args,
+            split_id=split_id,
+            split_seed=split_seed,
+            partition="validation",
+            execution_offset=repeat_index,
+        )
+        validation_rows.extend(evaluated["rows"])
+        validation_configurations.extend(evaluated["configurations"])
+        for config_id, samples in evaluated["latency_samples_by_config"].items():
+            validation_latencies[config_id].extend(samples)
+        validation_repeats.append(
+            {
+                "split_id": split_id,
+                "split_seed": int(split_seed),
+                "sampled_holdouts": int(len(holdouts)),
+                "train_ratings_before_catalog_filter": int(len(train_ratings)),
+                "configurations": evaluated["configurations"],
+            }
+        )
+
+    validation_aggregate = aggregate_catalog_configurations(
+        validation_rows,
+        configs=configs,
+        configuration_records=validation_configurations,
+        latency_samples_by_config=validation_latencies,
+        k=args.k,
+    )
+    selection_metric = f"{args.selection_metric}_at_{args.k}"
+    challenger_count = len(configs) - 1
+    selection_confidence_level = familywise_confidence_level(
+        args.confidence_level,
+        challenger_count,
+    )
+    multiplicity_adjustment = "bonferroni_familywise" if challenger_count > 1 else "none"
+    validation_deltas = paired_benchmark_deltas(
+        validation_rows,
+        configs=configs,
+        baseline_config_id=baseline_config_id,
+        k=args.k,
+        selection_metric=selection_metric,
+        min_delta=args.min_delta,
+        confidence_level=selection_confidence_level,
+        n_resamples=args.bootstrap_resamples,
+        random_state=args.random_state,
+        cluster_column="split_id",
+        require_matching_status=False,
+    )
+    selection = select_catalog_configuration(
+        validation_aggregate,
+        validation_deltas=validation_deltas,
+        baseline_config_id=baseline_config_id,
+        selection_metric=selection_metric,
+        args=args,
+        confidence_level=selection_confidence_level,
+        multiplicity_adjustment=multiplicity_adjustment,
+    )
+    selected_config_id = str(selection["selected_config_id"])
+
+    config_by_id = {str(config["config_id"]): config for config in configs}
+    final_config_ids = [baseline_config_id]
+    if selected_config_id != baseline_config_id:
+        final_config_ids.append(selected_config_id)
+    final_configs = [config_by_id[config_id] for config_id in final_config_ids]
+    final_evaluated = evaluate_catalog_configurations(
+        clean_dataset=clean_dataset,
+        train_ratings=fixed_test.development_ratings,
+        holdouts=fixed_test.test_holdout_ratings,
+        configs=final_configs,
+        args=args,
+        split_id="fixed-test",
+        split_seed=args.test_random_state,
+        partition="test",
+        execution_offset=0,
+    )
+    final_rows = final_evaluated["rows"]
+    final_aggregate = aggregate_catalog_configurations(
+        final_rows,
+        configs=final_configs,
+        configuration_records=final_evaluated["configurations"],
+        latency_samples_by_config=final_evaluated["latency_samples_by_config"],
+        k=args.k,
+    )
+    final_delta = None
+    if selected_config_id != baseline_config_id:
+        final_delta = paired_benchmark_deltas(
+            final_rows,
+            configs=final_configs,
+            baseline_config_id=baseline_config_id,
+            k=args.k,
+            selection_metric=selection_metric,
+            min_delta=args.min_delta,
+            confidence_level=args.confidence_level,
+            n_resamples=args.bootstrap_resamples,
+            random_state=_stable_seed(args.test_random_state, selected_config_id),
+            cluster_column=None,
+            require_matching_status=False,
+        )[selected_config_id]
+    deployment = catalog_deployment_decision(
+        selection=selection,
+        final_delta=final_delta,
+        baseline_config_id=baseline_config_id,
+        selection_metric=selection_metric,
+        min_delta=args.min_delta,
+    )
+
+    save_catalog_benchmark_artifact(
+        args.output,
+        clean_dataset=clean_dataset,
+        fixed_test_holdouts=fixed_test.test_holdout_ratings,
+        configs=configs,
+        baseline_config_id=baseline_config_id,
+        weights=weights,
+        validation_repeats=validation_repeats,
+        validation_rows=validation_rows,
+        validation_aggregate=validation_aggregate,
+        validation_deltas=validation_deltas,
+        selection=selection,
+        final_evaluated=final_evaluated,
+        final_rows=final_rows,
+        final_aggregate=final_aggregate,
+        final_delta=final_delta,
+        deployment=deployment,
+        args=args,
+    )
+
+    selected = config_by_id[selected_config_id]
+    print("protocol: fixed outer test plus repeated catalog validation")
+    print("relevance_unit: canonical_work")
+    print("selection_partition: validation")
+    print(f"validation_repetitions: {args.repetitions}")
+    print(f"fixed_test_holdouts: {len(fixed_test.test_holdout_ratings):,}")
+    print(f"baseline_config: {baseline_config_id}")
+    print(f"selected_config: {selected_config_id}")
+    print(f"selection_decision: {selection['decision']}")
+    print(
+        "selected_catalog: interaction="
+        f"{selected['max_interaction_books']:,}, content={selected['max_content_books']:,}"
+    )
+    print(f"deployment_config: {deployment['deployment_config_id']}")
+    print(f"deployment_decision: {deployment['decision']}")
+    print(f"selection_metric: {selection_metric}")
+    print(f"selection_confidence_level: {selection_confidence_level:.4f}")
+    print(f"saved_benchmark: {args.output.resolve()}")
+
+
+def evaluate_catalog_configurations(
+    *,
+    clean_dataset: BookDataset,
+    train_ratings: pd.DataFrame,
+    holdouts: pd.DataFrame,
+    configs: list[dict[str, object]],
+    args: argparse.Namespace,
+    split_id: str,
+    split_seed: int,
+    partition: str,
+    execution_offset: int,
+) -> dict[str, object]:
+    """Fit every catalog on identical holdouts and attach fair common-reference diagnostics."""
+
+    ordered = list(configs)
+    offset = int(execution_offset) % len(ordered)
+    execution_order = [*ordered[offset:], *ordered[:offset]]
+    evaluated_by_id: dict[str, dict[str, object]] = {}
+    datasets_by_id: dict[str, BookDataset] = {}
+    rows: list[dict[str, object]] = []
+    latency_samples_by_config: dict[str, list[float]] = {}
+    for config in execution_order:
+        config_id = str(config["config_id"])
+
+        def prepare_catalog() -> BookDataset:
+            return prepare_work_level_evaluation_train_dataset(
+                clean_dataset,
+                train_ratings,
+                min_user_ratings=args.min_user_ratings,
+                min_book_ratings=args.min_book_ratings,
+                max_books=int(config["max_interaction_books"]),
+                max_ratings=args.max_ratings,
+                max_content_books=int(config["max_content_books"]),
+                random_state=split_seed,
+            )
+
+        with threadpool_limits(limits=1):
+            train_dataset, preparation_ms = timed_call(prepare_catalog)
+        evaluated = evaluate_hybrid_weight_configurations(
+            train_dataset=train_dataset,
+            holdouts=holdouts,
+            configs=[config],
+            args=args,
+            split_id=split_id,
+            split_seed=split_seed,
+            partition=partition,
+            collect_resources=True,
+            preparation_seconds=preparation_ms / 1_000.0,
+        )
+        enrich_catalog_evaluation(
+            evaluated,
+            train_dataset=train_dataset,
+            config=config,
+            split_id=split_id,
+            k=args.k,
+        )
+        evaluated_by_id[config_id] = evaluated
+        datasets_by_id[config_id] = train_dataset
+        rows.extend(evaluated["rows"])
+        latency_samples_by_config[config_id] = evaluated["latency_samples_by_config"][
+            config_id
+        ]
+
+    reference_context = build_common_catalog_reference_context(
+        clean_dataset=clean_dataset,
+        train_ratings=train_ratings,
+        datasets=list(datasets_by_id.values()),
+    )
+    configurations: list[dict[str, object]] = []
+    for config in configs:
+        config_id = str(config["config_id"])
+        evaluated = evaluated_by_id[config_id]
+        recommendation_lists = evaluated["recommendation_lists_by_config"][config_id]
+        configuration = evaluated["configurations"][0]
+        diagnostics = recommendation_diagnostics_at_k(
+            recommendation_lists,
+            catalog_items=reference_context["catalog_items"],
+            popularity_counts=reference_context["popularity_counts"],
+            k=args.k,
+            item_features=reference_context["item_features"],
+            item_to_index=reference_context["item_to_index"],
+        )
+        diagnostics["unique_recommended_works_at_k"] = int(
+            len({work for recommendations in recommendation_lists for work in recommendations[: args.k]})
+        )
+        diagnostics["coverage_vs_common_reference_at_k"] = float(
+            diagnostics[f"catalog_coverage_at_{args.k}"]
+        )
+        configuration["common_reference_diagnostics"] = diagnostics
+        configurations.append(configuration)
+
+    return {
+        "rows": rows,
+        "configurations": configurations,
+        "latency_samples_by_config": latency_samples_by_config,
+        "execution_order": [str(config["config_id"]) for config in execution_order],
+    }
+
+
 def evaluate_hybrid_weight_configurations(
     *,
     train_dataset: BookDataset,
@@ -1199,14 +1652,27 @@ def evaluate_hybrid_weight_configurations(
     split_id: str,
     split_seed: int,
     partition: str,
+    collect_resources: bool = False,
+    preparation_seconds: float = 0.0,
 ) -> dict[str, object]:
     """Fit once, score every requested weight configuration, and retain paired rows."""
 
-    hybrid_recommender = HybridRecommender(
-        n_neighbors=args.neighbors,
-        dynamic_weights=not args.disable_hybrid_dynamic_weights,
-        positive_rating_threshold=args.positive_rating_threshold,
-    ).fit(train_dataset.books, train_dataset.ratings)
+    def fit_recommender() -> HybridRecommender:
+        return HybridRecommender(
+            n_neighbors=args.neighbors,
+            dynamic_weights=not args.disable_hybrid_dynamic_weights,
+            positive_rating_threshold=args.positive_rating_threshold,
+        ).fit(train_dataset.books, train_dataset.ratings)
+
+    if collect_resources:
+        with threadpool_limits(limits=1):
+            hybrid_recommender, fit_elapsed_ms = timed_call(fit_recommender)
+        model_proxy, model_structure = catalog_model_resource_profile(hybrid_recommender)
+    else:
+        hybrid_recommender = fit_recommender()
+        fit_elapsed_ms = 0.0
+        model_proxy = {}
+        model_structure = {}
     work_context = build_work_evaluation_context(train_dataset, hybrid_recommender.content_model)
     catalog_work_set = set(work_context["catalog_items"])
     history_user_set = set(train_dataset.ratings["user_id"].astype(int))
@@ -1231,6 +1697,9 @@ def evaluate_hybrid_weight_configurations(
     train_user_counts = train_dataset.ratings["user_id"].value_counts()
     all_rows: list[dict[str, object]] = []
     configurations = []
+    recommendation_lists_by_config: dict[str, list[list[str]]] = {}
+    latency_samples_by_config: dict[str, list[float]] = {}
+    cohort_hash = benchmark_holdout_cohort_hash(holdouts, split_id=split_id)
     for config in configs:
         config_id = str(config["config_id"])
         weights = {
@@ -1240,13 +1709,10 @@ def evaluate_hybrid_weight_configurations(
         }
         metric_rows: list[dict[str, object]] = []
         recommendation_lists = []
-        for holdout in holdouts.itertuples(index=False):
-            user_id = int(holdout.user_id)
-            candidate_available = str(holdout.work_key) in catalog_work_set
-            history_available = user_id in history_user_set
-            positive_seed_count = int(positive_user_counts.get(user_id, 0))
-            positive_seed_available = user_id in positive_user_set
-            recommendations = recommend_hybrid_with_weights(
+        latency_samples: list[float] = []
+
+        def recommend(user_id: int):
+            return recommend_hybrid_with_weights(
                 hybrid_recommender,
                 user_id=user_id,
                 top_n=args.k,
@@ -1255,6 +1721,22 @@ def evaluate_hybrid_weight_configurations(
                 allow_popularity_fallback=True,
                 **weights,
             )
+
+        if collect_resources and len(holdouts):
+            with threadpool_limits(limits=1):
+                recommend(int(holdouts.iloc[0]["user_id"]))
+        for holdout in holdouts.itertuples(index=False):
+            user_id = int(holdout.user_id)
+            candidate_available = str(holdout.work_key) in catalog_work_set
+            history_available = user_id in history_user_set
+            positive_seed_count = int(positive_user_counts.get(user_id, 0))
+            positive_seed_available = user_id in positive_user_set
+            if collect_resources:
+                with threadpool_limits(limits=1):
+                    recommendations, elapsed_ms = timed_call(recommend, user_id)
+                latency_samples.append(elapsed_ms)
+            else:
+                recommendations = recommend(user_id)
             recommended = recommendation_work_keys(recommendations, work_context["isbn_to_work"])
             row: dict[str, object] = {
                 "split_id": split_id,
@@ -1276,6 +1758,8 @@ def evaluate_hybrid_weight_configurations(
                     history_available,
                     positive_seed_available,
                 ),
+                "recommendation_count": int(len(recommended)),
+                "list_fill_rate": float(min(len(recommended), args.k) / args.k),
                 **ranking_metrics_at_k(recommended, [str(holdout.work_key)], args.k),
             }
             metric_rows.append(row)
@@ -1312,8 +1796,7 @@ def evaluate_hybrid_weight_configurations(
                 else {}
             ),
         }
-        configurations.append(
-            {
+        configuration = {
                 "config_id": config_id,
                 **weights,
                 "dynamic_weights": not args.disable_hybrid_dynamic_weights,
@@ -1331,12 +1814,494 @@ def evaluate_hybrid_weight_configurations(
                     item_to_index=work_context["item_to_index"],
                 ),
             }
-        )
+        if collect_resources:
+            configuration["resources"] = catalog_resource_metrics(
+                preparation_seconds=preparation_seconds,
+                fit_seconds=fit_elapsed_ms / 1_000.0,
+                latency_samples_ms=latency_samples,
+                cohort_hash=cohort_hash,
+                model_proxy=model_proxy,
+            )
+            configuration["model_structure"] = model_structure
+        configurations.append(configuration)
+        recommendation_lists_by_config[config_id] = recommendation_lists
+        latency_samples_by_config[config_id] = latency_samples
         all_rows.extend(metric_rows)
     return {
         "rows": all_rows,
         "configurations": configurations,
         "availability": availability_payload,
+        "recommendation_lists_by_config": recommendation_lists_by_config,
+        "latency_samples_by_config": latency_samples_by_config,
+        "work_context": work_context,
+    }
+
+
+def enrich_catalog_evaluation(
+    evaluated: dict[str, object],
+    *,
+    train_dataset: BookDataset,
+    config: dict[str, object],
+    split_id: str,
+    k: int,
+) -> None:
+    """Attach catalog reach and actual-size evidence to a single-config evaluation."""
+
+    work_context = evaluated["work_context"]
+    isbn_to_work = work_context["isbn_to_work"]
+    interaction_work_set = {
+        str(work_key)
+        for work_key in train_dataset.ratings["isbn"].astype(str).map(isbn_to_work).dropna()
+    }
+    content_work_set = set(work_context["catalog_items"])
+    for row in evaluated["rows"]:
+        target_work = str(row["holdout_work_key"])
+        row["target_in_interaction_catalog"] = target_work in interaction_work_set
+        row["target_in_content_catalog"] = target_work in content_work_set
+
+    configuration = evaluated["configurations"][0]
+    configuration.update(
+        {
+            "split_id": split_id,
+            "max_interaction_books": int(config["max_interaction_books"]),
+            "max_content_books": int(config["max_content_books"]),
+            "actual_catalog": {
+                "interaction_books": int(train_dataset.ratings["isbn"].nunique()),
+                "interaction_works": int(len(interaction_work_set)),
+                "content_books": int(len(train_dataset.books)),
+                "content_works": int(len(content_work_set)),
+                "train_ratings": int(len(train_dataset.ratings)),
+            },
+            "availability": catalog_availability_from_rows(
+                evaluated["rows"],
+                k=k,
+            ),
+            "training_fingerprint": fingerprint_dataset(
+                train_dataset.books,
+                train_dataset.ratings,
+                train_dataset.users,
+            ).fingerprint,
+        }
+    )
+
+
+def catalog_availability_from_rows(
+    rows: list[dict[str, object]],
+    *,
+    k: int,
+) -> dict[str, object]:
+    frame = pd.DataFrame(rows)
+    sampled = int(len(frame))
+    if sampled == 0:
+        raise ValueError("Catalog evaluation requires at least one sampled holdout.")
+    interaction = frame["target_in_interaction_catalog"].astype(bool)
+    content = frame["target_in_content_catalog"].astype(bool)
+    history = frame["history_available"].astype(bool)
+    positive = frame["positive_seed_available"].astype(bool)
+    personalized = content & positive
+    content_only = content & ~interaction
+    recommendation_counts = frame["recommendation_count"].astype(int)
+
+    def count_rate(mask: pd.Series) -> tuple[int, float]:
+        count = int(mask.sum())
+        return count, float(count / sampled)
+
+    interaction_count, interaction_rate = count_rate(interaction)
+    content_count, content_rate = count_rate(content)
+    content_only_count, content_only_rate = count_rate(content_only)
+    history_count, history_rate = count_rate(history)
+    positive_count, positive_rate = count_rate(positive)
+    personalized_count, personalized_rate = count_rate(personalized)
+    full_count, full_rate = count_rate(recommendation_counts >= k)
+    empty_count, empty_rate = count_rate(recommendation_counts == 0)
+    return {
+        "sampled_holdouts": sampled,
+        "target_in_interaction_catalog": interaction_count,
+        "interaction_retention_rate": interaction_rate,
+        "target_in_content_catalog": content_count,
+        "content_retention_rate": content_rate,
+        "content_only_targets": content_only_count,
+        "content_only_retention_rate": content_only_rate,
+        "history_available_holdouts": history_count,
+        "history_retention_rate": history_rate,
+        "positive_seed_available_holdouts": positive_count,
+        "positive_seed_retention_rate": positive_rate,
+        "personalization_evaluable_holdouts": personalized_count,
+        "personalization_retention_rate": personalized_rate,
+        "full_recommendation_lists": full_count,
+        "full_list_rate": full_rate,
+        "empty_recommendation_lists": empty_count,
+        "empty_list_rate": empty_rate,
+        "mean_list_fill_rate": float(recommendation_counts.clip(upper=k).mean() / k),
+        "status_counts": {
+            str(status): int(count)
+            for status, count in frame["evaluation_status"].value_counts().sort_index().items()
+        },
+    }
+
+
+def build_common_catalog_reference_context(
+    *,
+    clean_dataset: BookDataset,
+    train_ratings: pd.DataFrame,
+    datasets: list[BookDataset],
+) -> dict[str, object]:
+    """Fit one train-only metadata reference so discovery metrics share a denominator."""
+
+    union_isbns = {
+        str(isbn)
+        for dataset in datasets
+        for isbn in dataset.books["isbn"].astype(str)
+    }
+    reference_books = clean_dataset.books.loc[
+        clean_dataset.books["isbn"].astype(str).isin(union_isbns)
+    ].reset_index(drop=True)
+    reference_content = ContentBasedRecommender().fit(reference_books)
+    isbn_to_work = {
+        str(row.isbn): book_work_key(row.book_title, row.book_author, row.isbn)
+        for row in clean_dataset.books[
+            ["isbn", "book_title", "book_author"]
+        ].itertuples(index=False)
+    }
+    catalog_items: list[str] = []
+    representative_indices: list[int] = []
+    seen: set[str] = set()
+    for index, row in enumerate(
+        reference_books[["isbn", "book_title", "book_author"]].itertuples(index=False)
+    ):
+        work_key = book_work_key(row.book_title, row.book_author, row.isbn)
+        if work_key in seen:
+            continue
+        seen.add(work_key)
+        catalog_items.append(work_key)
+        representative_indices.append(index)
+    rating_work_keys = train_ratings["isbn"].astype(str).map(isbn_to_work).dropna()
+    return {
+        "catalog_items": catalog_items,
+        "popularity_counts": rating_work_keys.value_counts(),
+        "item_features": reference_content.matrix[representative_indices],
+        "item_to_index": {
+            work_key: index for index, work_key in enumerate(catalog_items)
+        },
+    }
+
+
+def benchmark_holdout_cohort_hash(
+    holdouts: pd.DataFrame,
+    *,
+    split_id: str | None,
+) -> str:
+    columns = ["user_id", "holdout_work_key"]
+    frame = holdouts.copy()
+    if "holdout_work_key" not in frame.columns and "work_key" in frame.columns:
+        frame = frame.rename(columns={"work_key": "holdout_work_key"})
+    if split_id is None:
+        if "split_id" not in frame.columns:
+            raise ValueError("A split_id column is required for a multi-split cohort hash.")
+        columns.insert(0, "split_id")
+    else:
+        frame["split_id"] = split_id
+        columns.insert(0, "split_id")
+    records = (
+        frame[columns]
+        .drop_duplicates()
+        .sort_values(columns, kind="stable")
+        .to_dict("records")
+    )
+    encoded = json.dumps(records, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def catalog_model_resource_profile(
+    recommender: HybridRecommender,
+) -> tuple[dict[str, int], dict[str, object]]:
+    structure = hybrid_sparse_payload(recommender)
+    dense_array_bytes = int(getattr(recommender.popularity_scores, "nbytes", 0))
+    content_bytes = int(structure["content"]["payload_bytes"])
+    collaborative_bytes = int(structure["collaborative"]["payload_bytes"])
+    proxy = {
+        "serialized_model_bytes": model_serialized_size_bytes(recommender),
+        "matrix_payload_bytes": content_bytes + collaborative_bytes + dense_array_bytes,
+        "content_matrix_bytes": content_bytes,
+        "collaborative_matrix_bytes": collaborative_bytes,
+        "dense_array_bytes": dense_array_bytes,
+    }
+    structure = {**structure, "dense_array_bytes": dense_array_bytes}
+    return proxy, structure
+
+
+def _timing_resource(samples: list[float]) -> dict[str, object]:
+    if not samples:
+        raise ValueError("Timing resources require at least one sample.")
+    values = pd.Series(samples, dtype="float64")
+    return {
+        "trial_count": int(len(values)),
+        "seconds": [float(value) for value in values],
+        "median_seconds": float(values.quantile(0.50)),
+        "p95_seconds": float(values.quantile(0.95)),
+    }
+
+
+def catalog_resource_metrics(
+    *,
+    preparation_seconds: float,
+    fit_seconds: float,
+    latency_samples_ms: list[float],
+    cohort_hash: str,
+    model_proxy: dict[str, int],
+    warmup_calls: int = 1,
+) -> dict[str, object]:
+    latency = summarize_latency_ms(latency_samples_ms)
+    payload = {
+        "preparation": _timing_resource([float(preparation_seconds)]),
+        "fit": _timing_resource([float(fit_seconds)]),
+        "warm_inference": {
+            "warmup_calls": int(warmup_calls),
+            "measured_calls": int(latency["sample_count"]),
+            "cohort_hash": cohort_hash,
+            "mean_ms": float(latency["mean_ms"]),
+            "p50_ms": float(latency["p50_ms"]),
+            "p95_ms": float(latency["p95_ms"]),
+            "max_ms": float(latency["max_ms"]),
+        },
+        "model_proxy": {key: int(value) for key, value in model_proxy.items()},
+    }
+    return validate_resource_metrics(payload)
+
+
+def aggregate_catalog_configurations(
+    rows: list[dict[str, object]],
+    *,
+    configs: list[dict[str, object]],
+    configuration_records: list[dict[str, object]],
+    latency_samples_by_config: dict[str, list[float]],
+    k: int,
+) -> list[dict[str, object]]:
+    base_records = aggregate_benchmark_configurations(rows, configs=configs, k=k)
+    row_frame = pd.DataFrame(rows)
+    by_config = {
+        str(config["config_id"]): config
+        for config in configs
+    }
+    result = []
+    for base in base_records:
+        config_id = str(base["config_id"])
+        config = by_config[config_id]
+        records = [
+            record
+            for record in configuration_records
+            if str(record["config_id"]) == config_id
+        ]
+        config_rows = row_frame.loc[row_frame["config_id"] == config_id].copy()
+        preparation = [
+            float(record["resources"]["preparation"]["seconds"][0])
+            for record in records
+        ]
+        fit = [
+            float(record["resources"]["fit"]["seconds"][0])
+            for record in records
+        ]
+        proxy_fields = records[0]["resources"]["model_proxy"].keys()
+        model_proxy = {
+            field: max(int(record["resources"]["model_proxy"][field]) for record in records)
+            for field in proxy_fields
+        }
+        resources = catalog_resource_metrics(
+            preparation_seconds=preparation[0],
+            fit_seconds=fit[0],
+            latency_samples_ms=latency_samples_by_config[config_id],
+            cohort_hash=benchmark_holdout_cohort_hash(config_rows, split_id=None),
+            model_proxy=model_proxy,
+            warmup_calls=len(records),
+        )
+        resources["preparation"] = _timing_resource(preparation)
+        resources["fit"] = _timing_resource(fit)
+        resources = validate_resource_metrics(resources)
+        base.update(
+            {
+                "max_interaction_books": int(config["max_interaction_books"]),
+                "max_content_books": int(config["max_content_books"]),
+                "availability": catalog_availability_from_rows(
+                    config_rows.to_dict("records"),
+                    k=k,
+                ),
+                "resources": resources,
+                "actual_catalog_trials": [record["actual_catalog"] for record in records],
+                "config_relative_diagnostics": mean_numeric_mappings(
+                    [record["diagnostics"] for record in records]
+                ),
+                "common_reference_diagnostics": mean_numeric_mappings(
+                    [record["common_reference_diagnostics"] for record in records]
+                ),
+                "model_structure_trials": [record["model_structure"] for record in records],
+            }
+        )
+        result.append(base)
+    return result
+
+
+def mean_numeric_mappings(values: list[dict[str, object]]) -> dict[str, float]:
+    if not values:
+        return {}
+    common_keys = set.intersection(*(set(value) for value in values))
+    return {
+        key: float(sum(float(value[key]) for value in values) / len(values))
+        for key in sorted(common_keys)
+        if all(
+            isinstance(value[key], (int, float)) and not isinstance(value[key], bool)
+            for value in values
+        )
+    }
+
+
+def select_catalog_configuration(
+    aggregate: list[dict[str, object]],
+    *,
+    validation_deltas: dict[str, dict[str, object]],
+    baseline_config_id: str,
+    selection_metric: str,
+    args: argparse.Namespace,
+    confidence_level: float,
+    multiplicity_adjustment: str,
+) -> dict[str, object]:
+    """Promote only when quality, reach, and validation resource guardrails all pass."""
+
+    by_config = {str(record["config_id"]): record for record in aggregate}
+    baseline = by_config[baseline_config_id]
+    ranked_ids = sorted(
+        by_config,
+        key=lambda config_id: (
+            -float(by_config[config_id]["end_to_end_metrics"][selection_metric]),
+            int(by_config[config_id]["max_content_books"]),
+            config_id,
+        ),
+    )
+    evidence_rows = []
+    selected_config_id = baseline_config_id
+    for config_id in ranked_ids:
+        if config_id == baseline_config_id:
+            continue
+        candidate = by_config[config_id]
+        delta_evidence = validation_deltas[config_id]
+        interval = delta_evidence["end_to_end"][selection_metric]
+        quality_lower = float(interval["lower"])
+        selection_rate = float(delta_evidence["selection_rate"])
+        content_delta = float(
+            candidate["availability"]["content_retention_rate"]
+            - baseline["availability"]["content_retention_rate"]
+        )
+        personalization_delta = float(
+            candidate["availability"]["personalization_retention_rate"]
+            - baseline["availability"]["personalization_retention_rate"]
+        )
+        latency_ratio = positive_resource_ratio(
+            candidate["resources"]["warm_inference"]["p95_ms"],
+            baseline["resources"]["warm_inference"]["p95_ms"],
+        )
+        model_ratio = positive_resource_ratio(
+            candidate["resources"]["model_proxy"]["serialized_model_bytes"],
+            baseline["resources"]["model_proxy"]["serialized_model_bytes"],
+        )
+        passes_quality = quality_lower > args.min_delta and selection_rate >= args.min_selection_rate
+        passes_reach = (
+            content_delta >= args.min_content_retention_delta
+            and personalization_delta >= args.min_personalization_retention_delta
+        )
+        passes_resources = (
+            latency_ratio <= args.max_latency_ratio
+            and model_ratio <= args.max_serialized_model_ratio
+        )
+        passes = passes_quality and passes_reach and passes_resources
+        evidence_rows.append(
+            {
+                "config_id": config_id,
+                "primary_metric": float(candidate["end_to_end_metrics"][selection_metric]),
+                "paired_delta_lower": quality_lower,
+                "selection_rate": selection_rate,
+                "content_retention_delta": content_delta,
+                "personalization_retention_delta": personalization_delta,
+                "p95_latency_ratio": latency_ratio,
+                "serialized_model_ratio": model_ratio,
+                "passes_quality": passes_quality,
+                "passes_reach": passes_reach,
+                "passes_resources": passes_resources,
+                "passes": passes,
+            }
+        )
+        if selected_config_id == baseline_config_id and passes:
+            selected_config_id = config_id
+
+    return {
+        "partition": "validation",
+        "scope": "end_to_end",
+        "metric": selection_metric,
+        "baseline_config_id": baseline_config_id,
+        "selected_config_id": selected_config_id,
+        "decision": (
+            "promote_to_fixed_test"
+            if selected_config_id != baseline_config_id
+            else "retain_baseline"
+        ),
+        "min_delta": float(args.min_delta),
+        "min_selection_rate": float(args.min_selection_rate),
+        "min_content_retention_delta": float(args.min_content_retention_delta),
+        "min_personalization_retention_delta": float(
+            args.min_personalization_retention_delta
+        ),
+        "max_latency_ratio": float(args.max_latency_ratio),
+        "max_serialized_model_ratio": float(args.max_serialized_model_ratio),
+        "confidence_level": float(confidence_level),
+        "multiplicity_adjustment": multiplicity_adjustment,
+        "ranked_validation_config_ids": ranked_ids,
+        "candidate_evidence": evidence_rows,
+        "decision_rule": (
+            "paired lower CI and repeat selection rate, non-decreasing reach, and validation "
+            "latency/model-size ratios must all pass"
+        ),
+    }
+
+
+def positive_resource_ratio(candidate: object, baseline: object) -> float:
+    candidate_value = float(candidate)
+    baseline_value = float(baseline)
+    if baseline_value <= 0.0:
+        return 1.0 if candidate_value <= 0.0 else 1e308
+    return float(candidate_value / baseline_value)
+
+
+def catalog_deployment_decision(
+    *,
+    selection: dict[str, object],
+    final_delta: dict[str, object] | None,
+    baseline_config_id: str,
+    selection_metric: str,
+    min_delta: float,
+) -> dict[str, object]:
+    selected_config_id = str(selection["selected_config_id"])
+    if selected_config_id == baseline_config_id:
+        return {
+            "partition": "fixed_test",
+            "deployment_config_id": baseline_config_id,
+            "decision": "retain_baseline",
+            "reason": "No challenger passed all validation promotion gates.",
+        }
+    interval = final_delta["end_to_end"][selection_metric]
+    passes = float(interval["lower"]) > float(min_delta)
+    return {
+        "partition": "fixed_test",
+        "validation_selected_config_id": selected_config_id,
+        "deployment_config_id": selected_config_id if passes else baseline_config_id,
+        "decision": "promote" if passes else "retain_baseline_after_test",
+        "metric": selection_metric,
+        "paired_delta_mean": float(interval["mean"]),
+        "paired_delta_lower": float(interval["lower"]),
+        "min_delta": float(min_delta),
+        "passes": passes,
+        "reason": (
+            "Fixed-test paired lower confidence bound cleared the deployment threshold."
+            if passes
+            else "Fixed-test paired lower confidence bound did not clear the threshold."
+        ),
     }
 
 
@@ -1418,6 +2383,7 @@ def paired_benchmark_deltas(
     n_resamples: int,
     random_state: int,
     cluster_column: str | None,
+    require_matching_status: bool = True,
 ) -> dict[str, dict[str, object]]:
     """Return paired baseline deltas and repeat-level win evidence for every challenger."""
 
@@ -1435,6 +2401,7 @@ def paired_benchmark_deltas(
             k=k,
             scope="end_to_end",
             cluster_column=cluster_column,
+            require_matching_status=require_matching_status,
             confidence_level=confidence_level,
             n_resamples=n_resamples,
             random_state=_stable_seed(random_state, f"{baseline_config_id}:{config_id}:end_to_end"),
@@ -1449,6 +2416,7 @@ def paired_benchmark_deltas(
                     k=k,
                     scope="conditional",
                     cluster_column=cluster_column,
+                    require_matching_status=require_matching_status,
                     confidence_level=confidence_level,
                     n_resamples=n_resamples,
                     random_state=_stable_seed(
@@ -2040,6 +3008,416 @@ def read_benchmark_metrics(
     }
 
 
+def read_catalog_benchmark_metrics(
+    path: Path | None,
+    *,
+    expected_source_dataset_fingerprint: str | None = None,
+    expected_parameters: dict[str, object] | None = None,
+    expected_catalog: dict[str, int] | None = None,
+    expected_weights: dict[str, float] | None = None,
+) -> dict:
+    """Verify catalog benchmark lineage before it can authorize a serving bundle."""
+
+    if path is None:
+        return {}
+    try:
+        raw_payload = path.read_bytes()
+        payload = json.loads(raw_payload.decode("utf-8"), parse_constant=_reject_json_constant)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Cannot read catalog benchmark artifact {path}: {exc}") from exc
+    _validate_finite_json_tree(payload, "catalog benchmark artifact")
+    if not isinstance(payload, dict):
+        raise ValueError("Catalog benchmark artifact root must be a JSON object.")
+    required = {
+        "schema_version": CATALOG_BENCHMARK_ARTIFACT_SCHEMA_VERSION,
+        "artifact_type": CATALOG_BENCHMARK_ARTIFACT_TYPE,
+        "protocol": CATALOG_BENCHMARK_PROTOCOL,
+        "relevance_unit": "canonical_work",
+        "split_unit": "user_work",
+    }
+    for key, expected in required.items():
+        if payload.get(key) != expected:
+            raise ValueError(
+                f"Catalog benchmark artifact {key!r} is {payload.get(key)!r}; "
+                f"expected {expected!r}."
+            )
+    if payload.get("algorithms") != evaluation_algorithm_contract():
+        raise ValueError("Catalog benchmark algorithm contract is incompatible.")
+
+    parameters = payload.get("parameters")
+    dataset = payload.get("dataset")
+    selection = payload.get("selection")
+    deployment = payload.get("deployment")
+    validation = payload.get("validation")
+    fixed_test = payload.get("fixed_test")
+    for name, value in (
+        ("parameters", parameters),
+        ("dataset", dataset),
+        ("selection", selection),
+        ("deployment", deployment),
+        ("validation", validation),
+        ("fixed_test", fixed_test),
+    ):
+        if not isinstance(value, dict):
+            raise ValueError(f"Catalog benchmark artifact {name} must be an object.")
+
+    source_fingerprint = dataset.get("source_fingerprint")
+    if not _is_sha256_digest(source_fingerprint):
+        raise ValueError("Catalog benchmark source fingerprint is not a SHA-256 digest.")
+    if (
+        expected_source_dataset_fingerprint is not None
+        and source_fingerprint != expected_source_dataset_fingerprint
+    ):
+        raise ValueError("Catalog benchmark was produced from a different source dataset.")
+    for key, expected in (expected_parameters or {}).items():
+        if not _benchmark_parameter_matches(parameters.get(key), expected):
+            raise ValueError(
+                f"Catalog benchmark parameter {key!r} is {parameters.get(key)!r}; "
+                f"expected {expected!r}."
+            )
+
+    configs_by_id = catalog_config_registry(parameters.get("catalog_configs"))
+    expected_config_ids = set(configs_by_id)
+    baseline_config_id = selection.get("baseline_config_id")
+    selected_config_id = selection.get("selected_config_id")
+    if (
+        not isinstance(baseline_config_id, str)
+        or not isinstance(selected_config_id, str)
+        or baseline_config_id not in configs_by_id
+        or selected_config_id not in configs_by_id
+        or parameters.get("baseline_config_id") != baseline_config_id
+    ):
+        raise ValueError("Catalog benchmark selection references an invalid configuration.")
+    k = _benchmark_positive_integer(parameters.get("k"), "catalog parameters.k")
+    repetitions = _benchmark_positive_integer(
+        parameters.get("repetitions"),
+        "catalog parameters.repetitions",
+    )
+    if repetitions < 2:
+        raise ValueError("Catalog benchmark requires at least two validation repetitions.")
+    selection_metric_name = parameters.get("selection_metric")
+    if selection_metric_name not in {"precision", "recall", "hit_rate", "map", "mrr", "ndcg"}:
+        raise ValueError("Catalog benchmark selection metric is invalid.")
+    selection_metric = f"{selection_metric_name}_at_{k}"
+    if (
+        selection.get("partition") != "validation"
+        or selection.get("scope") != "end_to_end"
+        or selection.get("metric") != selection_metric
+    ):
+        raise ValueError("Catalog benchmark selection must be validation-only end-to-end.")
+
+    raw_weights = parameters.get("hybrid_weights")
+    if not isinstance(raw_weights, dict) or set(raw_weights) != {
+        "collaborative_weight",
+        "content_weight",
+        "popularity_weight",
+    }:
+        raise ValueError("Catalog benchmark fixed hybrid weights are invalid.")
+    weights = normalize_catalog_hybrid_weights(
+        raw_weights["collaborative_weight"],
+        raw_weights["content_weight"],
+        raw_weights["popularity_weight"],
+    )
+    if any(
+        not _benchmark_numbers_match(raw_weights[key], value)
+        for key, value in weights.items()
+    ):
+        raise ValueError("Catalog benchmark hybrid weights must already be normalized.")
+    if expected_weights is not None:
+        for key, expected in expected_weights.items():
+            if key not in weights or not _benchmark_numbers_match(weights[key], float(expected)):
+                raise ValueError(
+                    f"Catalog benchmark fixed {key!r} is {weights.get(key)!r}; "
+                    f"expected {expected!r}."
+                )
+
+    validation_users = _validate_catalog_benchmark_partition(
+        validation,
+        name="validation",
+        config_registry=configs_by_id,
+        expected_config_ids=expected_config_ids,
+        expected_partition="validation",
+        expected_repetitions=repetitions,
+        k=k,
+        expected_weights=weights,
+    )
+    expected_fixed_ids = [baseline_config_id]
+    if selected_config_id != baseline_config_id:
+        expected_fixed_ids.append(selected_config_id)
+    fixed_users = _validate_catalog_benchmark_partition(
+        fixed_test,
+        name="fixed_test",
+        config_registry=configs_by_id,
+        expected_config_ids=set(expected_fixed_ids),
+        expected_partition="test",
+        expected_repetitions=1,
+        k=k,
+        expected_weights=weights,
+    )
+    if not validation_users.isdisjoint(fixed_users):
+        raise ValueError("Catalog benchmark reuses fixed-test users in validation evidence.")
+    if fixed_test.get("evaluated_after_selection") is not True or fixed_test.get(
+        "evaluated_config_ids"
+    ) != expected_fixed_ids:
+        raise ValueError("Catalog fixed test is not restricted to baseline and selection.")
+    fixed_hash = benchmark_holdout_cohort_hash(
+        pd.DataFrame(fixed_test["per_user_rows"]),
+        split_id="fixed-test",
+    )
+    if dataset.get("fixed_test_cohort_hash") != fixed_hash:
+        raise ValueError("Catalog benchmark fixed-test cohort fingerprint is inconsistent.")
+
+    candidate_evidence = selection.get("candidate_evidence")
+    if not isinstance(candidate_evidence, list):
+        raise ValueError("Catalog benchmark selection evidence must be an array.")
+    evidence_by_id = {
+        str(record.get("config_id")): record
+        for record in candidate_evidence
+        if isinstance(record, dict)
+    }
+    challenger_ids = expected_config_ids.difference({baseline_config_id})
+    if set(evidence_by_id) != challenger_ids:
+        raise ValueError("Catalog benchmark selection evidence is incomplete.")
+    validation_deltas = validation.get("paired_deltas_vs_baseline")
+    if not isinstance(validation_deltas, dict) or set(validation_deltas) != challenger_ids:
+        raise ValueError("Catalog benchmark validation paired deltas are incomplete.")
+    selection_confidence = _benchmark_number(
+        parameters.get("selection_confidence_level"),
+        "catalog parameters.selection_confidence_level",
+    )
+    multiplicity_adjustment = parameters.get("selection_multiplicity_adjustment")
+    if multiplicity_adjustment not in {"none", "bonferroni_familywise"}:
+        raise ValueError("Catalog benchmark multiplicity adjustment is invalid.")
+    for config_id in challenger_ids:
+        _validate_benchmark_delta_evidence(
+            validation_deltas[config_id],
+            config_id=config_id,
+            metric=selection_metric,
+            expected_confidence_level=selection_confidence,
+        )
+    selection_args = argparse.Namespace(
+        min_delta=_benchmark_number(parameters.get("min_delta"), "catalog parameters.min_delta"),
+        min_selection_rate=_benchmark_number(
+            parameters.get("min_selection_rate"),
+            "catalog parameters.min_selection_rate",
+        ),
+        min_content_retention_delta=_benchmark_number(
+            parameters.get("min_content_retention_delta"),
+            "catalog parameters.min_content_retention_delta",
+        ),
+        min_personalization_retention_delta=_benchmark_number(
+            parameters.get("min_personalization_retention_delta"),
+            "catalog parameters.min_personalization_retention_delta",
+        ),
+        max_latency_ratio=_benchmark_number(
+            parameters.get("max_latency_ratio"),
+            "catalog parameters.max_latency_ratio",
+        ),
+        max_serialized_model_ratio=_benchmark_number(
+            parameters.get("max_serialized_model_ratio"),
+            "catalog parameters.max_serialized_model_ratio",
+        ),
+    )
+    recomputed_selection = select_catalog_configuration(
+        validation["aggregate_by_config"],
+        validation_deltas=validation_deltas,
+        baseline_config_id=baseline_config_id,
+        selection_metric=selection_metric,
+        args=selection_args,
+        confidence_level=selection_confidence,
+        multiplicity_adjustment=str(multiplicity_adjustment),
+    )
+    if selection != recomputed_selection:
+        raise ValueError("Catalog benchmark selection is inconsistent with validation evidence.")
+    passing_ids = {
+        config_id
+        for config_id, evidence in evidence_by_id.items()
+        if evidence.get("passes") is True
+    }
+    if selected_config_id == baseline_config_id:
+        if passing_ids or selection.get("decision") != "retain_baseline":
+            raise ValueError("Catalog benchmark retained a baseline despite passing evidence.")
+    elif (
+        selected_config_id not in passing_ids
+        or selection.get("decision") != "promote_to_fixed_test"
+    ):
+        raise ValueError("Catalog benchmark selected a challenger without passing evidence.")
+
+    final_delta = fixed_test.get("paired_delta_selected_vs_baseline")
+    min_delta = _benchmark_number(parameters.get("min_delta"), "catalog parameters.min_delta")
+    expected_deployment = catalog_deployment_decision(
+        selection=selection,
+        final_delta=final_delta,
+        baseline_config_id=baseline_config_id,
+        selection_metric=selection_metric,
+        min_delta=min_delta,
+    )
+    if deployment != expected_deployment:
+        raise ValueError("Catalog benchmark deployment decision is inconsistent.")
+    deployment_config_id = deployment.get("deployment_config_id")
+    if expected_catalog is not None:
+        deployment_config = configs_by_id.get(str(deployment_config_id))
+        if deployment_config is None or any(
+            int(deployment_config[key]) != int(expected)
+            for key, expected in expected_catalog.items()
+        ):
+            raise ValueError(
+                "Catalog benchmark deployment configuration does not match the serving catalog."
+            )
+
+    return {
+        "schema_version": payload["schema_version"],
+        "protocol": payload["protocol"],
+        "relevance_unit": payload["relevance_unit"],
+        "split_unit": payload["split_unit"],
+        "source_dataset_fingerprint": source_fingerprint,
+        "artifact_sha256": hashlib.sha256(raw_payload).hexdigest(),
+        "selection": selection,
+        "deployment": deployment,
+        "hybrid_weights": weights,
+        "fixed_test": {
+            "aggregate_by_config": fixed_test["aggregate_by_config"],
+            "paired_delta_selected_vs_baseline": final_delta,
+        },
+    }
+
+
+def _validate_catalog_benchmark_partition(
+    partition_payload: dict,
+    *,
+    name: str,
+    config_registry: dict[str, dict[str, object]],
+    expected_config_ids: set[str],
+    expected_partition: str,
+    expected_repetitions: int,
+    k: int,
+    expected_weights: dict[str, float],
+) -> set[int]:
+    if partition_payload.get("partition") != expected_partition:
+        raise ValueError(f"Catalog benchmark {name} partition is incompatible.")
+    if name == "validation":
+        repeats = partition_payload.get("repeats")
+        if not isinstance(repeats, list) or len(repeats) != expected_repetitions:
+            raise ValueError("Catalog benchmark validation repeats are incomplete.")
+        split_ids = set()
+        for index, repeat in enumerate(repeats):
+            if not isinstance(repeat, dict):
+                raise ValueError("Catalog benchmark validation repeat must be an object.")
+            split_id = repeat.get("split_id")
+            if not isinstance(split_id, str) or not split_id or split_id in split_ids:
+                raise ValueError("Catalog benchmark validation split IDs must be unique.")
+            split_ids.add(split_id)
+            _validate_catalog_configuration_records(
+                repeat.get("configurations"),
+                name=f"validation.repeats[{index}].configurations",
+                config_registry=config_registry,
+                expected_config_ids=expected_config_ids,
+                k=k,
+                expected_weights=expected_weights,
+            )
+    else:
+        split_ids = {"fixed-test"}
+        _validate_catalog_configuration_records(
+            partition_payload.get("configurations"),
+            name="fixed_test.configurations",
+            config_registry=config_registry,
+            expected_config_ids=expected_config_ids,
+            k=k,
+            expected_weights=expected_weights,
+        )
+    _validate_catalog_configuration_records(
+        partition_payload.get("aggregate_by_config"),
+        name=f"{name}.aggregate_by_config",
+        config_registry=config_registry,
+        expected_config_ids=expected_config_ids,
+        k=k,
+        expected_weights=expected_weights,
+    )
+    rows = partition_payload.get("per_user_rows")
+    if not isinstance(rows, list) or not rows:
+        raise ValueError(f"Catalog benchmark {name} rows must be a non-empty array.")
+    frame = pd.DataFrame(rows)
+    required_columns = {
+        "partition",
+        "config_id",
+        "split_id",
+        "user_id",
+        "holdout_work_key",
+        "candidate_available",
+        "positive_seed_available",
+        "target_in_interaction_catalog",
+        "target_in_content_catalog",
+    }
+    if not required_columns.issubset(frame.columns):
+        raise ValueError(f"Catalog benchmark {name} rows have an invalid schema.")
+    if set(frame["config_id"].astype(str)) != expected_config_ids:
+        raise ValueError(f"Catalog benchmark {name} rows omit a configuration.")
+    if set(frame["split_id"].astype(str)) != split_ids:
+        raise ValueError(f"Catalog benchmark {name} rows reference invalid split IDs.")
+    if not frame["partition"].eq(expected_partition).all():
+        raise ValueError(f"Catalog benchmark {name} rows have an invalid partition.")
+    if frame[["config_id", "split_id", "user_id", "holdout_work_key"]].duplicated().any():
+        raise ValueError(f"Catalog benchmark {name} rows contain duplicate pairs.")
+    for split_id, split_rows in frame.groupby("split_id", sort=True):
+        pairs_by_config = []
+        for config_id in sorted(expected_config_ids):
+            config_rows = split_rows.loc[split_rows["config_id"] == config_id]
+            pairs_by_config.append(
+                set(
+                    zip(
+                        config_rows["user_id"].astype(int),
+                        config_rows["holdout_work_key"].astype(str),
+                    )
+                )
+            )
+        if any(pairs != pairs_by_config[0] for pairs in pairs_by_config[1:]):
+            raise ValueError(
+                f"Catalog benchmark {name} configurations do not share cohort {split_id}."
+            )
+    return set(frame["user_id"].astype(int))
+
+
+def _validate_catalog_configuration_records(
+    records: object,
+    *,
+    name: str,
+    config_registry: dict[str, dict[str, object]],
+    expected_config_ids: set[str],
+    k: int,
+    expected_weights: dict[str, float],
+) -> None:
+    if not isinstance(records, list) or not records:
+        raise ValueError(f"Catalog benchmark {name} must be a non-empty array.")
+    by_id = {}
+    for index, record in enumerate(records):
+        if not isinstance(record, dict):
+            raise ValueError(f"Catalog benchmark {name}[{index}] must be an object.")
+        config_id = record.get("config_id")
+        if not isinstance(config_id, str) or config_id in by_id or config_id not in expected_config_ids:
+            raise ValueError(f"Catalog benchmark {name} has invalid configuration IDs.")
+        registry = config_registry[config_id]
+        for key in ("max_interaction_books", "max_content_books"):
+            if record.get(key) != registry[key]:
+                raise ValueError(f"Catalog benchmark {name} catalog sizes are inconsistent.")
+        for key, expected_weight in expected_weights.items():
+            if not _benchmark_numbers_match(record.get(key), expected_weight):
+                raise ValueError(f"Catalog benchmark {name} hybrid weights are inconsistent.")
+        _validate_benchmark_metric_mapping(
+            record.get("end_to_end_metrics"),
+            k=k,
+            name=f"{name}[{index}].end_to_end_metrics",
+        )
+        _validate_benchmark_metric_mapping(
+            record.get("conditional_metrics"),
+            k=k,
+            name=f"{name}[{index}].conditional_metrics",
+        )
+        validate_resource_metrics(record.get("resources"))
+        by_id[config_id] = record
+    if set(by_id) != expected_config_ids:
+        raise ValueError(f"Catalog benchmark {name} does not cover all configurations.")
+
+
 def _benchmark_parameter_matches(actual: object, expected: object) -> bool:
     if isinstance(expected, bool):
         return actual is expected
@@ -2391,6 +3769,23 @@ def benchmark_parameters_for_training(args: argparse.Namespace) -> dict[str, obj
     return parameters
 
 
+def catalog_benchmark_parameters_for_training(args: argparse.Namespace) -> dict[str, object]:
+    """Map serving settings to catalog-benchmark invariants other than catalog size."""
+
+    parameters = {
+        "min_user_ratings": args.min_user_ratings,
+        "min_book_ratings": args.min_book_ratings,
+        "max_ratings": args.max_ratings,
+        "neighbors": args.neighbors,
+        "hybrid_candidate_pool_size": DEFAULT_HYBRID_CANDIDATE_POOL_SIZE,
+        "hybrid_dynamic_weights": not args.disable_dynamic_weights,
+        "positive_rating_threshold": args.positive_rating_threshold,
+    }
+    if args.max_ratings is not None:
+        parameters["test_random_state"] = getattr(args, "random_state", 42)
+    return parameters
+
+
 def normalized_hybrid_weights(
     collaborative_weight: float,
     content_weight: float,
@@ -2712,6 +4107,13 @@ def non_negative_float(value: str | float) -> float:
         raise argparse.ArgumentTypeError("value must be a finite non-negative number") from exc
     if not math.isfinite(parsed) or parsed < 0:
         raise argparse.ArgumentTypeError("value must be a finite non-negative number")
+    return parsed
+
+
+def positive_float(value: str | float) -> float:
+    parsed = non_negative_float(value)
+    if parsed <= 0.0:
+        raise argparse.ArgumentTypeError("value must be a finite positive number")
     return parsed
 
 
@@ -3125,6 +4527,121 @@ def save_benchmark_artifact(
                 for configuration in final_evaluated["configurations"]
             ],
             "availability": final_evaluated["availability"],
+            "configurations": final_evaluated["configurations"],
+            "aggregate_by_config": final_aggregate,
+            "paired_delta_selected_vs_baseline": final_delta,
+            "per_user_rows": final_rows,
+        },
+    }
+    write_json_atomic(output, payload)
+
+
+def save_catalog_benchmark_artifact(
+    output: Path,
+    *,
+    clean_dataset: BookDataset,
+    fixed_test_holdouts: pd.DataFrame,
+    configs: list[dict[str, object]],
+    baseline_config_id: str,
+    weights: dict[str, float],
+    validation_repeats: list[dict[str, object]],
+    validation_rows: list[dict[str, object]],
+    validation_aggregate: list[dict[str, object]],
+    validation_deltas: dict[str, dict[str, object]],
+    selection: dict[str, object],
+    final_evaluated: dict[str, object],
+    final_rows: list[dict[str, object]],
+    final_aggregate: list[dict[str, object]],
+    final_delta: dict[str, object] | None,
+    deployment: dict[str, object],
+    args: argparse.Namespace,
+) -> None:
+    source_fingerprint = fingerprint_dataset(
+        clean_dataset.books,
+        clean_dataset.ratings,
+        clean_dataset.users,
+    )
+    catalog_registry = [
+        {
+            "config_id": str(config["config_id"]),
+            "max_interaction_books": int(config["max_interaction_books"]),
+            "max_content_books": int(config["max_content_books"]),
+        }
+        for config in configs
+    ]
+    payload = {
+        "schema_version": CATALOG_BENCHMARK_ARTIFACT_SCHEMA_VERSION,
+        "artifact_type": CATALOG_BENCHMARK_ARTIFACT_TYPE,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "protocol": CATALOG_BENCHMARK_PROTOCOL,
+        "relevance_unit": "canonical_work",
+        "split_unit": "user_work",
+        "algorithms": evaluation_algorithm_contract(),
+        "parameters": {
+            "validation_users": int(args.validation_users),
+            "test_users": int(args.test_users),
+            "repetitions": int(args.repetitions),
+            "seed_stride": int(args.seed_stride),
+            "random_state": int(args.random_state),
+            "test_random_state": int(args.test_random_state),
+            "min_interactions": int(args.min_interactions),
+            "min_relevant_rating": float(args.min_relevant_rating),
+            "min_user_ratings": int(args.min_user_ratings),
+            "min_book_ratings": int(args.min_book_ratings),
+            "max_ratings": args.max_ratings,
+            "k": int(args.k),
+            "neighbors": int(args.neighbors),
+            "hybrid_candidate_pool_size": int(args.hybrid_candidate_pool_size),
+            "hybrid_dynamic_weights": not args.disable_hybrid_dynamic_weights,
+            "positive_rating_threshold": float(args.positive_rating_threshold),
+            "hybrid_weights": weights,
+            "catalog_configs": catalog_registry,
+            "baseline_config_id": baseline_config_id,
+            "selection_metric": str(args.selection_metric),
+            "min_delta": float(args.min_delta),
+            "min_selection_rate": float(args.min_selection_rate),
+            "min_content_retention_delta": float(args.min_content_retention_delta),
+            "min_personalization_retention_delta": float(
+                args.min_personalization_retention_delta
+            ),
+            "max_latency_ratio": float(args.max_latency_ratio),
+            "max_serialized_model_ratio": float(args.max_serialized_model_ratio),
+            "confidence_level": float(args.confidence_level),
+            "selection_confidence_level": float(selection["confidence_level"]),
+            "selection_multiplicity_adjustment": str(
+                selection["multiplicity_adjustment"]
+            ),
+            "bootstrap_resamples": int(args.bootstrap_resamples),
+        },
+        "dataset": {
+            "clean_books": int(len(clean_dataset.books)),
+            "clean_ratings": int(len(clean_dataset.ratings)),
+            "clean_users": int(len(clean_dataset.users)),
+            "source_fingerprint": source_fingerprint.fingerprint,
+            "fixed_test_sampled_holdouts": int(len(fixed_test_holdouts)),
+            "fixed_test_users": int(fixed_test_holdouts["user_id"].nunique()),
+            "fixed_test_cohort_hash": benchmark_holdout_cohort_hash(
+                fixed_test_holdouts,
+                split_id="fixed-test",
+            ),
+        },
+        "selection": selection,
+        "deployment": deployment,
+        "validation": {
+            "partition": "validation",
+            "repetitions": int(args.repetitions),
+            "repeats": validation_repeats,
+            "aggregate_by_config": validation_aggregate,
+            "paired_deltas_vs_baseline": validation_deltas,
+            "per_user_rows": validation_rows,
+        },
+        "fixed_test": {
+            "partition": "test",
+            "evaluated_after_selection": True,
+            "evaluated_config_ids": [
+                str(configuration["config_id"])
+                for configuration in final_evaluated["configurations"]
+            ],
             "configurations": final_evaluated["configurations"],
             "aggregate_by_config": final_aggregate,
             "paired_delta_selected_vs_baseline": final_delta,
