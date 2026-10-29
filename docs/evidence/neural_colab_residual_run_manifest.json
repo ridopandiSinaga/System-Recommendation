@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "project": "ridopandiSinaga/System-Recommendation",
+  "session_name": "book-recommendation-neural-20261014-residual",
+  "account_free_without_paid_balance_confirmed_by_user": true,
+  "paid_resources_authorized": false,
+  "gpu": "Tesla T4, 15360 MiB, 580.82.07",
+  "tensorflow_version": "2.21.0",
+  "python_version": "3.13.15",
+  "candidate_count": 4,
+  "trained_neural_candidates": 3,
+  "total_neural_epochs": 12,
+  "test_previously_observed": true,
+  "model_promotion_to_application": false,
+  "backups": [
+    {
+      "archive": "inputs_backup.tar.gz",
+      "bytes": 1072687,
+      "sha256": "ade712ebe480fea6ba08a4e0acf4635c785f6464a09bee3172aa1bde9e3feaf3",
+      "files": 9,
+      "verified_utc": "2026-10-13T17:59:18.702728+00:00"
+    },
+    {
+      "archive": "epoch_000_snapshot.tar.gz",
+      "bytes": 6379430,
+      "sha256": "b5b16e5acb74fa7e0e65a53186293a70be4aa74e0b60a180d202e54db925073e",
+      "files": 14,
+      "verified_utc": "2026-10-13T17:59:51.217850+00:00"
+    },
+    {
+      "archive": "epoch_001_snapshot.tar.gz",
+      "bytes": 8948414,
+      "sha256": "6ae49c7b256a7dc309cfdd8743a49740e5376b377f0feb74272f58d15802cd9c",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:00:26.389863+00:00"
+    },
+    {
+      "archive": "epoch_002_snapshot.tar.gz",
+      "bytes": 8924471,
+      "sha256": "5d4fbe46e3b58d0fbff22244c63ced351a2f2cfc89c132a727a2005d8c5a4ab8",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:01:01.720184+00:00"
+    },
+    {
+      "archive": "epoch_003_snapshot.tar.gz",
+      "bytes": 8937093,
+      "sha256": "10891fdc1f94f3f04de9e9f2c72e0f6a9194ec26d03dfdf0cd3911ccf64b2f12",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:01:37.589151+00:00"
+    },
+    {
+      "archive": "epoch_004_snapshot.tar.gz",
+      "bytes": 8945286,
+      "sha256": "520a0439ad63d57224ef849c02e78de34e9edbd8614463aacf3761b4c9b22d2b",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:02:11.012395+00:00"
+    },
+    {
+      "archive": "epoch_005_snapshot.tar.gz",
+      "bytes": 8947484,
+      "sha256": "51250747899f211a5407cbf81dec87de7492cb8eaa4d2235b07b064014f37c45",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:02:50.675536+00:00"
+    },
+    {
+      "archive": "epoch_006_snapshot.tar.gz",
+      "bytes": 8924731,
+      "sha256": "faa1436167e1af94e830aa23ee6a0e0642824a7e52cbefccffe10449d4d665df",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:03:32.269565+00:00"
+    },
+    {
+      "archive": "epoch_007_snapshot.tar.gz",
+      "bytes": 8955426,
+      "sha256": "36ce7765f28c7c25a37a1dbd915618fdff57f3009229bcc861b7698309014a77",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:03:55.293743+00:00"
+    },
+    {
+      "archive": "epoch_008_snapshot.tar.gz",
+      "bytes": 8941996,
+      "sha256": "2d1e1da004826baca68d3bf257c34f67eaed20dc7daf4ef2f37a1cd8c9e2799d",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:04:13.246886+00:00"
+    },
+    {
+      "archive": "epoch_009_snapshot.tar.gz",
+      "bytes": 8907336,
+      "sha256": "6196533dc097bbd51ddaf47ceb8db86268f9073860f426ccf6487a0c4f02d962",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:04:23.160332+00:00"
+    },
+    {
+      "archive": "epoch_010_snapshot.tar.gz",
+      "bytes": 8909397,
+      "sha256": "ac947ab80e354ff2b60f2170ca51b5d7882cbb3ef55c65aff7cc46fb72c76f49",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:04:32.409041+00:00"
+    },
+    {
+      "archive": "epoch_011_snapshot.tar.gz",
+      "bytes": 8936880,
+      "sha256": "27d9485809cb8ef22d51b516151175e17514e8ddb4212518138c18fdd71715ba",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:04:42.008016+00:00"
+    },
+    {
+      "archive": "epoch_012_snapshot.tar.gz",
+      "bytes": 8949832,
+      "sha256": "17bb4d9e6bee4b50d9f0b43d2f8ce3a960fd6e8cf5a5af20ba52c51e93bbf209",
+      "files": 14,
+      "verified_utc": "2026-10-13T18:04:51.180680+00:00"
+    },
+    {
+      "archive": "final_backup.tar.gz",
+      "bytes": 25725631,
+      "sha256": "c4b54d1380e76f8bffa91c6aa44ac14b3d017b139ac05bef238ec134b4c307ac",
+      "files": 42,
+      "verified_utc": "2026-10-13T18:06:10.294840+00:00"
+    },
+    {
+      "archive": "runtime_verification.tar.gz",
+      "bytes": 293191,
+      "sha256": "4e455943deda416618df39f429325989237a4cc6e3a58586b0ede693244b1116",
+      "files": 13,
+      "verified_utc": "2026-10-13T18:06:45.187111+00:00"
+    }
+  ],
+  "verification": [
+    "remote manifest SHA-256 and size",
+    "gzip CRC and safe tar members",
+    "extracted file checksums",
+    "runtime source matches local code",
+    "all neural model weights and predictions preserved after save/load",
+    "all notebook cells executed and source/dependency stamp verified"
+  ],
+  "runtime_tests": {
+    "passed": 260,
+    "duration_seconds": 88.83,
+    "coverage_percent": 81.01,
+    "log_sha256": "dc097f8537cb5d41cabc71089428ee909f75e88d450ac700372f75121701abdb"
+  },
+  "focused_model_cli_tests": {
+    "passed": 17,
+    "duration_seconds": 25.2
+  },
+  "shutdown": {
+    "stopped": true,
+    "stop_operation": "residual-stop-project-runtime-20261013T180709-429f452d.json",
+    "verification_operation": "residual-verify-server-stopped-20261013T180748-10dbb6ac.json",
+    "server_status": "no active sessions",
+    "verified_utc": "2026-10-13T18:08:38.555904+00:00"
+  },
+  "local_artifact_path_relative_to_project": "artifacts/colab/run-20261014-residual"
+}

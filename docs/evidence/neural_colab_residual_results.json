@@ -1,0 +1,1184 @@
+{
+  "status": "completed",
+  "completed_utc": "2026-10-13T17:59:23.175669+00:00",
+  "configuration": {
+    "started_utc": "2026-10-13T17:57:48.689603+00:00",
+    "input_dir": "/content/book-recommendation-neural-20261014-residual/frozen/inputs",
+    "output": "/content/book-recommendation-neural-20261014-residual/experiment",
+    "candidates": [
+      {
+        "name": "bias_only_u0_i20",
+        "kind": "bias_only",
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "residual_scale": 0.0,
+        "l2": 1e-05
+      },
+      {
+        "name": "residual_u0_i20_s025",
+        "kind": "neural",
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "residual_scale": 0.25,
+        "l2": 1e-05
+      },
+      {
+        "name": "residual_u0_i20_s100",
+        "kind": "neural",
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "residual_scale": 1.0,
+        "l2": 1e-05
+      },
+      {
+        "name": "residual_u0_i20_s025_l2e4",
+        "kind": "neural",
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "residual_scale": 0.25,
+        "l2": 0.0001
+      }
+    ],
+    "candidate_count": 4,
+    "max_neural_epochs_each": 10,
+    "batch_size": 1024,
+    "patience": 3,
+    "embedding_size": 16,
+    "hidden_units": [
+      32,
+      16
+    ],
+    "learning_rate": 0.001,
+    "regularization": "L2 is predeclared separately for each candidate",
+    "shared_bias_backbone": "All candidates use user_shrinkage=0 and item_shrinkage=20",
+    "seed": 42,
+    "require_gpu": true,
+    "max_training_seconds": 600,
+    "selection_metric": "known_validation_rmse_rating_scale",
+    "selection_tie_breaker": "earlier candidate in the predeclared list",
+    "test_has_been_seen_previously": true,
+    "test_scope": "development replication on reused test, not a new blind test",
+    "prediction_convention": "Train loss uses raw linear normalized predictions plus L2. Validation, test and recommendations clip normalized predictions to [0,1], then convert to rating 1+9*p.",
+    "fallback_policy": "Both IDs known: selected predictor. Otherwise known user: train user mean; otherwise known ISBN: train item mean; otherwise: train global mean.",
+    "fixed_train_only_fallback_not_selected_using_test": true
+  },
+  "gpu": {
+    "checked_utc": "2026-10-13T17:57:49.202498+00:00",
+    "tensorflow_version": "2.21.0",
+    "cuda_build": true,
+    "physical_gpu_names": [
+      "/physical_device:GPU:0"
+    ],
+    "gpu_details": [
+      {
+        "compute_capability": [
+          7,
+          5
+        ],
+        "device_name": "Tesla T4"
+      }
+    ],
+    "logical_gpu_names": [
+      "/device:GPU:0"
+    ],
+    "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "probe_value": 128.0,
+    "probe_seconds": 0.27623916399988957,
+    "nvidia_smi_exit_code": 0,
+    "nvidia_smi": "Tesla T4, 15360 MiB, 580.82.07"
+  },
+  "dataset": {
+    "train_pairs": 111875,
+    "train_users": 15312,
+    "train_isbns": 5000,
+    "validation_pairs": 500,
+    "validation_known_pairs": 140,
+    "test_pairs_frozen_reference": 500,
+    "input_bytes_match_original_experiment": true,
+    "split_policy": "Reuse prior work-level holdout and train-only catalog selection exactly",
+    "test_pairs": 500,
+    "canonical_work_leakage_checks_passed": true
+  },
+  "selection": {
+    "selected_utc": "2026-10-13T17:58:46.861449+00:00",
+    "metric": "known_validation_rmse_rating_scale",
+    "serving_candidate": "residual_u0_i20_s025_l2e4",
+    "serving_kind": "neural",
+    "serving_validation": {
+      "pairs": 140,
+      "rmse_rating_scale": 1.7466038713583087,
+      "mae_rating_scale": 1.2908833674022129
+    },
+    "best_neural_candidate": "residual_u0_i20_s025_l2e4",
+    "best_neural_validation": {
+      "pairs": 140,
+      "rmse_rating_scale": 1.7466038713583087,
+      "mae_rating_scale": 1.2908833674022129
+    },
+    "validation_user_mean": {
+      "pairs": 140,
+      "rmse_rating_scale": 1.8181379940009768,
+      "mae_rating_scale": 1.3483918541499533
+    },
+    "candidate_count": 4,
+    "test_evaluated_at_selection": false,
+    "limitation": "140 known validation pairs; sample uncertainty can reverse model ordering."
+  },
+  "candidate_validation_results": [
+    {
+      "name": "bias_only_u0_i20",
+      "kind": "bias_only",
+      "user_shrinkage": 0.0,
+      "item_shrinkage": 20.0,
+      "residual_scale": 0.0,
+      "l2": 1e-05,
+      "validation": {
+        "pairs": 140,
+        "rmse_rating_scale": 1.7475726909521183,
+        "mae_rating_scale": 1.2898133516311645
+      },
+      "best_epoch": null,
+      "epochs_completed": 0,
+      "history": [],
+      "baseline_summary": {
+        "train_pairs": 111875,
+        "users": 15312,
+        "books": 5000,
+        "global_mean_rating": 7.780013500899776,
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "biases_trainable": false,
+        "normalization": "(rating - 1) / 9",
+        "prediction_reporting": "clip normalized prediction to [0, 1]",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "hidden_activation": "leaky_relu (negative_slope=0.2)"
+      },
+      "first_step_trace": {},
+      "seconds": 5.921358675999954
+    },
+    {
+      "name": "residual_u0_i20_s025",
+      "kind": "neural",
+      "user_shrinkage": 0.0,
+      "item_shrinkage": 20.0,
+      "residual_scale": 0.25,
+      "l2": 1e-05,
+      "validation": {
+        "pairs": 140,
+        "rmse_rating_scale": 1.7466083457956485,
+        "mae_rating_scale": 1.290877001626151
+      },
+      "best_epoch": 1,
+      "epochs_completed": 4,
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.022760555148124695,
+          "train_rmse": 1.3577941548696182,
+          "val_mse": 0.03766223043203354,
+          "val_rmse": 1.7466083318805954
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.022760866209864616,
+          "train_rmse": 1.3578034331224214,
+          "val_mse": 0.03771652653813362,
+          "val_rmse": 1.7478668855461572
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.022758454084396362,
+          "train_rmse": 1.357731483333912,
+          "val_mse": 0.03768312931060791,
+          "val_rmse": 1.7470928636335392
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.02275882661342621,
+          "train_rmse": 1.3577425955193136,
+          "val_mse": 0.03767531365156174,
+          "val_rmse": 1.7469116765814179
+        }
+      ],
+      "baseline_summary": {
+        "train_pairs": 111875,
+        "users": 15312,
+        "books": 5000,
+        "global_mean_rating": 7.780013500899776,
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "biases_trainable": false,
+        "normalization": "(rating - 1) / 9",
+        "prediction_reporting": "clip normalized prediction to [0, 1]",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "hidden_activation": "leaky_relu (negative_slope=0.2)"
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            14257,
+            496
+          ],
+          [
+            6281,
+            2902
+          ],
+          [
+            5640,
+            136
+          ],
+          [
+            10973,
+            2850
+          ],
+          [
+            12009,
+            427
+          ],
+          [
+            8097,
+            492
+          ],
+          [
+            5832,
+            3301
+          ],
+          [
+            5860,
+            3259
+          ]
+        ],
+        "targets_normalized": [
+          0.6666666865348816,
+          0.4444444477558136,
+          0.7777777910232544,
+          0.7777777910232544,
+          1.0,
+          0.7777777910232544,
+          0.3333333432674408,
+          0.3333333432674408
+        ],
+        "predictions_before": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "predictions_after": [
+          0.7501655220985413,
+          0.794257402420044,
+          0.8478456139564514,
+          0.7409061789512634,
+          0.609311044216156,
+          0.9127572178840637,
+          0.6004157662391663,
+          0.2412402182817459
+        ],
+        "mse_before": 0.021850187331438065,
+        "regularization_loss": 0.003305537858977914,
+        "total_loss_before": 0.025155724957585335,
+        "mse_after": 0.021849248558282852,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.00028583177481777966,
+          "residual_rating_model/book_embedding/embeddings": 0.0001635279186302796,
+          "residual_rating_model/hidden_1/kernel": 0.00012280858936719596,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 9.326511644758284e-05,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 9.354171197628602e-05,
+          "residual_rating_model/rating_residual/bias": 0.0007716756081208587
+        },
+        "user_embedding_before": [
+          -0.04974351078271866,
+          -0.010197926312685013,
+          0.0013237372040748596,
+          0.013852965086698532,
+          -0.02267543040215969,
+          0.001559235155582428,
+          -0.020605003461241722,
+          -0.016761384904384613,
+          -0.0402938611805439,
+          0.04074013605713844,
+          -0.006402552127838135,
+          0.020116988569498062,
+          0.01314595714211464,
+          0.011956442147493362,
+          -0.0458027720451355,
+          -0.010971210896968842
+        ],
+        "user_embedding_gradient": [
+          -9.94870219983568e-07,
+          -2.039585211832673e-07,
+          2.64747441747204e-08,
+          2.7705928573595884e-07,
+          -4.5350859068093996e-07,
+          3.118470104368498e-08,
+          -4.1210006429537316e-07,
+          -3.3522769626870286e-07,
+          -8.058772209551535e-07,
+          8.148027177412587e-07,
+          -1.2805104177004978e-07,
+          4.023397650598781e-07,
+          2.629191442338197e-07,
+          2.391288376202283e-07,
+          -9.160553986475861e-07,
+          -2.1942420858067635e-07
+        ],
+        "user_embedding_after": [
+          -0.049504198133945465,
+          -0.010137337259948254,
+          0.0013154346961528063,
+          0.013772409409284592,
+          -0.022550007328391075,
+          0.001549470005556941,
+          -0.020489711314439774,
+          -0.016665538772940636,
+          -0.04009077697992325,
+          0.04053526371717453,
+          -0.006363634951412678,
+          0.020004119724035263,
+          0.013069197535514832,
+          0.011886139400303364,
+          -0.045578159391880035,
+          -0.010906325653195381
+        ],
+        "embedding_delta_norm": 0.0005184303736314178,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros; first data update learns the residual head",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "seconds": 16.99529525999992
+    },
+    {
+      "name": "residual_u0_i20_s100",
+      "kind": "neural",
+      "user_shrinkage": 0.0,
+      "item_shrinkage": 20.0,
+      "residual_scale": 1.0,
+      "l2": 1e-05,
+      "validation": {
+        "pairs": 140,
+        "rmse_rating_scale": 1.7467858152340254,
+        "mae_rating_scale": 1.290619468688965
+      },
+      "best_epoch": 1,
+      "epochs_completed": 4,
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.02275935746729374,
+          "train_rmse": 1.3577584302263759,
+          "val_mse": 0.03766988217830658,
+          "val_rmse": 1.746785750011384
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.02276504598557949,
+          "train_rmse": 1.35792810002295,
+          "val_mse": 0.037738725543022156,
+          "val_rmse": 1.7483811852638984
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.022758696228265762,
+          "train_rmse": 1.3577387062647683,
+          "val_mse": 0.03767713904380798,
+          "val_rmse": 1.7469539955443725
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.02275938168168068,
+          "train_rmse": 1.3577591525068557,
+          "val_mse": 0.037704624235630035,
+          "val_rmse": 1.7475910743323315
+        }
+      ],
+      "baseline_summary": {
+        "train_pairs": 111875,
+        "users": 15312,
+        "books": 5000,
+        "global_mean_rating": 7.780013500899776,
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "biases_trainable": false,
+        "normalization": "(rating - 1) / 9",
+        "prediction_reporting": "clip normalized prediction to [0, 1]",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "hidden_activation": "leaky_relu (negative_slope=0.2)"
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            14257,
+            496
+          ],
+          [
+            6281,
+            2902
+          ],
+          [
+            5640,
+            136
+          ],
+          [
+            10973,
+            2850
+          ],
+          [
+            12009,
+            427
+          ],
+          [
+            8097,
+            492
+          ],
+          [
+            5832,
+            3301
+          ],
+          [
+            5860,
+            3259
+          ]
+        ],
+        "targets_normalized": [
+          0.6666666865348816,
+          0.4444444477558136,
+          0.7777777910232544,
+          0.7777777910232544,
+          1.0,
+          0.7777777910232544,
+          0.3333333432674408,
+          0.3333333432674408
+        ],
+        "predictions_before": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "predictions_after": [
+          0.7509011030197144,
+          0.7949851155281067,
+          0.8486763834953308,
+          0.7416395545005798,
+          0.610088050365448,
+          0.9135066270828247,
+          0.6012500524520874,
+          0.24195420742034912
+        ],
+        "mse_before": 0.021850187331438065,
+        "regularization_loss": 0.003305537858977914,
+        "total_loss_before": 0.025155724957585335,
+        "mse_after": 0.021847069263458252,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.00028583177481777966,
+          "residual_rating_model/book_embedding/embeddings": 0.0001635279186302796,
+          "residual_rating_model/hidden_1/kernel": 0.00012280858936719596,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 9.326511644758284e-05,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 0.0003741668479051441,
+          "residual_rating_model/rating_residual/bias": 0.0030867024324834347
+        },
+        "user_embedding_before": [
+          -0.04974351078271866,
+          -0.010197926312685013,
+          0.0013237372040748596,
+          0.013852965086698532,
+          -0.02267543040215969,
+          0.001559235155582428,
+          -0.020605003461241722,
+          -0.016761384904384613,
+          -0.0402938611805439,
+          0.04074013605713844,
+          -0.006402552127838135,
+          0.020116988569498062,
+          0.01314595714211464,
+          0.011956442147493362,
+          -0.0458027720451355,
+          -0.010971210896968842
+        ],
+        "user_embedding_gradient": [
+          -9.94870219983568e-07,
+          -2.039585211832673e-07,
+          2.64747441747204e-08,
+          2.7705928573595884e-07,
+          -4.5350859068093996e-07,
+          3.118470104368498e-08,
+          -4.1210006429537316e-07,
+          -3.3522769626870286e-07,
+          -8.058772209551535e-07,
+          8.148027177412587e-07,
+          -1.2805104177004978e-07,
+          4.023397650598781e-07,
+          2.629191442338197e-07,
+          2.391288376202283e-07,
+          -9.160553986475861e-07,
+          -2.1942420858067635e-07
+        ],
+        "user_embedding_after": [
+          -0.049504198133945465,
+          -0.010137337259948254,
+          0.0013154346961528063,
+          0.013772409409284592,
+          -0.022550007328391075,
+          0.001549470005556941,
+          -0.020489711314439774,
+          -0.016665538772940636,
+          -0.04009077697992325,
+          0.04053526371717453,
+          -0.006363634951412678,
+          0.020004119724035263,
+          0.013069197535514832,
+          0.011886139400303364,
+          -0.045578159391880035,
+          -0.010906325653195381
+        ],
+        "embedding_delta_norm": 0.0005184303736314178,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "residual_scale": 1.0,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros; first data update learns the residual head",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "seconds": 16.66881446499997
+    },
+    {
+      "name": "residual_u0_i20_s025_l2e4",
+      "kind": "neural",
+      "user_shrinkage": 0.0,
+      "item_shrinkage": 20.0,
+      "residual_scale": 0.25,
+      "l2": 0.0001,
+      "validation": {
+        "pairs": 140,
+        "rmse_rating_scale": 1.7466038713583087,
+        "mae_rating_scale": 1.2908833674022129
+      },
+      "best_epoch": 1,
+      "epochs_completed": 4,
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.022760599851608276,
+          "train_rmse": 1.3577954882751198,
+          "val_mse": 0.03766203671693802,
+          "val_rmse": 1.7466038400484465
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.022760869935154915,
+          "train_rmse": 1.3578035442388372,
+          "val_mse": 0.03771655261516571,
+          "val_rmse": 1.747867489779595
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.022758454084396362,
+          "train_rmse": 1.357731483333912,
+          "val_mse": 0.0376831479370594,
+          "val_rmse": 1.7470932954200848
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.02275882102549076,
+          "train_rmse": 1.3577424288372046,
+          "val_mse": 0.03767532855272293,
+          "val_rmse": 1.7469120220464902
+        }
+      ],
+      "baseline_summary": {
+        "train_pairs": 111875,
+        "users": 15312,
+        "books": 5000,
+        "global_mean_rating": 7.780013500899776,
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "biases_trainable": false,
+        "normalization": "(rating - 1) / 9",
+        "prediction_reporting": "clip normalized prediction to [0, 1]",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "hidden_activation": "leaky_relu (negative_slope=0.2)"
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            14257,
+            496
+          ],
+          [
+            6281,
+            2902
+          ],
+          [
+            5640,
+            136
+          ],
+          [
+            10973,
+            2850
+          ],
+          [
+            12009,
+            427
+          ],
+          [
+            8097,
+            492
+          ],
+          [
+            5832,
+            3301
+          ],
+          [
+            5860,
+            3259
+          ]
+        ],
+        "targets_normalized": [
+          0.6666666865348816,
+          0.4444444477558136,
+          0.7777777910232544,
+          0.7777777910232544,
+          1.0,
+          0.7777777910232544,
+          0.3333333432674408,
+          0.3333333432674408
+        ],
+        "predictions_before": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "predictions_after": [
+          0.750165581703186,
+          0.7942575812339783,
+          0.8478452563285828,
+          0.7409062385559082,
+          0.6093108654022217,
+          0.9127572774887085,
+          0.6004153490066528,
+          0.24124033749103546
+        ],
+        "mse_before": 0.021850187331438065,
+        "regularization_loss": 0.0330553762614727,
+        "total_loss_before": 0.05490556359291077,
+        "mse_after": 0.02184925228357315,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.0028583176899701357,
+          "residual_rating_model/book_embedding/embeddings": 0.0016352790407836437,
+          "residual_rating_model/hidden_1/kernel": 0.0012280859518796206,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 0.0009326512226834893,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 9.354171197628602e-05,
+          "residual_rating_model/rating_residual/bias": 0.0007716756081208587
+        },
+        "user_embedding_before": [
+          -0.04974351078271866,
+          -0.010197926312685013,
+          0.0013237372040748596,
+          0.013852965086698532,
+          -0.02267543040215969,
+          0.001559235155582428,
+          -0.020605003461241722,
+          -0.016761384904384613,
+          -0.0402938611805439,
+          0.04074013605713844,
+          -0.006402552127838135,
+          0.020116988569498062,
+          0.01314595714211464,
+          0.011956442147493362,
+          -0.0458027720451355,
+          -0.010971210896968842
+        ],
+        "user_embedding_gradient": [
+          -9.948701517714653e-06,
+          -2.0395852970978012e-06,
+          2.647474275363493e-07,
+          2.770593027889845e-06,
+          -4.535086191026494e-06,
+          3.118470317531319e-07,
+          -4.121000529266894e-06,
+          -3.3522769626870286e-06,
+          -8.05877243692521e-06,
+          8.148026608978398e-06,
+          -1.2805104461222072e-06,
+          4.023397650598781e-06,
+          2.629191385494778e-06,
+          2.3912882625154452e-06,
+          -9.160554327536374e-06,
+          -2.1942421426501824e-06
+        ],
+        "user_embedding_after": [
+          -0.04898471012711525,
+          -0.009805841371417046,
+          0.0012464849278330803,
+          0.01338597759604454,
+          -0.022086260840296745,
+          0.001469473005272448,
+          -0.020039189606904984,
+          -0.01624680496752262,
+          -0.03957568109035492,
+          0.04001973196864128,
+          -0.006114332005381584,
+          0.019557073712348938,
+          0.012691983953118324,
+          0.011525859124958515,
+          -0.04505939781665802,
+          -0.010561574250459671
+        ],
+        "embedding_delta_norm": 0.002106397645547986,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros; first data update learns the residual head",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "seconds": 15.606293737999977
+    }
+  ],
+  "training": {
+    "total_neural_epochs": 12,
+    "best_neural_epochs_completed": 4,
+    "best_neural_best_epoch": 1,
+    "restored_best_validation_weights": true
+  },
+  "rating_test": {
+    "test_explicit_pairs": 500,
+    "known_pairs": 135,
+    "known_pair_retention_rate": 0.27,
+    "availability": {
+      "both_known": 135,
+      "known_user_unknown_isbn": 156,
+      "unknown_user_known_isbn": 58,
+      "both_unknown": 151
+    },
+    "scale": "explicit ratings 1 through 10",
+    "prediction_convention": "Train loss uses raw linear normalized predictions plus L2. Validation, test and recommendations clip normalized predictions to [0,1], then convert to rating 1+9*p.",
+    "fallback_policy": "Both IDs known: selected predictor. Otherwise known user: train user mean; otherwise known ISBN: train item mean; otherwise: train global mean.",
+    "known_predictions_clipped": {
+      "bias_only": 4,
+      "best_neural": 4,
+      "selected_serving": 4
+    },
+    "models": {
+      "train_global_mean": {
+        "all_pairs": {
+          "pairs": 500,
+          "rmse_rating_scale": 1.915601446797602,
+          "mae_rating_scale": 1.5353588201117319
+        },
+        "known_pairs": {
+          "pairs": 135,
+          "rmse_rating_scale": 1.7536706753991114,
+          "mae_rating_scale": 1.4158481771156632
+        },
+        "by_availability": {
+          "both_known": {
+            "pairs": 135,
+            "rmse_rating_scale": 1.7536706753991114,
+            "mae_rating_scale": 1.4158481771156632
+          },
+          "known_user_unknown_isbn": {
+            "pairs": 156,
+            "rmse_rating_scale": 2.007730540892477,
+            "mae_rating_scale": 1.5912827388626272
+          },
+          "unknown_user_known_isbn": {
+            "pairs": 58,
+            "rmse_rating_scale": 1.9180070253077477,
+            "mae_rating_scale": 1.5206873434790984
+          },
+          "both_unknown": {
+            "pairs": 151,
+            "rmse_rating_scale": 1.9554474819701466,
+            "mae_rating_scale": 1.5900657811979726
+          }
+        }
+      },
+      "train_user_mean_global_fallback": {
+        "all_pairs": {
+          "pairs": 500,
+          "rmse_rating_scale": 1.7851769848704346,
+          "mae_rating_scale": 1.4101787571845898
+        },
+        "known_pairs": {
+          "pairs": 135,
+          "rmse_rating_scale": 1.4225087079170553,
+          "mae_rating_scale": 1.1392572983181235
+        },
+        "by_availability": {
+          "both_known": {
+            "pairs": 135,
+            "rmse_rating_scale": 1.4225087079170553,
+            "mae_rating_scale": 1.1392572983181235
+          },
+          "known_user_unknown_isbn": {
+            "pairs": 156,
+            "rmse_rating_scale": 1.8423337125085155,
+            "mae_rating_scale": 1.429422079722222
+          },
+          "unknown_user_known_isbn": {
+            "pairs": 58,
+            "rmse_rating_scale": 1.9180070253077477,
+            "mae_rating_scale": 1.5206873434790984
+          },
+          "both_unknown": {
+            "pairs": 151,
+            "rmse_rating_scale": 1.9554474819701466,
+            "mae_rating_scale": 1.5900657811979726
+          }
+        }
+      },
+      "train_item_mean_global_fallback": {
+        "all_pairs": {
+          "pairs": 500,
+          "rmse_rating_scale": 1.8975969131776094,
+          "mae_rating_scale": 1.5098192097254148
+        },
+        "known_pairs": {
+          "pairs": 135,
+          "rmse_rating_scale": 1.7356565954659589,
+          "mae_rating_scale": 1.371323771436132
+        },
+        "by_availability": {
+          "both_known": {
+            "pairs": 135,
+            "rmse_rating_scale": 1.7356565954659589,
+            "mae_rating_scale": 1.371323771436132
+          },
+          "known_user_unknown_isbn": {
+            "pairs": 156,
+            "rmse_rating_scale": 2.007730540892477,
+            "mae_rating_scale": 1.5912827388626272
+          },
+          "unknown_user_known_isbn": {
+            "pairs": 58,
+            "rmse_rating_scale": 1.7981111917767623,
+            "mae_rating_scale": 1.4041526809545841
+          },
+          "both_unknown": {
+            "pairs": 151,
+            "rmse_rating_scale": 1.9554474819701466,
+            "mae_rating_scale": 1.5900657811979726
+          }
+        }
+      },
+      "train_user_item_global_fallback": {
+        "all_pairs": {
+          "pairs": 500,
+          "rmse_rating_scale": 1.7706420882660616,
+          "mae_rating_scale": 1.3966607363317463
+        },
+        "known_pairs": {
+          "pairs": 135,
+          "rmse_rating_scale": 1.4225087079170553,
+          "mae_rating_scale": 1.1392572983181235
+        },
+        "by_availability": {
+          "both_known": {
+            "pairs": 135,
+            "rmse_rating_scale": 1.4225087079170553,
+            "mae_rating_scale": 1.1392572983181235
+          },
+          "known_user_unknown_isbn": {
+            "pairs": 156,
+            "rmse_rating_scale": 1.8423337125085155,
+            "mae_rating_scale": 1.429422079722222
+          },
+          "unknown_user_known_isbn": {
+            "pairs": 58,
+            "rmse_rating_scale": 1.7981111917767623,
+            "mae_rating_scale": 1.4041526809545841
+          },
+          "both_unknown": {
+            "pairs": 151,
+            "rmse_rating_scale": 1.9554474819701466,
+            "mae_rating_scale": 1.5900657811979726
+          }
+        }
+      },
+      "bias_only": {
+        "all_pairs": {
+          "pairs": 500,
+          "rmse_rating_scale": 1.765819148053549,
+          "mae_rating_scale": 1.3840833519293465
+        },
+        "known_pairs": {
+          "pairs": 135,
+          "rmse_rating_scale": 1.4001286123468444,
+          "mae_rating_scale": 1.0926743931240506
+        },
+        "by_availability": {
+          "both_known": {
+            "pairs": 135,
+            "rmse_rating_scale": 1.4001286123468444,
+            "mae_rating_scale": 1.0926743931240506
+          },
+          "known_user_unknown_isbn": {
+            "pairs": 156,
+            "rmse_rating_scale": 1.8423337125085155,
+            "mae_rating_scale": 1.429422079722222
+          },
+          "unknown_user_known_isbn": {
+            "pairs": 58,
+            "rmse_rating_scale": 1.7981111917767623,
+            "mae_rating_scale": 1.4041526809545841
+          },
+          "both_unknown": {
+            "pairs": 151,
+            "rmse_rating_scale": 1.9554474819701466,
+            "mae_rating_scale": 1.5900657811979726
+          }
+        }
+      },
+      "best_neural": {
+        "all_pairs": {
+          "pairs": 500,
+          "rmse_rating_scale": 1.7666672903390568,
+          "mae_rating_scale": 1.3858658264471688
+        },
+        "known_pairs": {
+          "pairs": 135,
+          "rmse_rating_scale": 1.4040856871099612,
+          "mae_rating_scale": 1.0992761505974664
+        },
+        "by_availability": {
+          "both_known": {
+            "pairs": 135,
+            "rmse_rating_scale": 1.4040856871099612,
+            "mae_rating_scale": 1.0992761505974664
+          },
+          "known_user_unknown_isbn": {
+            "pairs": 156,
+            "rmse_rating_scale": 1.8423337125085155,
+            "mae_rating_scale": 1.429422079722222
+          },
+          "unknown_user_known_isbn": {
+            "pairs": 58,
+            "rmse_rating_scale": 1.7981111917767623,
+            "mae_rating_scale": 1.4041526809545841
+          },
+          "both_unknown": {
+            "pairs": 151,
+            "rmse_rating_scale": 1.9554474819701466,
+            "mae_rating_scale": 1.5900657811979726
+          }
+        }
+      },
+      "selected_serving": {
+        "all_pairs": {
+          "pairs": 500,
+          "rmse_rating_scale": 1.7666672903390568,
+          "mae_rating_scale": 1.3858658264471688
+        },
+        "known_pairs": {
+          "pairs": 135,
+          "rmse_rating_scale": 1.4040856871099612,
+          "mae_rating_scale": 1.0992761505974664
+        },
+        "by_availability": {
+          "both_known": {
+            "pairs": 135,
+            "rmse_rating_scale": 1.4040856871099612,
+            "mae_rating_scale": 1.0992761505974664
+          },
+          "known_user_unknown_isbn": {
+            "pairs": 156,
+            "rmse_rating_scale": 1.8423337125085155,
+            "mae_rating_scale": 1.429422079722222
+          },
+          "unknown_user_known_isbn": {
+            "pairs": 58,
+            "rmse_rating_scale": 1.7981111917767623,
+            "mae_rating_scale": 1.4041526809545841
+          },
+          "both_unknown": {
+            "pairs": 151,
+            "rmse_rating_scale": 1.9554474819701466,
+            "mae_rating_scale": 1.5900657811979726
+          }
+        }
+      }
+    },
+    "best_neural_vs_user_mean_paired_bootstrap": {
+      "draws": 1000,
+      "seed": 123,
+      "pairs": 135,
+      "difference": "best_neural_rmse_minus_train_user_mean_rmse",
+      "point_estimate": -0.018423020807094126,
+      "interval_95_percent": [
+        -0.0710557655501309,
+        0.029074173989267735
+      ],
+      "method": "paired bootstrap percentile; one held-out rating per test user",
+      "limitation": "Conditional on this reused split; no correction for development reuse."
+    }
+  },
+  "ranking_test": {
+    "availability": {
+      "test_holdouts": 500,
+      "relevant_test_holdouts_rating_ge_8": 272,
+      "candidate_work_available": 129,
+      "train_user_history_available": 160,
+      "candidate_and_history_available": 93,
+      "candidate_isbns": 5000,
+      "candidate_canonical_works": 4364,
+      "scope": "all relevant test holdouts; unavailable targets remain explicit misses",
+      "paired": true,
+      "top_k": 10
+    },
+    "models": {
+      "neural_with_popularity_fallback": {
+        "count": 272,
+        "metrics": {
+          "precision_at_10": 0.0007352941176470588,
+          "recall_at_10": 0.007352941176470588,
+          "hit_rate_at_10": 0.007352941176470588,
+          "map_at_10": 0.004136029411764706,
+          "mrr_at_10": 0.004136029411764706,
+          "ndcg_at_10": 0.004836267929359297
+        },
+        "conditional_count": 93,
+        "conditional_metrics": {
+          "precision_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "hit_rate_at_10": 0.0,
+          "map_at_10": 0.0,
+          "mrr_at_10": 0.0,
+          "ndcg_at_10": 0.0
+        }
+      },
+      "item_based_with_popularity_fallback": {
+        "count": 272,
+        "metrics": {
+          "precision_at_10": 0.001838235294117647,
+          "recall_at_10": 0.01838235294117647,
+          "hit_rate_at_10": 0.01838235294117647,
+          "map_at_10": 0.011488970588235295,
+          "mrr_at_10": 0.011488970588235295,
+          "ndcg_at_10": 0.013151927882090603
+        },
+        "conditional_count": 93,
+        "conditional_metrics": {
+          "precision_at_10": 0.0032258064516129037,
+          "recall_at_10": 0.03225806451612903,
+          "hit_rate_at_10": 0.03225806451612903,
+          "map_at_10": 0.021505376344086023,
+          "mrr_at_10": 0.021505376344086023,
+          "ndcg_at_10": 0.024321069969278658
+        }
+      },
+      "popularity": {
+        "count": 272,
+        "metrics": {
+          "precision_at_10": 0.001838235294117647,
+          "recall_at_10": 0.01838235294117647,
+          "hit_rate_at_10": 0.01838235294117647,
+          "map_at_10": 0.012014180672268907,
+          "mrr_at_10": 0.012014180672268907,
+          "ndcg_at_10": 0.013414699301908316
+        },
+        "conditional_count": 93,
+        "conditional_metrics": {
+          "precision_at_10": 0.0032258064516129037,
+          "recall_at_10": 0.03225806451612903,
+          "hit_rate_at_10": 0.03225806451612903,
+          "map_at_10": 0.02304147465437788,
+          "mrr_at_10": 0.02304147465437788,
+          "ndcg_at_10": 0.025089605734767026
+        }
+      }
+    },
+    "evaluated_neural_candidate": "residual_u0_i20_s025_l2e4",
+    "selection_objective": "known validation rating RMSE, not ranking metrics"
+  },
+  "previous_published_original_nn": {
+    "source": "/content/book-recommendation-neural-20261014-residual/System-Recommendation/docs/evidence/neural_colab_t4_results.json",
+    "same_input_sha256_verified": true,
+    "previous_completed_utc": "2026-10-13T17:15:17.436623+00:00",
+    "scope": "Published prior run on these identical known test pairs; not retrained here",
+    "known_pairs": 135,
+    "neural": {
+      "explicit_pairs": 500,
+      "known_pairs": 135,
+      "unknown_pairs": 365,
+      "mse_normalized": 0.027932338416576385,
+      "rmse_rating_scale": 1.5041673483168976,
+      "scope": "known_user_and_book_pairs_only",
+      "mae_rating_scale": 1.1892129156324598
+    },
+    "user_mean": {
+      "known_pairs": 135,
+      "scope": "same_known_user_and_isbn_pairs_as_neural",
+      "rmse_rating_scale": 1.4225087127027538,
+      "mae_rating_scale": 1.1392572968094437
+    },
+    "previous_validation_rmse": 1.6210179161810472
+  },
+  "model_roundtrip_verified": {
+    "final_model": true,
+    "best_neural_model": true
+  },
+  "interpretation": "Development replication on a previously inspected test split. Four candidates predeclared, selected only by validation. Includes all 500 test pairs with deterministic train-only cold fallback. A bias-only winner is not evidence of neural improvement. No claim of superiority on independent unseen data.",
+  "total_seconds": 94.48609466599987
+}

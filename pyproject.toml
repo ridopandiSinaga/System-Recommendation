@@ -3,7 +3,7 @@ name = "book-recommender"
 version = "0.1.0"
 description = "Book recommendation system using Kaggle Book Recommendation Dataset."
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "joblib>=1.4",
     "kaggle>=1.6",
@@ -21,6 +21,9 @@ dependencies = [
 
 [project.optional-dependencies]
 app = []
+neural = [
+    "tensorflow>=2.20,<2.22",
+]
 api = [
     "fastapi>=0.115,<1",
     "uvicorn>=0.34,<1",

@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "project": "ridopandiSinaga/System-Recommendation",
+  "session_name": "book-recommendation-neural-20261013",
+  "account_free_without_paid_balance_confirmed_by_user": true,
+  "account_metadata_api_status": 403,
+  "billing_confirmation_source": "user",
+  "gpu": "Tesla T4",
+  "gpu_memory_mib": 15360,
+  "tensorflow_version": "2.21.0",
+  "python_version": "3.13.15",
+  "main_run_seed": 42,
+  "main_run_epochs_completed": 5,
+  "best_validation_epoch": 2,
+  "backups": [
+    {
+      "archive": "epoch_001_snapshot.tar.gz",
+      "bytes": 6246493,
+      "sha256": "aca019b36517cba744247a2e2eae4099ff023e0997b6ed1b509d832d70773470",
+      "files": 15,
+      "verified_utc": "2026-10-13T17:20:11.186389+00:00"
+    },
+    {
+      "archive": "epoch_002_snapshot.tar.gz",
+      "bytes": 6232604,
+      "sha256": "f623e3d0cddc8efab3c9f8c0a82601c8ec2f4a2de6b9328a990f1d9770a0c36a",
+      "files": 15,
+      "verified_utc": "2026-10-13T17:20:13.413480+00:00"
+    },
+    {
+      "archive": "epoch_003_snapshot.tar.gz",
+      "bytes": 6232327,
+      "sha256": "30f0671ba862133530d93621830bc1e28d64f3595a4292017ae8c876a46dfb43",
+      "files": 15,
+      "verified_utc": "2026-10-13T17:20:15.640866+00:00"
+    },
+    {
+      "archive": "epoch_004_snapshot.tar.gz",
+      "bytes": 6235343,
+      "sha256": "27d861c3a997bae1a6dd222c4b577d7dce661316cb5c8abf174a15d6a7a49181",
+      "files": 15,
+      "verified_utc": "2026-10-13T17:20:18.171129+00:00"
+    },
+    {
+      "archive": "epoch_005_snapshot.tar.gz",
+      "bytes": 6239985,
+      "sha256": "366a620f1c38c353b20a40986e98d11355b3a37ab7b0489106d2d53e38271b8f",
+      "files": 15,
+      "verified_utc": "2026-10-13T17:20:20.112501+00:00"
+    },
+    {
+      "archive": "final_backup.tar.gz",
+      "bytes": 9920292,
+      "sha256": "e97552332eae06ea341069749ea2c8d59fa084f3e9cc1e72e651c738b9bf46fd",
+      "files": 26,
+      "verified_utc": "2026-10-13T17:20:23.610448+00:00"
+    },
+    {
+      "archive": "inputs_backup.tar.gz",
+      "bytes": 1072666,
+      "sha256": "f03338ee9ba4c468baf4dab1652dc77b89bfc809115a9a2df3e10764bf0fd38e",
+      "files": 10,
+      "verified_utc": "2026-10-13T17:20:26.096311+00:00"
+    },
+    {
+      "archive": "runtime_verification.tar.gz",
+      "bytes": 789372,
+      "sha256": "ea755b9abb9064946810fac5d1b1b906e98148131983d3da95989ec8bda13437",
+      "files": 12,
+      "verified_utc": "2026-10-13T17:22:13.290633+00:00"
+    }
+  ],
+  "verification": [
+    "remote manifest SHA-256 and byte size",
+    "gzip CRC and tar member safety",
+    "extracted file SHA-256",
+    "source files used remotely match local neural and worker code",
+    "saved model prediction parity",
+    "executed notebook source/dependency stamp"
+  ],
+  "runtime_tests": {
+    "passed": 228,
+    "duration_seconds": 69.8,
+    "coverage_percent": 80.58,
+    "log_sha256": "24b454929d5103afc1772cf90bbf1e964ba19b866a0ceb023db2284a3780afe6"
+  },
+  "local_monitor_integrity_tests": {
+    "passed": 19
+  },
+  "shutdown": {
+    "stopped": true,
+    "stop_operation": "stop-project-runtime-20261013T172308-6c5d3940.json",
+    "verification_operation": "verify-project-stopped-20261013T172340-8eda5f55.json",
+    "observed_status": "project session not found",
+    "verified_utc": "2026-10-13T17:24:34.373340+00:00"
+  },
+  "local_artifact_path_relative_to_project": "artifacts/colab/run-20261013"
+}

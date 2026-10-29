@@ -1,0 +1,24 @@
+{
+  "train_pairs": 111875,
+  "train_users": 15312,
+  "train_books": 5000,
+  "train_density": 0.0014612722048066877,
+  "median_ratings_per_user": 3.0,
+  "users_at_most_3_ratings_fraction": 0.5259926854754441,
+  "users_at_most_5_ratings_fraction": 0.6986677115987461,
+  "fixed_split_source": "artifacts/colab/run-20261013/final/inputs",
+  "validation": {
+    "pairs": 500,
+    "both_known": 140,
+    "known_user_unknown_book": 149,
+    "unknown_user_known_book": 64,
+    "both_unknown": 147
+  },
+  "test": {
+    "pairs": 500,
+    "both_known": 135,
+    "known_user_unknown_book": 156,
+    "unknown_user_known_book": 58,
+    "both_unknown": 151
+  }
+}

@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "project": "System-Recommendation",
+  "session_name": "book-recommendation-neural-20261014-ablation",
+  "experiment_directory": "experiment",
+  "account_free_without_paid_balance_confirmed_by_user": true,
+  "paid_resources_authorized": false,
+  "same_owned_runtime_shared_by_ablation_and_warmup": true,
+  "gpu": "Tesla T4, 15360 MiB, 580.82.07",
+  "tensorflow_version": "2.21.0",
+  "candidate_count": 8,
+  "all_candidates_completed": true,
+  "total_neural_epochs": 24,
+  "test_uploaded_as_experiment_input": false,
+  "test_used": false,
+  "model_promotion_to_application": false,
+  "backups": [
+    {
+      "archive": "inputs_backup.tar.gz",
+      "sha256": "f0d46e520862cd0bc0480048c3c128848b363a8727a46e007ced12bbe0871993",
+      "bytes": 1054355,
+      "kind": "training_inputs",
+      "epoch": null,
+      "members": 9,
+      "verified_utc": "2026-10-13T20:26:37.278562+00:00"
+    },
+    {
+      "archive": "epoch_001_snapshot.tar.gz",
+      "sha256": "882b81b89612cb1edb01eb0f3a6ab3320a07db83d85d0220ce1d8f96cf9cb42d",
+      "bytes": 3745203,
+      "kind": "epoch_checkpoint",
+      "epoch": 0,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:26:45.779173+00:00"
+    },
+    {
+      "archive": "epoch_002_snapshot.tar.gz",
+      "sha256": "e72ad7b16b2d512fa6a559c0845465c7c673fb811706a2e7f8d135dbdda1c288",
+      "bytes": 3745688,
+      "kind": "epoch_checkpoint",
+      "epoch": 0,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:27:11.084782+00:00"
+    },
+    {
+      "archive": "epoch_003_snapshot.tar.gz",
+      "sha256": "c51d155d5d606ff6656724ba9a22db86d707d9e643cf27e260d119918ebbf7b9",
+      "bytes": 6274044,
+      "kind": "epoch_checkpoint",
+      "epoch": 2,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:27:22.177000+00:00"
+    },
+    {
+      "archive": "epoch_004_snapshot.tar.gz",
+      "sha256": "932ba30f707a9a1a9212d73ef17b87e209bd6840b5c5ea23ce595f5a36ef76fd",
+      "bytes": 6314314,
+      "kind": "epoch_checkpoint",
+      "epoch": 4,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:27:30.668172+00:00"
+    },
+    {
+      "archive": "epoch_005_snapshot.tar.gz",
+      "sha256": "0e94cb2afa1d7670a5df3dd91f3d30aeec514ea3178df68a177f5ea9054bc8d2",
+      "bytes": 6321599,
+      "kind": "epoch_checkpoint",
+      "epoch": 4,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:27:42.681355+00:00"
+    },
+    {
+      "archive": "epoch_006_snapshot.tar.gz",
+      "sha256": "1351633560bd205e5b2140095973d4c37e6efcb19461e0741cff4a218ea15d78",
+      "bytes": 6295127,
+      "kind": "epoch_checkpoint",
+      "epoch": 6,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:27:52.911888+00:00"
+    },
+    {
+      "archive": "epoch_007_snapshot.tar.gz",
+      "sha256": "41ad4cb6c02bc544d849c37821c5bed6659edd726c3ff26171fdf97a96197643",
+      "bytes": 6317296,
+      "kind": "epoch_checkpoint",
+      "epoch": 8,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:28:09.664184+00:00"
+    },
+    {
+      "archive": "epoch_008_snapshot.tar.gz",
+      "sha256": "98d503906dd3735b11f98592d42b1fc441932622119f375d4a9815e4e9b65184",
+      "bytes": 6324465,
+      "kind": "epoch_checkpoint",
+      "epoch": 8,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:29:07.064827+00:00"
+    },
+    {
+      "archive": "epoch_009_snapshot.tar.gz",
+      "sha256": "6635c354c2dd64e025526c23c7c5138bfa38f99fd09b47d2e44f59ab98c2aa2b",
+      "bytes": 6207210,
+      "kind": "epoch_checkpoint",
+      "epoch": 10,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:29:15.405918+00:00"
+    },
+    {
+      "archive": "epoch_010_snapshot.tar.gz",
+      "sha256": "d37514641816892c4546ed70963acf8be5cbef195693e9584a98e7283931f44a",
+      "bytes": 6221133,
+      "kind": "epoch_checkpoint",
+      "epoch": 12,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:29:32.305440+00:00"
+    },
+    {
+      "archive": "epoch_011_snapshot.tar.gz",
+      "sha256": "490d73548841ad6bae3c466063f1d5e04be373881e6ae98ae9e18452ae9629c0",
+      "bytes": 6228692,
+      "kind": "epoch_checkpoint",
+      "epoch": 12,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:29:45.983562+00:00"
+    },
+    {
+      "archive": "epoch_012_snapshot.tar.gz",
+      "sha256": "09f156e2461c928451949dabd66851b1a3cd341aacae5f6cb37592acc93f879e",
+      "bytes": 6237287,
+      "kind": "epoch_checkpoint",
+      "epoch": 14,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:29:56.009716+00:00"
+    },
+    {
+      "archive": "epoch_013_snapshot.tar.gz",
+      "sha256": "905b83a87c34b546bed99449d8f5ec5a689aa9664d2f6d898e306d2e04439721",
+      "bytes": 6270826,
+      "kind": "epoch_checkpoint",
+      "epoch": 16,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:30:06.911548+00:00"
+    },
+    {
+      "archive": "epoch_014_snapshot.tar.gz",
+      "sha256": "4faf038b7bd7d54ab96e04881c3f3903412718dc94f8103abd349b183e7a4415",
+      "bytes": 6278555,
+      "kind": "epoch_checkpoint",
+      "epoch": 16,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:30:15.535687+00:00"
+    },
+    {
+      "archive": "epoch_015_snapshot.tar.gz",
+      "sha256": "8c9cd4ee0565dfdef37ae1e59e728d29c1dc44befad2e4deaa02a094a046ed00",
+      "bytes": 6279179,
+      "kind": "epoch_checkpoint",
+      "epoch": 18,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:30:22.953256+00:00"
+    },
+    {
+      "archive": "epoch_016_snapshot.tar.gz",
+      "sha256": "94cf735b92d2f7e118c830b330e131aaad783cc1f9934a0491164ffefb2b40d1",
+      "bytes": 6288632,
+      "kind": "epoch_checkpoint",
+      "epoch": 20,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:30:34.042771+00:00"
+    },
+    {
+      "archive": "epoch_017_snapshot.tar.gz",
+      "sha256": "ada7db586a36b989da4dd8cb538035a9f5a96391bc1f62987fb4748f4ea39810",
+      "bytes": 6295240,
+      "kind": "epoch_checkpoint",
+      "epoch": 20,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:30:42.248307+00:00"
+    },
+    {
+      "archive": "epoch_018_snapshot.tar.gz",
+      "sha256": "0e1f00140b5342ca4c8baf447ab5ad4f1b29f27643bf59242f2e0672e75acd6d",
+      "bytes": 6219090,
+      "kind": "epoch_checkpoint",
+      "epoch": 22,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:30:52.294959+00:00"
+    },
+    {
+      "archive": "epoch_019_snapshot.tar.gz",
+      "sha256": "2d4e5204c9422d95f3381b3a487ba86f8093fe5ef8afc09a3eaed270b9a15ad3",
+      "bytes": 6232908,
+      "kind": "epoch_checkpoint",
+      "epoch": 24,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:31:00.567587+00:00"
+    },
+    {
+      "archive": "epoch_020_snapshot.tar.gz",
+      "sha256": "fd2dd1e6e8c8b627c4f87c8f92c334a845b8cfc332c508b000f62d409fdaa1b6",
+      "bytes": 6241591,
+      "kind": "epoch_checkpoint",
+      "epoch": 24,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:31:15.971195+00:00"
+    },
+    {
+      "archive": "final_backup.tar.gz",
+      "sha256": "47ab873367e4000ae37b9712f65753649668b1bbd43d0157692e46cf3bb973d1",
+      "bytes": 29443472,
+      "kind": "completed_experiment",
+      "epoch": null,
+      "members": 76,
+      "verified_utc": "2026-10-13T20:31:43.448790+00:00"
+    },
+    {
+      "archive": "runtime_verification.tar.gz",
+      "sha256": "9ae21e07646c47db923a3aae0bf181c24bd2803d8919a830b55548a6fe11524b",
+      "bytes": 31928,
+      "kind": "runtime_verification",
+      "epoch": null,
+      "members": 9,
+      "verified_utc": "2026-10-13T20:32:43.291589+00:00"
+    }
+  ],
+  "verification": {
+    "all_backups_verified": true,
+    "method": "SHA-256, byte size, gzip CRC, tar containment, and every extracted file hash",
+    "all_candidate_model_roundtrips_verified": true,
+    "source_metadata_matches_archived_executed_source": true,
+    "no_test_csv_in_archived_inputs": true
+  },
+  "runtime_tests": {
+    "passed": 6,
+    "file": "verification/ablation_tests.log"
+  },
+  "local_monitor_tests": {
+    "passed": 26
+  },
+  "shutdown": {
+    "stopped": true,
+    "after_both_runs_backed_up_and_verified": true,
+    "stop_operation": "artifacts/colab/operations/ablation-stop-owned-session-20261013T204458-e6a9c8c5.json",
+    "server_check_operation": "artifacts/colab/operations/ablation-verify-server-stopped-20261013T204527-aa481b58.json",
+    "server_reports_no_active_sessions": true,
+    "completed_at_utc": "2026-10-13T20:45:08.692124+00:00"
+  },
+  "local_artifact_path_relative_to_project": "artifacts/colab/run-20261014-ablation"
+}
