@@ -4,7 +4,7 @@
 
 A book recommendation app with a hybrid of metadata similarity, item-based collaborative filtering, and popularity. Streamlit and FastAPI load the same verified model bundle. A separate experiment series tests whether neural models improve recommendations on Book-Crossing data.
 
-[Run locally](#run-the-app) · [Case study PDF](docs/portfolio/book-recommender.pdf) · [Portfolio](https://ridopandisinaga.github.io/portfolio/#book-recommender) · [Experiment guide](docs/EXPERIMENTS.md)
+[Live demo](https://books-system-recommendation.streamlit.app/) · [Case study PDF](docs/portfolio/book-recommender.pdf) · [Portfolio](https://ridopandisinaga.github.io/portfolio/#book-recommender) · [Experiment guide](docs/EXPERIMENTS.md)
 
 ![Streamlit Book Recommender showing the catalog summary and hybrid recommendations](docs/images/book-recommender.webp)
 
@@ -36,8 +36,6 @@ Each user has one held-out relevant work, so Recall@10 is the share whose target
 A separate [catalog-size benchmark](docs/CATALOG_SIZE_BENCHMARK.md) retained the 1,000-interaction / 3,000-content configuration: larger catalogs improved reach, but neither challenger passed all selection gates.
 
 ## Run the app
-
-The [hosted demo](https://books-system-recommendation.streamlit.app/) is currently unavailable: its Python 3.13 runtime does not match the Python 3.12 bundle. The commands below use the compatible environment.
 
 Install [uv](https://docs.astral.sh/uv/), then run from a terminal:
 
