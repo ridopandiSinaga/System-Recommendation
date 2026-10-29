@@ -1,0 +1,4991 @@
+{
+  "schema_version": 1,
+  "experiment_kind": "multiseed_internal_development",
+  "status": "completed",
+  "completed_utc": "2026-10-13T21:04:13.934208+00:00",
+  "configuration": {
+    "started_utc": "2026-10-13T21:00:50.054673+00:00",
+    "candidates": [
+      {
+        "name": "split17_mlp_seed42",
+        "kind": "neural",
+        "split_seed": 17,
+        "initialization_seed": 42,
+        "architecture": "mlp",
+        "l2": 1e-05
+      },
+      {
+        "name": "split17_residual_seed42",
+        "kind": "neural",
+        "split_seed": 17,
+        "initialization_seed": 42,
+        "architecture": "residual",
+        "l2": 0.0
+      },
+      {
+        "name": "split17_mlp_seed2026",
+        "kind": "neural",
+        "split_seed": 17,
+        "initialization_seed": 2026,
+        "architecture": "mlp",
+        "l2": 1e-05
+      },
+      {
+        "name": "split17_residual_seed2026",
+        "kind": "neural",
+        "split_seed": 17,
+        "initialization_seed": 2026,
+        "architecture": "residual",
+        "l2": 0.0
+      },
+      {
+        "name": "split17_mlp_seed7",
+        "kind": "neural",
+        "split_seed": 17,
+        "initialization_seed": 7,
+        "architecture": "mlp",
+        "l2": 1e-05
+      },
+      {
+        "name": "split17_residual_seed7",
+        "kind": "neural",
+        "split_seed": 17,
+        "initialization_seed": 7,
+        "architecture": "residual",
+        "l2": 0.0
+      },
+      {
+        "name": "split29_mlp_seed42",
+        "kind": "neural",
+        "split_seed": 29,
+        "initialization_seed": 42,
+        "architecture": "mlp",
+        "l2": 1e-05
+      },
+      {
+        "name": "split29_residual_seed42",
+        "kind": "neural",
+        "split_seed": 29,
+        "initialization_seed": 42,
+        "architecture": "residual",
+        "l2": 0.0
+      },
+      {
+        "name": "split29_mlp_seed2026",
+        "kind": "neural",
+        "split_seed": 29,
+        "initialization_seed": 2026,
+        "architecture": "mlp",
+        "l2": 1e-05
+      },
+      {
+        "name": "split29_residual_seed2026",
+        "kind": "neural",
+        "split_seed": 29,
+        "initialization_seed": 2026,
+        "architecture": "residual",
+        "l2": 0.0
+      },
+      {
+        "name": "split29_mlp_seed7",
+        "kind": "neural",
+        "split_seed": 29,
+        "initialization_seed": 7,
+        "architecture": "mlp",
+        "l2": 1e-05
+      },
+      {
+        "name": "split29_residual_seed7",
+        "kind": "neural",
+        "split_seed": 29,
+        "initialization_seed": 7,
+        "architecture": "residual",
+        "l2": 0.0
+      }
+    ],
+    "candidate_count": 12,
+    "split_seeds": [
+      17,
+      29
+    ],
+    "initialization_seeds": [
+      42,
+      2026,
+      7
+    ],
+    "architectures": [
+      "mlp",
+      "residual"
+    ],
+    "users_per_partition": 3000,
+    "training_seed_scope": "Weight initialization and minibatch shuffle; identical seed paired across architectures",
+    "deterministic_operations_requested": true,
+    "max_neural_epochs_each": 12,
+    "patience": 3,
+    "batch_size": 1024,
+    "embedding_size": 16,
+    "hidden_units": [
+      32,
+      16
+    ],
+    "learning_rate": 0.001,
+    "residual_scale": 0.25,
+    "user_shrinkage": 0.0,
+    "item_shrinkage": 20.0,
+    "max_training_seconds": 900,
+    "bootstrap_draws": 1000,
+    "selection_metric": "known_selection_rmse_rating_scale",
+    "selection_tie_breaker": "earlier predeclared candidate",
+    "split_policy": "Sample 6000 users with >=2 canonical works uniformly; disjoint 3000 selection/3000 assessment users; one uniform work each; retain all editions",
+    "metric_weighting": "Rating-pair weighted with user-cluster bootstrap",
+    "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean.",
+    "assessment_gate": "All 12 successful candidate networks frozen and hashed before assessment",
+    "original_test_used": false,
+    "original_validation_used": false,
+    "scope": "Internal development repartition of previously used training data, not a fresh test",
+    "model_promotion_to_application": false
+  },
+  "dataset": {
+    "source_pairs": 111875,
+    "source_users": 15312,
+    "source_isbns": 5000,
+    "splits": [
+      {
+        "split_seed": 17,
+        "eligible_users": 15312,
+        "source_pairs": 111875,
+        "fit_pairs": 105871,
+        "fit_users": 15312,
+        "fit_isbns": 5000,
+        "selection_pairs": 3002,
+        "assessment_pairs": 3002,
+        "selection_users": 3000,
+        "assessment_users": 3000,
+        "selection_works": 3000,
+        "assessment_works": 3000,
+        "membership_sha256": "81da16720c525ae8d9c24c46ccef735dd68956157fa3f4c08f2d6a749c62163d",
+        "partition_row_sha256": {
+          "fit": "d43058aa89dcdfdad2c56bc37144cdcd040af2742d855355eb55dc58f4a0c584",
+          "selection": "676c80ab221af8a26c3c042aa86b4f05883f4c1e518c2370d8bcf0944261995d",
+          "assessment": "bc7612ffc5bde945db8cdc0f16367db99324c08ac028224e9f1c72de6ce51c05"
+        },
+        "rating_values_used_for_split": false,
+        "all_heldout_editions_retained": true,
+        "selection_assessment_users_disjoint": true,
+        "all_users_keep_fit_history": true,
+        "user_work_overlap_count": 0,
+        "metric_weighting": "Rating-pair weighted; repeated editions remain in the same user cluster",
+        "partition_file_fingerprints": {
+          "fit_ratings.csv": {
+            "sha256": "ac5ace4bda3ef7eb78c6f0dd98fc0e554a4c3c2e2c6e2a98c2f48c66da6b56f6",
+            "bytes": 8652307
+          },
+          "selection_ratings.csv": {
+            "sha256": "0a57eb20b686e06004fb6f2946036907c7c3b37d41da3bdb58e0051b67f3dac4",
+            "bytes": 247281
+          },
+          "assessment_ratings.csv": {
+            "sha256": "2fe5dff4f1be39f7e5aa0f9dd4ac2607b1a884958dc10a572298bb8926bbf6a0",
+            "bytes": 247211
+          },
+          "membership.json": {
+            "sha256": "67f6abe3f0abf2cb6a3d7da465fa82626b158010eebe840ffa844aa2ff0ee890",
+            "bytes": 807927
+          }
+        }
+      },
+      {
+        "split_seed": 29,
+        "eligible_users": 15312,
+        "source_pairs": 111875,
+        "fit_pairs": 105869,
+        "fit_users": 15312,
+        "fit_isbns": 5000,
+        "selection_pairs": 3001,
+        "assessment_pairs": 3005,
+        "selection_users": 3000,
+        "assessment_users": 3000,
+        "selection_works": 3000,
+        "assessment_works": 3000,
+        "membership_sha256": "1a07b3853a8443c6ec1a9e105f50340dc64d7ee0cd92fe056593ef6155f686d8",
+        "partition_row_sha256": {
+          "fit": "345c052b8afbe4bae9957f89349b3656a92229194068554c0c4f7e9accb2f20b",
+          "selection": "d40504116cf2b077efdd40eee5236ac1e45b9e5d84955f779138f50932adc015",
+          "assessment": "41f45dc8327240eaedf8b4204ffcd4c6d6f1275bd406ac2210e84532bee0c687"
+        },
+        "rating_values_used_for_split": false,
+        "all_heldout_editions_retained": true,
+        "selection_assessment_users_disjoint": true,
+        "all_users_keep_fit_history": true,
+        "user_work_overlap_count": 0,
+        "metric_weighting": "Rating-pair weighted; repeated editions remain in the same user cluster",
+        "partition_file_fingerprints": {
+          "fit_ratings.csv": {
+            "sha256": "ec8b9bab0a794f6199a1d12736fbc149be3996ce3f750ca895171aed4c433edc",
+            "bytes": 8655086
+          },
+          "selection_ratings.csv": {
+            "sha256": "26e7f0a2cb482fdcf57b5576c07b127e13615d9340fa79d9cb7e3ae1133909c3",
+            "bytes": 245283
+          },
+          "assessment_ratings.csv": {
+            "sha256": "8c9bd6fb798cdf15b41beb1fad240c85edc3e45b204f66ac0b24b2a459c504ae",
+            "bytes": 246430
+          },
+          "membership.json": {
+            "sha256": "0111f6e4c1d64a0cfc4f97c7a7bbd6ea118f0e57f5b2c42918b2af52fc1e7cda",
+            "bytes": 804948
+          }
+        }
+      }
+    ],
+    "original_test_used": false,
+    "original_validation_used": false
+  },
+  "gpu": {
+    "checked_utc": "2026-10-13T21:00:50.572801+00:00",
+    "tensorflow_version": "2.21.0",
+    "cuda_build": true,
+    "physical_gpu_names": [
+      "/physical_device:GPU:0"
+    ],
+    "gpu_details": [
+      {
+        "compute_capability": [
+          7,
+          5
+        ],
+        "device_name": "Tesla T4"
+      }
+    ],
+    "logical_gpu_names": [
+      "/device:GPU:0"
+    ],
+    "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "probe_value": 128.0,
+    "probe_seconds": 0.28014550800003235,
+    "nvidia_smi_exit_code": 0,
+    "nvidia_smi": "Tesla T4, 15360 MiB, 580.82.07",
+    "determinism": {
+      "requested": true,
+      "enabled": true
+    }
+  },
+  "candidate_validation_results": [
+    {
+      "name": "split17_mlp_seed42",
+      "kind": "neural",
+      "split_seed": 17,
+      "initialization_seed": 42,
+      "architecture": "mlp",
+      "l2": 1e-05,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.030907869338989258,
+          "train_rmse": 1.5822570639621523,
+          "val_mse": 0.034847769886255264,
+          "val_rmse": 1.68008016498817
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.02418789267539978,
+          "train_rmse": 1.3997211531970868,
+          "val_mse": 0.03234901651740074,
+          "val_rmse": 1.6187249111289603
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.02258043922483921,
+          "train_rmse": 1.3524110237690228,
+          "val_mse": 0.03291087597608566,
+          "val_rmse": 1.632721946340815
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.022062839940190315,
+          "train_rmse": 1.3368208687611873,
+          "val_mse": 0.03311598300933838,
+          "val_rmse": 1.6378017657080506
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.021657628938555717,
+          "train_rmse": 1.324487804407052,
+          "val_mse": 0.03415346145629883,
+          "val_rmse": 1.6632589629880865
+        }
+      ],
+      "epochs_completed": 5,
+      "best_epoch": 2,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3002,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "54839ba1569b34a41bdc47e2b4875303dffee7384ae5fc923c3dd606f7034d11",
+          "bytes": 1330347
+        }
+      },
+      "validation": {
+        "pairs": 3002,
+        "rmse_rating_scale": 1.6187249455659911,
+        "mae_rating_scale": 1.2705827815623223
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6187249455659911,
+          "mae_rating_scale": 1.2705827815623223
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6187249455659911,
+          "mae_rating_scale": 1.2705827815623223
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            8397,
+            2805
+          ],
+          [
+            9029,
+            736
+          ],
+          [
+            7103,
+            4388
+          ],
+          [
+            7345,
+            153
+          ],
+          [
+            1128,
+            505
+          ],
+          [
+            13061,
+            4570
+          ],
+          [
+            11659,
+            1908
+          ],
+          [
+            12520,
+            962
+          ]
+        ],
+        "targets_normalized": [
+          0.7777777910232544,
+          0.8888888955116272,
+          0.1111111119389534,
+          0.7777777910232544,
+          0.6666666865348816,
+          1.0,
+          0.7777777910232544,
+          0.6666666865348816
+        ],
+        "predictions_before": [
+          0.49673086404800415,
+          0.4986952841281891,
+          0.4907713234424591,
+          0.5035972595214844,
+          0.5041832327842712,
+          0.5003214478492737,
+          0.4956039786338806,
+          0.5039610266685486
+        ],
+        "predictions_after": [
+          0.49933841824531555,
+          0.5002881288528442,
+          0.4918465316295624,
+          0.5056332349777222,
+          0.5053728222846985,
+          0.5017650127410889,
+          0.498044490814209,
+          0.5062932968139648
+        ],
+        "mse_before": 0.1062975600361824,
+        "regularization_loss": 0.003305537858977914,
+        "total_loss_before": 0.10960309952497482,
+        "mse_after": 0.10498908162117004,
+        "gradient_norms": {
+          "neural_rating_model/user_embedding/embeddings": 0.0030507317278534174,
+          "neural_rating_model/book_embedding/embeddings": 0.002935499418526888,
+          "neural_rating_model/hidden_1/kernel": 0.0019038364989683032,
+          "neural_rating_model/hidden_1/bias": 0.06011292710900307,
+          "neural_rating_model/hidden_2/kernel": 0.006676381919533014,
+          "neural_rating_model/hidden_2/bias": 0.11150134354829788,
+          "neural_rating_model/rating/kernel": 0.005067539867013693,
+          "neural_rating_model/rating/bias": 0.13029243052005768
+        },
+        "user_embedding_before": [
+          0.036740873008966446,
+          -0.010144330561161041,
+          0.048785362392663956,
+          -0.040991030633449554,
+          0.04331245645880699,
+          0.03471798822283745,
+          0.04232039675116539,
+          -0.048377323895692825,
+          0.021577443927526474,
+          0.008440088480710983,
+          -0.044096995145082474,
+          -0.024597574025392532,
+          0.046687256544828415,
+          0.005100451409816742,
+          -0.0422927625477314,
+          0.0008008480072021484
+        ],
+        "user_embedding_gradient": [
+          7.957389243529178e-06,
+          -3.115181243629195e-05,
+          -1.5891935618128628e-05,
+          -6.277194188442081e-06,
+          3.758592720259912e-05,
+          -3.827628006547457e-06,
+          3.38414465659298e-05,
+          -1.2320896530582104e-05,
+          -2.5228138838429004e-05,
+          -2.6329949832870625e-05,
+          2.7362269975128584e-05,
+          -2.7602582122199237e-06,
+          -3.990706318290904e-05,
+          -6.7784144448523875e-06,
+          -1.790485384844942e-06,
+          5.971307473373599e-06
+        ],
+        "user_embedding_after": [
+          0.036025263369083405,
+          -0.009236493147909641,
+          0.0496193952858448,
+          -0.040326040238142014,
+          0.042390067130327225,
+          0.03526557981967926,
+          0.04140586033463478,
+          -0.047581568360328674,
+          0.022466052323579788,
+          0.00933285802602768,
+          -0.04499339312314987,
+          -0.024131517857313156,
+          0.047613825649023056,
+          0.005782332271337509,
+          -0.04193125292658806,
+          0.0001470776041969657
+        ],
+        "embedding_delta_norm": 0.0030956983100622892,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "bed36251c13cc6441c272cfb63a562600ab0d0f075ca8e7409ebb4d0b848dd0b",
+          "bytes": 1330347
+        },
+        "metadata.json": {
+          "sha256": "eec37d347d2ef37d143ee6bbabf7b28d4358d86d1d5d7f2f02695daecc8a50f5",
+          "bytes": 11850683
+        }
+      },
+      "seconds": 11.543450656999994,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6270996160585327,
+          "mae_rating_scale": 1.2786225722997209
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6270996160585327,
+          "mae_rating_scale": 1.2786225722997209
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split17_residual_seed42",
+      "kind": "neural",
+      "split_seed": 17,
+      "initialization_seed": 42,
+      "architecture": "residual",
+      "l2": 0.0,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.022502904757857323,
+          "train_rmse": 1.3500871399233618,
+          "val_mse": 0.04298298805952072,
+          "val_rmse": 1.8659105103999973
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.022496549412608147,
+          "train_rmse": 1.349896478409089,
+          "val_mse": 0.042987946420907974,
+          "val_rmse": 1.8660181296261689
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.02244807407259941,
+          "train_rmse": 1.348441322372076,
+          "val_mse": 0.042993929237127304,
+          "val_rmse": 1.8661479759674235
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.02195708639919758,
+          "train_rmse": 1.333613136683575,
+          "val_mse": 0.04286035895347595,
+          "val_rmse": 1.8632469174083055
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.0205330029129982,
+          "train_rmse": 1.2896407391025047,
+          "val_mse": 0.04326768219470978,
+          "val_rmse": 1.8720796611713648
+        },
+        {
+          "epoch": 6,
+          "train_mse": 0.01776774786412716,
+          "train_rmse": 1.1996614426555101,
+          "val_mse": 0.04363530874252319,
+          "val_rmse": 1.8800159595451253
+        },
+        {
+          "epoch": 7,
+          "train_mse": 0.014428146183490753,
+          "train_rmse": 1.0810549666241542,
+          "val_mse": 0.04565838351845741,
+          "val_rmse": 1.9231040182462962
+        }
+      ],
+      "epochs_completed": 7,
+      "best_epoch": 4,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3002,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "dcd97cacce030be13b7fea1f663abb1e21f7822f9c478164f8845c05f12aad38",
+          "bytes": 1412780
+        }
+      },
+      "validation": {
+        "pairs": 3002,
+        "rmse_rating_scale": 1.8632469066989574,
+        "mae_rating_scale": 1.381993461973583
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.8632469066989574,
+          "mae_rating_scale": 1.381993461973583
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.8632469066989574,
+          "mae_rating_scale": 1.381993461973583
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            8397,
+            2805
+          ],
+          [
+            9029,
+            736
+          ],
+          [
+            7103,
+            4388
+          ],
+          [
+            7345,
+            153
+          ],
+          [
+            1128,
+            505
+          ],
+          [
+            13061,
+            4570
+          ],
+          [
+            11659,
+            1908
+          ],
+          [
+            12520,
+            962
+          ]
+        ],
+        "targets_normalized": [
+          0.7777777910232544,
+          0.8888888955116272,
+          0.1111111119389534,
+          0.7777777910232544,
+          0.6666666865348816,
+          1.0,
+          0.7777777910232544,
+          0.6666666865348816
+        ],
+        "predictions_before": [
+          0.8177357316017151,
+          0.7686562538146973,
+          0.5359155535697937,
+          0.8149997591972351,
+          0.7091678380966187,
+          0.7195006608963013,
+          0.7526642084121704,
+          0.7215381264686584
+        ],
+        "predictions_after": [
+          0.8179786205291748,
+          0.7688992619514465,
+          0.5361422896385193,
+          0.8152596354484558,
+          0.7094209790229797,
+          0.7197468280792236,
+          0.7529054284095764,
+          0.7218067049980164
+        ],
+        "mse_before": 0.021170230582356453,
+        "regularization_loss": 0.0,
+        "total_loss_before": 0.021170230582356453,
+        "mse_after": 0.021167650818824768,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.0,
+          "residual_rating_model/book_embedding/embeddings": 0.0,
+          "residual_rating_model/hidden_1/kernel": 0.0,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 0.0,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 9.236051846528426e-05,
+          "residual_rating_model/rating_residual/bias": 0.0023868121206760406
+        },
+        "user_embedding_before": [
+          0.036740873008966446,
+          -0.010144330561161041,
+          0.048785362392663956,
+          -0.040991030633449554,
+          0.04331245645880699,
+          0.03471798822283745,
+          0.04232039675116539,
+          -0.048377323895692825,
+          0.021577443927526474,
+          0.008440088480710983,
+          -0.044096995145082474,
+          -0.024597574025392532,
+          0.046687256544828415,
+          0.005100451409816742,
+          -0.0422927625477314,
+          0.0008008480072021484
+        ],
+        "user_embedding_gradient": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "user_embedding_after": [
+          0.036740873008966446,
+          -0.010144330561161041,
+          0.048785362392663956,
+          -0.040991030633449554,
+          0.04331245645880699,
+          0.03471798822283745,
+          0.04232039675116539,
+          -0.048377323895692825,
+          0.021577443927526474,
+          0.008440088480710983,
+          -0.044096995145082474,
+          -0.024597574025392532,
+          0.046687256544828415,
+          0.005100451409816742,
+          -0.0422927625477314,
+          0.0008008480072021484
+        ],
+        "embedding_delta_norm": 0.0,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.8177357316017151,
+          0.7686562538146973,
+          0.5359155535697937,
+          0.8149997591972351,
+          0.7091678380966187,
+          0.7195006608963013,
+          0.7526642084121704,
+          0.7215381264686584
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros; first data update learns the residual head",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "461f4c2b12c0d26fe5b7653ab7aacff0030d69f3b97ca1008aee2571212d0f5b",
+          "bytes": 1412780
+        },
+        "metadata.json": {
+          "sha256": "9e97aea129896fd2d2f97936a86aaf1203b4bb12f0e6a7e1f334dcfea26a27d3",
+          "bytes": 11852062
+        }
+      },
+      "seconds": 16.18171014400002,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.9167312964750267,
+          "mae_rating_scale": 1.4134601804115707
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.9167312964750267,
+          "mae_rating_scale": 1.4134601804115707
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split17_mlp_seed2026",
+      "kind": "neural",
+      "split_seed": 17,
+      "initialization_seed": 2026,
+      "architecture": "mlp",
+      "l2": 1e-05,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.031872037798166275,
+          "train_rmse": 1.6067467322672444,
+          "val_mse": 0.035425424575805664,
+          "val_rmse": 1.6939478712877378
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.025070903822779655,
+          "train_rmse": 1.4250414764648613,
+          "val_mse": 0.032721295952796936,
+          "val_rmse": 1.6280125835436752
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.023019762709736824,
+          "train_rmse": 1.3655038555378314,
+          "val_mse": 0.03277266025543213,
+          "val_rmse": 1.6292898700630292
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.0222381092607975,
+          "train_rmse": 1.3421202815413371,
+          "val_mse": 0.033258143812417984,
+          "val_rmse": 1.6413133914051443
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.02193443663418293,
+          "train_rmse": 1.3329251169397391,
+          "val_mse": 0.03348974138498306,
+          "val_rmse": 1.6470182306773742
+        }
+      ],
+      "epochs_completed": 5,
+      "best_epoch": 2,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3002,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "f271eeb3a77f1e398ed1630579f7288ca415038442a718c14286999be12454c3",
+          "bytes": 1330347
+        }
+      },
+      "validation": {
+        "pairs": 3002,
+        "rmse_rating_scale": 1.6280126156317103,
+        "mae_rating_scale": 1.284331968353241
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6280126156317103,
+          "mae_rating_scale": 1.284331968353241
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6280126156317103,
+          "mae_rating_scale": 1.284331968353241
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            11554,
+            1364
+          ],
+          [
+            5656,
+            2844
+          ],
+          [
+            9614,
+            4012
+          ],
+          [
+            6877,
+            4754
+          ],
+          [
+            8037,
+            1363
+          ],
+          [
+            11101,
+            2715
+          ],
+          [
+            2464,
+            3936
+          ],
+          [
+            11325,
+            3189
+          ]
+        ],
+        "targets_normalized": [
+          0.7777777910232544,
+          1.0,
+          0.7777777910232544,
+          0.8888888955116272,
+          1.0,
+          0.8888888955116272,
+          0.7777777910232544,
+          0.4444444477558136
+        ],
+        "predictions_before": [
+          0.5002421736717224,
+          0.5014166235923767,
+          0.5008034706115723,
+          0.496554970741272,
+          0.4979196786880493,
+          0.4992404878139496,
+          0.49881109595298767,
+          0.5006754994392395
+        ],
+        "predictions_after": [
+          0.5012630224227905,
+          0.5025838613510132,
+          0.5018115043640137,
+          0.4977635443210602,
+          0.49924594163894653,
+          0.501024603843689,
+          0.5008407831192017,
+          0.5011565089225769
+        ],
+        "mse_before": 0.10378061980009079,
+        "regularization_loss": 0.003307004226371646,
+        "total_loss_before": 0.1070876270532608,
+        "mse_after": 0.10306201130151749,
+        "gradient_norms": {
+          "neural_rating_model/user_embedding/embeddings": 0.001838627620600164,
+          "neural_rating_model/book_embedding/embeddings": 0.0015226639807224274,
+          "neural_rating_model/hidden_1/kernel": 0.0011085937730967999,
+          "neural_rating_model/hidden_1/bias": 0.033150166273117065,
+          "neural_rating_model/hidden_2/kernel": 0.003695763647556305,
+          "neural_rating_model/hidden_2/bias": 0.061619676649570465,
+          "neural_rating_model/rating/kernel": 0.0055216411128640175,
+          "neural_rating_model/rating/bias": 0.12811803817749023
+        },
+        "user_embedding_before": [
+          -0.007346130907535553,
+          0.028148818761110306,
+          0.025858666747808456,
+          0.030587587505578995,
+          0.033294763416051865,
+          0.01100616529583931,
+          0.039719630032777786,
+          -0.041855134069919586,
+          0.026122722774744034,
+          0.00810243934392929,
+          -0.034412872046232224,
+          -0.03167837858200073,
+          0.029081176966428757,
+          -0.0028326138854026794,
+          0.03251856938004494,
+          0.04030268266797066
+        ],
+        "user_embedding_gradient": [
+          -2.098170170938829e-08,
+          -1.3014036994718481e-05,
+          2.427868366794428e-06,
+          2.10169491765555e-05,
+          7.825851753295865e-06,
+          -4.716839612228796e-06,
+          9.475819751969539e-06,
+          1.5417917893501e-05,
+          1.8989398085977882e-05,
+          -1.581992910359986e-05,
+          -2.3370359485852532e-05,
+          2.1155547074158676e-06,
+          -7.235256816784386e-06,
+          7.5095977081218734e-06,
+          -1.4655636732641142e-05,
+          -8.964793778432067e-06
+        ],
+        "user_embedding_after": [
+          -0.007339539472013712,
+          0.028953325003385544,
+          0.025424357503652573,
+          0.02971837855875492,
+          0.03258255869150162,
+          0.011604811996221542,
+          0.03896985203027725,
+          -0.04268493130803108,
+          0.025265485048294067,
+          0.008935841731727123,
+          -0.03353206068277359,
+          -0.03207921236753464,
+          0.029777035117149353,
+          -0.0035362904891371727,
+          0.03334108740091324,
+          0.041041914373636246
+        ],
+        "embedding_delta_norm": 0.002876813756301999,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "028530546f10de9ff220a87fee610b06774f7a577a4ddfdd9151821dc6e75c51",
+          "bytes": 1330347
+        },
+        "metadata.json": {
+          "sha256": "c0de3071be4a8d993dde773448dcd672f5ce86e29597eab3aed1d02a083bad9d",
+          "bytes": 11850672
+        }
+      },
+      "seconds": 10.631423433000009,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6350774138397075,
+          "mae_rating_scale": 1.2894748383407033
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6350774138397075,
+          "mae_rating_scale": 1.2894748383407033
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split17_residual_seed2026",
+      "kind": "neural",
+      "split_seed": 17,
+      "initialization_seed": 2026,
+      "architecture": "residual",
+      "l2": 0.0,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.022504882887005806,
+          "train_rmse": 1.350146478663508,
+          "val_mse": 0.04295152798295021,
+          "val_rmse": 1.8652275374921332
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.022503690794110298,
+          "train_rmse": 1.3501107192830275,
+          "val_mse": 0.04302659258246422,
+          "val_rmse": 1.8668567162960314
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.02249019593000412,
+          "train_rmse": 1.3497058458532116,
+          "val_mse": 0.04299931973218918,
+          "val_rmse": 1.8662649592990068
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.022440604865550995,
+          "train_rmse": 1.3482169684845353,
+          "val_mse": 0.043042026460170746,
+          "val_rmse": 1.8671915122112757
+        }
+      ],
+      "epochs_completed": 4,
+      "best_epoch": 1,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3002,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "4e6632ebfcfb20999c62090bfc9db94b7c43b68b03fe1fdd73c6429f206280c3",
+          "bytes": 1412780
+        }
+      },
+      "validation": {
+        "pairs": 3002,
+        "rmse_rating_scale": 1.8652276085648944,
+        "mae_rating_scale": 1.3813014258391694
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.8652276085648944,
+          "mae_rating_scale": 1.3813014258391694
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.8652276085648944,
+          "mae_rating_scale": 1.3813014258391694
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            11554,
+            1364
+          ],
+          [
+            5656,
+            2844
+          ],
+          [
+            9614,
+            4012
+          ],
+          [
+            6877,
+            4754
+          ],
+          [
+            8037,
+            1363
+          ],
+          [
+            11101,
+            2715
+          ],
+          [
+            2464,
+            3936
+          ],
+          [
+            11325,
+            3189
+          ]
+        ],
+        "targets_normalized": [
+          0.7777777910232544,
+          1.0,
+          0.7777777910232544,
+          0.8888888955116272,
+          1.0,
+          0.8888888955116272,
+          0.7777777910232544,
+          0.4444444477558136
+        ],
+        "predictions_before": [
+          0.7250245809555054,
+          0.9844366312026978,
+          0.7290127277374268,
+          0.886117160320282,
+          0.7859089374542236,
+          0.9049382209777832,
+          0.7638646364212036,
+          0.8094764947891235
+        ],
+        "predictions_after": [
+          0.7252886891365051,
+          0.9847143292427063,
+          0.7292818427085876,
+          0.88636314868927,
+          0.7861508131027222,
+          0.9051948189735413,
+          0.7641181349754333,
+          0.8097571134567261
+        ],
+        "mse_before": 0.02149665169417858,
+        "regularization_loss": 0.0,
+        "total_loss_before": 0.02149665169417858,
+        "mse_after": 0.02149532362818718,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.0,
+          "residual_rating_model/book_embedding/embeddings": 0.0,
+          "residual_rating_model/hidden_1/kernel": 0.0,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 0.0,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 0.00013266518362797797,
+          "residual_rating_model/rating_residual/bias": 0.0010299625573679805
+        },
+        "user_embedding_before": [
+          -0.007346130907535553,
+          0.028148818761110306,
+          0.025858666747808456,
+          0.030587587505578995,
+          0.033294763416051865,
+          0.01100616529583931,
+          0.039719630032777786,
+          -0.041855134069919586,
+          0.026122722774744034,
+          0.00810243934392929,
+          -0.034412872046232224,
+          -0.03167837858200073,
+          0.029081176966428757,
+          -0.0028326138854026794,
+          0.03251856938004494,
+          0.04030268266797066
+        ],
+        "user_embedding_gradient": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "user_embedding_after": [
+          -0.007346130907535553,
+          0.028148818761110306,
+          0.025858666747808456,
+          0.030587587505578995,
+          0.033294763416051865,
+          0.01100616529583931,
+          0.039719630032777786,
+          -0.041855134069919586,
+          0.026122722774744034,
+          0.00810243934392929,
+          -0.034412872046232224,
+          -0.03167837858200073,
+          0.029081176966428757,
+          -0.0028326138854026794,
+          0.03251856938004494,
+          0.04030268266797066
+        ],
+        "embedding_delta_norm": 0.0,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.7250245809555054,
+          0.9844366312026978,
+          0.7290127277374268,
+          0.886117160320282,
+          0.7859089374542236,
+          0.9049382209777832,
+          0.7638646364212036,
+          0.8094764947891235
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros; first data update learns the residual head",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "ced562000bdbd599bb88ae94cb38a80211383d68e81c2786e473948044716967",
+          "bytes": 1412780
+        },
+        "metadata.json": {
+          "sha256": "b666035bde3b94c1ed7bb323184e617d9dafd89cf276e7ffb1a29b86e201cfd0",
+          "bytes": 11851489
+        }
+      },
+      "seconds": 11.072496580999996,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.92275411097418,
+          "mae_rating_scale": 1.4177007819318042
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.92275411097418,
+          "mae_rating_scale": 1.4177007819318042
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split17_mlp_seed7",
+      "kind": "neural",
+      "split_seed": 17,
+      "initialization_seed": 7,
+      "architecture": "mlp",
+      "l2": 1e-05,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.03251287341117859,
+          "train_rmse": 1.6228193819108354,
+          "val_mse": 0.035724397748708725,
+          "val_rmse": 1.701080896855116
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.025036143139004707,
+          "train_rmse": 1.4240532273266266,
+          "val_mse": 0.032494377344846725,
+          "val_rmse": 1.6223577179317097
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.02288810722529888,
+          "train_rmse": 1.361593436106832,
+          "val_mse": 0.03258021920919418,
+          "val_rmse": 1.6244992323620004
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.02217457816004753,
+          "train_rmse": 1.3402017874051093,
+          "val_mse": 0.03308273106813431,
+          "val_rmse": 1.6369792963012328
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.02185172773897648,
+          "train_rmse": 1.3304096913571755,
+          "val_mse": 0.03348113223910332,
+          "val_rmse": 1.6468065191051948
+        }
+      ],
+      "epochs_completed": 5,
+      "best_epoch": 2,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3002,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "e43dd08f918d271dcce970911c101f3408ba44914868fac58052ac6f371405c9",
+          "bytes": 1330347
+        }
+      },
+      "validation": {
+        "pairs": 3002,
+        "rmse_rating_scale": 1.6223576901286871,
+        "mae_rating_scale": 1.279352908607803
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6223576901286871,
+          "mae_rating_scale": 1.279352908607803
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6223576901286871,
+          "mae_rating_scale": 1.279352908607803
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            14840,
+            583
+          ],
+          [
+            9219,
+            970
+          ],
+          [
+            2150,
+            4197
+          ],
+          [
+            6703,
+            4779
+          ],
+          [
+            7096,
+            2041
+          ],
+          [
+            5977,
+            2282
+          ],
+          [
+            1397,
+            4737
+          ],
+          [
+            1875,
+            407
+          ]
+        ],
+        "targets_normalized": [
+          0.8888888955116272,
+          1.0,
+          0.4444444477558136,
+          1.0,
+          0.5555555820465088,
+          0.6666666865348816,
+          0.7777777910232544,
+          0.7777777910232544
+        ],
+        "predictions_before": [
+          0.4994584321975708,
+          0.49266478419303894,
+          0.4955524504184723,
+          0.4978655278682709,
+          0.4977796673774719,
+          0.49911561608314514,
+          0.49987563490867615,
+          0.49913549423217773
+        ],
+        "predictions_after": [
+          0.5012284517288208,
+          0.49494868516921997,
+          0.4969688057899475,
+          0.4994075298309326,
+          0.49943286180496216,
+          0.5006631016731262,
+          0.502016007900238,
+          0.5007745027542114
+        ],
+        "mse_before": 0.10472200810909271,
+        "regularization_loss": 0.003302361350506544,
+        "total_loss_before": 0.10802436619997025,
+        "mse_after": 0.10375870764255524,
+        "gradient_norms": {
+          "neural_rating_model/user_embedding/embeddings": 0.002386776264756918,
+          "neural_rating_model/book_embedding/embeddings": 0.00215352070517838,
+          "neural_rating_model/hidden_1/kernel": 0.0012791685294359922,
+          "neural_rating_model/hidden_1/bias": 0.04065382480621338,
+          "neural_rating_model/hidden_2/kernel": 0.005544937681406736,
+          "neural_rating_model/hidden_2/bias": 0.09011097252368927,
+          "neural_rating_model/rating/kernel": 0.005513327661901712,
+          "neural_rating_model/rating/bias": 0.12732037901878357
+        },
+        "user_embedding_before": [
+          -0.038277626037597656,
+          0.011602651327848434,
+          -0.00410018116235733,
+          0.04722955450415611,
+          0.04169335588812828,
+          -0.048873674124479294,
+          -0.039337851107120514,
+          0.031028222292661667,
+          0.011222876608371735,
+          -0.03389425575733185,
+          -0.0013808980584144592,
+          -0.008320249617099762,
+          -0.04062627628445625,
+          0.04690208658576012,
+          -0.042358409613370895,
+          0.006657063961029053
+        ],
+        "user_embedding_gradient": [
+          -2.07320354093099e-05,
+          -2.2993378934188513e-06,
+          2.2162797904456966e-05,
+          -2.5329086383862887e-06,
+          -6.522160219901707e-06,
+          -3.8195226807147264e-05,
+          5.174169928068295e-06,
+          1.9838193111354485e-05,
+          -4.485104454943212e-06,
+          1.8690701836021617e-05,
+          1.7433198081562296e-05,
+          -1.832626003306359e-05,
+          7.548727808170952e-06,
+          -2.1872605429962277e-05,
+          -4.275115770724369e-06,
+          1.727351082081441e-05
+        ],
+        "user_embedding_after": [
+          -0.03740997612476349,
+          0.012023648247122765,
+          -0.004975307732820511,
+          0.04767429828643799,
+          0.04236682131886482,
+          -0.0479501411318779,
+          -0.039958514273166656,
+          0.030165715143084526,
+          0.011809361167252064,
+          -0.03474954143166542,
+          -0.002227350138127804,
+          -0.0074674165807664394,
+          -0.041331034153699875,
+          0.047775767743587494,
+          -0.04178360104560852,
+          0.0058118118904531
+        ],
+        "embedding_delta_norm": 0.0030254670418798923,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "4d3e8d0512166cec41d24c461d0cfebffd253a59bad327858fb17479d775d5fd",
+          "bytes": 1330347
+        },
+        "metadata.json": {
+          "sha256": "5bf2cb28848d771d1a8d3b2448c9d6d76b68cdd4c496e73b645bed7e8f02af44",
+          "bytes": 11850672
+        }
+      },
+      "seconds": 10.50180951499999,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6368475713446196,
+          "mae_rating_scale": 1.2918097890273164
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.6368475713446196,
+          "mae_rating_scale": 1.2918097890273164
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split17_residual_seed7",
+      "kind": "neural",
+      "split_seed": 17,
+      "initialization_seed": 7,
+      "architecture": "residual",
+      "l2": 0.0,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.02250283770263195,
+          "train_rmse": 1.3500851283949424,
+          "val_mse": 0.04299816116690636,
+          "val_rmse": 1.8662398169901464
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.022501936182379723,
+          "train_rmse": 1.3500580842218448,
+          "val_mse": 0.04300607740879059,
+          "val_rmse": 1.866411602544315
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.02248997800052166,
+          "train_rmse": 1.3496993065280334,
+          "val_mse": 0.04297906905412674,
+          "val_rmse": 1.8658254455828032
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.022356968373060226,
+          "train_rmse": 1.345702210081368,
+          "val_mse": 0.04289732500910759,
+          "val_rmse": 1.8640502476429424
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.021532727405428886,
+          "train_rmse": 1.3206630606781353,
+          "val_mse": 0.04291162267327309,
+          "val_rmse": 1.864360865426841
+        },
+        {
+          "epoch": 6,
+          "train_mse": 0.017876600846648216,
+          "train_rmse": 1.2033306563777495,
+          "val_mse": 0.04365106672048569,
+          "val_rmse": 1.8803553930997567
+        },
+        {
+          "epoch": 7,
+          "train_mse": 0.01363385934382677,
+          "train_rmse": 1.050877065526681,
+          "val_mse": 0.04474646598100662,
+          "val_rmse": 1.903802443653631
+        }
+      ],
+      "epochs_completed": 7,
+      "best_epoch": 4,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3002,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "459ea2e149f30ae01dce49f91e934397f82e149aab360c6a7b5fde6b573eacbf",
+          "bytes": 1412780
+        }
+      },
+      "validation": {
+        "pairs": 3002,
+        "rmse_rating_scale": 1.8640502505987717,
+        "mae_rating_scale": 1.3814994880233424
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.8640502505987717,
+          "mae_rating_scale": 1.3814994880233424
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.8640502505987717,
+          "mae_rating_scale": 1.3814994880233424
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            14840,
+            583
+          ],
+          [
+            9219,
+            970
+          ],
+          [
+            2150,
+            4197
+          ],
+          [
+            6703,
+            4779
+          ],
+          [
+            7096,
+            2041
+          ],
+          [
+            5977,
+            2282
+          ],
+          [
+            1397,
+            4737
+          ],
+          [
+            1875,
+            407
+          ]
+        ],
+        "targets_normalized": [
+          0.8888888955116272,
+          1.0,
+          0.4444444477558136,
+          1.0,
+          0.5555555820465088,
+          0.6666666865348816,
+          0.7777777910232544,
+          0.7777777910232544
+        ],
+        "predictions_before": [
+          0.7402776479721069,
+          0.7660490274429321,
+          0.7515201568603516,
+          0.8866783976554871,
+          0.6845429539680481,
+          0.7074059247970581,
+          0.6711320281028748,
+          0.9437538385391235
+        ],
+        "predictions_after": [
+          0.7400189638137817,
+          0.7657701373100281,
+          0.7512539625167847,
+          0.886414110660553,
+          0.6842620372772217,
+          0.7071549892425537,
+          0.6708727478981018,
+          0.9435116052627563
+        ],
+        "mse_before": 0.02392212115228176,
+        "regularization_loss": 0.0,
+        "total_loss_before": 0.02392212115228176,
+        "mse_after": 0.023919038474559784,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.0,
+          "residual_rating_model/book_embedding/embeddings": 0.0,
+          "residual_rating_model/hidden_1/kernel": 0.0,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 0.0,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 0.00021194624423515052,
+          "residual_rating_model/rating_residual/bias": 0.00254104589112103
+        },
+        "user_embedding_before": [
+          -0.038277626037597656,
+          0.011602651327848434,
+          -0.00410018116235733,
+          0.04722955450415611,
+          0.04169335588812828,
+          -0.048873674124479294,
+          -0.039337851107120514,
+          0.031028222292661667,
+          0.011222876608371735,
+          -0.03389425575733185,
+          -0.0013808980584144592,
+          -0.008320249617099762,
+          -0.04062627628445625,
+          0.04690208658576012,
+          -0.042358409613370895,
+          0.006657063961029053
+        ],
+        "user_embedding_gradient": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "user_embedding_after": [
+          -0.038277626037597656,
+          0.011602651327848434,
+          -0.00410018116235733,
+          0.04722955450415611,
+          0.04169335588812828,
+          -0.048873674124479294,
+          -0.039337851107120514,
+          0.031028222292661667,
+          0.011222876608371735,
+          -0.03389425575733185,
+          -0.0013808980584144592,
+          -0.008320249617099762,
+          -0.04062627628445625,
+          0.04690208658576012,
+          -0.042358409613370895,
+          0.006657063961029053
+        ],
+        "embedding_delta_norm": 0.0,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.7402776479721069,
+          0.7660490274429321,
+          0.7515201568603516,
+          0.8866783976554871,
+          0.6845429539680481,
+          0.7074059247970581,
+          0.6711320281028748,
+          0.9437538385391235
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros; first data update learns the residual head",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "50ac617ca1f9ec9765279a80c68961d9f587d908d0cd0911bd31a2de169bd63d",
+          "bytes": 1412780
+        },
+        "metadata.json": {
+          "sha256": "bd22570ece54eefa343e74d779909e1e5ad9022604fd93ac247ac3e2c75a6a94",
+          "bytes": 11852043
+        }
+      },
+      "seconds": 16.189357374999986,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.920624312809428,
+          "mae_rating_scale": 1.4166713745732216
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.920624312809428,
+          "mae_rating_scale": 1.4166713745732216
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split29_mlp_seed42",
+      "kind": "neural",
+      "split_seed": 29,
+      "initialization_seed": 42,
+      "architecture": "mlp",
+      "l2": 1e-05,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.030810901895165443,
+          "train_rmse": 1.5797731019068533,
+          "val_mse": 0.03927433490753174,
+          "val_rmse": 1.783597804301763
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.024153349921107292,
+          "train_rmse": 1.3987213244995198,
+          "val_mse": 0.036142464727163315,
+          "val_rmse": 1.7110054479458061
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.022578559815883636,
+          "train_rmse": 1.3523547408452319,
+          "val_mse": 0.036462537944316864,
+          "val_rmse": 1.718564975056127
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.021992631256580353,
+          "train_rmse": 1.3346921486931018,
+          "val_mse": 0.03678411990404129,
+          "val_rmse": 1.7261267949450714
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.021633630618453026,
+          "train_rmse": 1.3237537837886224,
+          "val_mse": 0.03736477717757225,
+          "val_rmse": 1.7396973735059074
+        }
+      ],
+      "epochs_completed": 5,
+      "best_epoch": 2,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3001,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "9e0dbcda8c971e4b9553ace83622e3005c274747b2c15aa9bc3e89fb6a71f572",
+          "bytes": 1330347
+        }
+      },
+      "validation": {
+        "pairs": 3001,
+        "rmse_rating_scale": 1.7110054617196666,
+        "mae_rating_scale": 1.3420146135281261
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.7110054617196666,
+          "mae_rating_scale": 1.3420146135281261
+        },
+        "all_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.7110054617196666,
+          "mae_rating_scale": 1.3420146135281261
+        },
+        "availability": {
+          "both_known": 3001,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            12279,
+            1125
+          ],
+          [
+            6273,
+            552
+          ],
+          [
+            7064,
+            4891
+          ],
+          [
+            3957,
+            2083
+          ],
+          [
+            1122,
+            3076
+          ],
+          [
+            9150,
+            1299
+          ],
+          [
+            5653,
+            3079
+          ],
+          [
+            4603,
+            2721
+          ]
+        ],
+        "targets_normalized": [
+          0.7777777910232544,
+          0.5555555820465088,
+          0.7777777910232544,
+          0.8888888955116272,
+          0.7777777910232544,
+          0.7777777910232544,
+          0.7777777910232544,
+          0.7777777910232544
+        ],
+        "predictions_before": [
+          0.49663764238357544,
+          0.5023049712181091,
+          0.500333845615387,
+          0.4925673305988312,
+          0.49795299768447876,
+          0.49941548705101013,
+          0.4913006126880646,
+          0.5047423839569092
+        ],
+        "predictions_after": [
+          0.5002532601356506,
+          0.5047010779380798,
+          0.5033155083656311,
+          0.4955179691314697,
+          0.5006663799285889,
+          0.5020560622215271,
+          0.4923913776874542,
+          0.5061603784561157
+        ],
+        "mse_before": 0.10842856764793396,
+        "regularization_loss": 0.003305537858977914,
+        "total_loss_before": 0.11173410713672638,
+        "mse_after": 0.1070956289768219,
+        "gradient_norms": {
+          "neural_rating_model/user_embedding/embeddings": 0.0030160853639245033,
+          "neural_rating_model/book_embedding/embeddings": 0.0029156305827200413,
+          "neural_rating_model/hidden_1/kernel": 0.001992109464481473,
+          "neural_rating_model/hidden_1/bias": 0.06238057091832161,
+          "neural_rating_model/hidden_2/kernel": 0.0069413757883012295,
+          "neural_rating_model/hidden_2/bias": 0.11592759937047958,
+          "neural_rating_model/rating/kernel": 0.005072212312370539,
+          "neural_rating_model/rating/bias": 0.13369861245155334
+        },
+        "user_embedding_before": [
+          -0.034670423716306686,
+          -0.03799932077527046,
+          0.047098640352487564,
+          0.009723663330078125,
+          0.003941953182220459,
+          -0.03630547598004341,
+          -0.021335506811738014,
+          0.04923533275723457,
+          -0.04926889017224312,
+          0.03439832851290703,
+          -0.040215957909822464,
+          -0.03644214943051338,
+          -0.044081833213567734,
+          -0.04406705126166344,
+          0.02059331163764,
+          0.01787397637963295
+        ],
+        "user_embedding_gradient": [
+          2.0773995856870897e-05,
+          -5.166608389117755e-06,
+          -4.536398591881152e-06,
+          1.545796840218827e-05,
+          1.0377909347880632e-05,
+          -2.063113970507402e-05,
+          4.8535359383095056e-05,
+          6.133946499176091e-06,
+          -9.89669842965668e-07,
+          -1.8258099316881271e-06,
+          7.656807429157197e-05,
+          -4.443775469553657e-05,
+          -9.225348549080081e-06,
+          -6.733027476002462e-06,
+          -3.648742494988255e-05,
+          2.9833117878297344e-05
+        ],
+        "user_embedding_after": [
+          -0.03553830459713936,
+          -0.03737900033593178,
+          0.04768788069486618,
+          0.00889349915087223,
+          0.00317550590261817,
+          -0.03543838858604431,
+          -0.022274332121014595,
+          0.0485755056142807,
+          -0.04903052747249603,
+          0.0347643606364727,
+          -0.041176289319992065,
+          -0.035508591681718826,
+          -0.04333711415529251,
+          -0.04338663071393967,
+          0.021513549610972404,
+          0.016969822347164154
+        ],
+        "embedding_delta_norm": 0.0030817058868706226,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "64c90e98a091e9f7ff9c24bc127aa4309ca285ce501857e5cafa9a5544fac150",
+          "bytes": 1330347
+        },
+        "metadata.json": {
+          "sha256": "1773857f0910f5620b2e01398c4143bc136deaf3dbfc4d415eee9f5a33c2e5c1",
+          "bytes": 11850429
+        }
+      },
+      "seconds": 10.82174782200002,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.5918291292409281,
+          "mae_rating_scale": 1.2603584448232032
+        },
+        "all_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.5918291292409281,
+          "mae_rating_scale": 1.2603584448232032
+        },
+        "availability": {
+          "both_known": 3005,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split29_residual_seed42",
+      "kind": "neural",
+      "split_seed": 29,
+      "initialization_seed": 42,
+      "architecture": "residual",
+      "l2": 0.0,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.022498304024338722,
+          "train_rmse": 1.3499491197713476,
+          "val_mse": 0.04617873951792717,
+          "val_rmse": 1.9340315149842056
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.022495336830615997,
+          "train_rmse": 1.349860097669346,
+          "val_mse": 0.046163517981767654,
+          "val_rmse": 1.9337127388842377
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.02249785326421261,
+          "train_rmse": 1.3499355963901467,
+          "val_mse": 0.04620061442255974,
+          "val_rmse": 1.9344895368616857
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.022199876606464386,
+          "train_rmse": 1.3409660715781049,
+          "val_mse": 0.0460093729197979,
+          "val_rmse": 1.930481599628349
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.021336164325475693,
+          "train_rmse": 1.3146213562708964,
+          "val_mse": 0.04595848545432091,
+          "val_rmse": 1.929413724891578
+        },
+        {
+          "epoch": 6,
+          "train_mse": 0.01958620734512806,
+          "train_rmse": 1.2595565866428444,
+          "val_mse": 0.04645455628633499,
+          "val_rmse": 1.9397987161541104
+        },
+        {
+          "epoch": 7,
+          "train_mse": 0.01665559783577919,
+          "train_rmse": 1.1615091152023365,
+          "val_mse": 0.0472596175968647,
+          "val_rmse": 1.9565349537756898
+        },
+        {
+          "epoch": 8,
+          "train_mse": 0.013035543262958527,
+          "train_rmse": 1.027559732716128,
+          "val_mse": 0.04833080247044563,
+          "val_rmse": 1.978584089723279
+        }
+      ],
+      "epochs_completed": 8,
+      "best_epoch": 5,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3001,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "a49cf69c1986f05b50527c90d52ce613e21aecf14798157d0ca5edfe47ac9b44",
+          "bytes": 1412780
+        }
+      },
+      "validation": {
+        "pairs": 3001,
+        "rmse_rating_scale": 1.9294136857085407,
+        "mae_rating_scale": 1.4431291772539876
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.9294136857085407,
+          "mae_rating_scale": 1.4431291772539876
+        },
+        "all_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.9294136857085407,
+          "mae_rating_scale": 1.4431291772539876
+        },
+        "availability": {
+          "both_known": 3001,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            12279,
+            1125
+          ],
+          [
+            6273,
+            552
+          ],
+          [
+            7064,
+            4891
+          ],
+          [
+            3957,
+            2083
+          ],
+          [
+            1122,
+            3076
+          ],
+          [
+            9150,
+            1299
+          ],
+          [
+            5653,
+            3079
+          ],
+          [
+            4603,
+            2721
+          ]
+        ],
+        "targets_normalized": [
+          0.7777777910232544,
+          0.5555555820465088,
+          0.7777777910232544,
+          0.8888888955116272,
+          0.7777777910232544,
+          0.7777777910232544,
+          0.7777777910232544,
+          0.7777777910232544
+        ],
+        "predictions_before": [
+          0.6962636113166809,
+          0.7711421847343445,
+          0.8292703628540039,
+          0.7685591578483582,
+          0.8284531235694885,
+          0.7717505693435669,
+          0.7560735940933228,
+          0.7969480752944946
+        ],
+        "predictions_after": [
+          0.6965616345405579,
+          0.7714067697525024,
+          0.829529881477356,
+          0.7688404321670532,
+          0.8287262320518494,
+          0.7720345854759216,
+          0.7563292384147644,
+          0.7972160577774048
+        ],
+        "mse_before": 0.021758487448096275,
+        "regularization_loss": 0.0,
+        "total_loss_before": 0.021758487448096275,
+        "mse_after": 0.02175423502922058,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.0,
+          "residual_rating_model/book_embedding/embeddings": 0.0,
+          "residual_rating_model/hidden_1/kernel": 0.0,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 0.0,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 0.00015563593478873372,
+          "residual_rating_model/rating_residual/bias": 0.003910493571311235
+        },
+        "user_embedding_before": [
+          -0.034670423716306686,
+          -0.03799932077527046,
+          0.047098640352487564,
+          0.009723663330078125,
+          0.003941953182220459,
+          -0.03630547598004341,
+          -0.021335506811738014,
+          0.04923533275723457,
+          -0.04926889017224312,
+          0.03439832851290703,
+          -0.040215957909822464,
+          -0.03644214943051338,
+          -0.044081833213567734,
+          -0.04406705126166344,
+          0.02059331163764,
+          0.01787397637963295
+        ],
+        "user_embedding_gradient": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "user_embedding_after": [
+          -0.034670423716306686,
+          -0.03799932077527046,
+          0.047098640352487564,
+          0.009723663330078125,
+          0.003941953182220459,
+          -0.03630547598004341,
+          -0.021335506811738014,
+          0.04923533275723457,
+          -0.04926889017224312,
+          0.03439832851290703,
+          -0.040215957909822464,
+          -0.03644214943051338,
+          -0.044081833213567734,
+          -0.04406705126166344,
+          0.02059331163764,
+          0.01787397637963295
+        ],
+        "embedding_delta_norm": 0.0,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.6962636113166809,
+          0.7711421847343445,
+          0.8292703628540039,
+          0.7685591578483582,
+          0.8284531235694885,
+          0.7717505693435669,
+          0.7560735940933228,
+          0.7969480752944946
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros; first data update learns the residual head",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "0384633ccf6e85415d496c9ebffe789db921b153154ff03dcb0c04cbe5278005",
+          "bytes": 1412780
+        },
+        "metadata.json": {
+          "sha256": "539ec5ec2694b9d506e430e8ecb78917582ff1709ab7d7a933d2155df52cc642",
+          "bytes": 11851988
+        }
+      },
+      "seconds": 18.690895360000013,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.8344857733261708,
+          "mae_rating_scale": 1.3747121044482646
+        },
+        "all_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.8344857733261708,
+          "mae_rating_scale": 1.3747121044482646
+        },
+        "availability": {
+          "both_known": 3005,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split29_mlp_seed2026",
+      "kind": "neural",
+      "split_seed": 29,
+      "initialization_seed": 2026,
+      "architecture": "mlp",
+      "l2": 1e-05,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.03179088234901428,
+          "train_rmse": 1.604699806901639,
+          "val_mse": 0.03962399810552597,
+          "val_rmse": 1.7915199821792676
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.025048229843378067,
+          "train_rmse": 1.42439693109527,
+          "val_mse": 0.03639601171016693,
+          "val_rmse": 1.7169964905390813
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.02298649214208126,
+          "train_rmse": 1.364516714265011,
+          "val_mse": 0.03613956645131111,
+          "val_rmse": 1.7109368435322794
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.022182825952768326,
+          "train_rmse": 1.3404510070025815,
+          "val_mse": 0.03664635494351387,
+          "val_rmse": 1.7228913925214855
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.02189655788242817,
+          "train_rmse": 1.3317737001745762,
+          "val_mse": 0.03710107132792473,
+          "val_rmse": 1.7335474546610783
+        },
+        {
+          "epoch": 6,
+          "train_mse": 0.02167709730565548,
+          "train_rmse": 1.3250829716504902,
+          "val_mse": 0.037440717220306396,
+          "val_rmse": 1.7414643535957943
+        }
+      ],
+      "epochs_completed": 6,
+      "best_epoch": 3,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3001,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "50d951f881367cf237332f9109236244725990193a4a9b9f54168ee467e26a16",
+          "bytes": 1330347
+        }
+      },
+      "validation": {
+        "pairs": 3001,
+        "rmse_rating_scale": 1.7109368029292529,
+        "mae_rating_scale": 1.3380160066375173
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.7109368029292529,
+          "mae_rating_scale": 1.3380160066375173
+        },
+        "all_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.7109368029292529,
+          "mae_rating_scale": 1.3380160066375173
+        },
+        "availability": {
+          "both_known": 3001,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            11549,
+            3474
+          ],
+          [
+            13063,
+            853
+          ],
+          [
+            8154,
+            421
+          ],
+          [
+            7494,
+            3776
+          ],
+          [
+            7893,
+            1590
+          ],
+          [
+            12162,
+            2158
+          ],
+          [
+            2461,
+            1773
+          ],
+          [
+            11323,
+            2126
+          ]
+        ],
+        "targets_normalized": [
+          0.8888888955116272,
+          1.0,
+          0.7777777910232544,
+          0.6666666865348816,
+          0.7777777910232544,
+          0.6666666865348816,
+          0.2222222238779068,
+          0.5555555820465088
+        ],
+        "predictions_before": [
+          0.5020507574081421,
+          0.49869152903556824,
+          0.4988360106945038,
+          0.5004642009735107,
+          0.4959738552570343,
+          0.49989643692970276,
+          0.5015718340873718,
+          0.4962887465953827
+        ],
+        "predictions_after": [
+          0.5032744407653809,
+          0.4996216297149658,
+          0.5003998279571533,
+          0.5023148059844971,
+          0.4974576234817505,
+          0.5009470582008362,
+          0.5025299787521362,
+          0.49784982204437256
+        ],
+        "mse_before": 0.1037883535027504,
+        "regularization_loss": 0.003307004226371646,
+        "total_loss_before": 0.10709536075592041,
+        "mse_after": 0.10307352244853973,
+        "gradient_norms": {
+          "neural_rating_model/user_embedding/embeddings": 0.0017595182871446013,
+          "neural_rating_model/book_embedding/embeddings": 0.0015173432184383273,
+          "neural_rating_model/hidden_1/kernel": 0.0010477987816557288,
+          "neural_rating_model/hidden_1/bias": 0.0324954017996788,
+          "neural_rating_model/hidden_2/kernel": 0.0036741362418979406,
+          "neural_rating_model/hidden_2/bias": 0.060994695872068405,
+          "neural_rating_model/rating/kernel": 0.005466977134346962,
+          "neural_rating_model/rating/bias": 0.13006393611431122
+        },
+        "user_embedding_before": [
+          -0.032320618629455566,
+          -0.0005802884697914124,
+          -0.007025230675935745,
+          0.049625907093286514,
+          0.010255564004182816,
+          0.002795018255710602,
+          -0.048250164836645126,
+          0.013471309095621109,
+          -0.04767888784408569,
+          0.015882279723882675,
+          -0.03879847377538681,
+          -0.01868661493062973,
+          -0.01223456859588623,
+          -0.04916882514953613,
+          0.04698408767580986,
+          0.03409362956881523
+        ],
+        "user_embedding_gradient": [
+          -2.080269950965885e-05,
+          -6.582655623788014e-05,
+          5.294440779834986e-05,
+          8.831888408167288e-06,
+          3.025528167199809e-05,
+          -3.2712527172407135e-05,
+          -3.9832004404161125e-05,
+          -2.8998038033023477e-05,
+          1.2498252544901334e-05,
+          -4.9617583499639295e-06,
+          -1.1941822776861954e-05,
+          4.854558574152179e-05,
+          -1.702380905044265e-05,
+          2.2521080609294586e-05,
+          -5.2222116210032254e-05,
+          -3.121172630926594e-05
+        ],
+        "user_embedding_after": [
+          -0.03145257756114006,
+          0.0003738676314242184,
+          -0.007968862541019917,
+          0.048889562487602234,
+          0.00935019925236702,
+          0.003706864546984434,
+          -0.04732372239232063,
+          0.014372974634170532,
+          -0.04847695678472519,
+          0.016493026167154312,
+          -0.03800784423947334,
+          -0.019625451415777206,
+          -0.0113912308588624,
+          -0.050045695155858994,
+          0.04792698472738266,
+          0.03500162810087204
+        ],
+        "embedding_delta_norm": 0.0034826812334358692,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "637263fa84ebbd36590497bae59ed545853359c13342e5aaf25c4e2713a5ed50",
+          "bytes": 1330347
+        },
+        "metadata.json": {
+          "sha256": "baaaf44d6b07e728e5f572de470cbbc2ee95b4a78ecd7c1d45a9f837467c718d",
+          "bytes": 11850615
+        }
+      },
+      "seconds": 12.070134561000032,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.5987025862819229,
+          "mae_rating_scale": 1.2591594915025048
+        },
+        "all_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.5987025862819229,
+          "mae_rating_scale": 1.2591594915025048
+        },
+        "availability": {
+          "both_known": 3005,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split29_residual_seed2026",
+      "kind": "neural",
+      "split_seed": 29,
+      "initialization_seed": 2026,
+      "architecture": "residual",
+      "l2": 0.0,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.022498270496726036,
+          "train_rmse": 1.3499481139046823,
+          "val_mse": 0.04617514833807945,
+          "val_rmse": 1.9339563116535068
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.02250070311129093,
+          "train_rmse": 1.350021093173942,
+          "val_mse": 0.046194300055503845,
+          "val_rmse": 1.9343573362995297
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.022499585524201393,
+          "train_rmse": 1.3499875656687779,
+          "val_mse": 0.04616035521030426,
+          "val_rmse": 1.9336464961400377
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.02249152585864067,
+          "train_rmse": 1.3497457518176874,
+          "val_mse": 0.04620610550045967,
+          "val_rmse": 1.9346044933105149
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.02235046960413456,
+          "train_rmse": 1.3455066101416595,
+          "val_mse": 0.04609539359807968,
+          "val_rmse": 1.932285403723905
+        },
+        {
+          "epoch": 6,
+          "train_mse": 0.021314755082130432,
+          "train_rmse": 1.3139616286834883,
+          "val_mse": 0.04596705362200737,
+          "val_rmse": 1.929593569481044
+        },
+        {
+          "epoch": 7,
+          "train_mse": 0.01862454041838646,
+          "train_rmse": 1.2282458116717936,
+          "val_mse": 0.04658304899930954,
+          "val_rmse": 1.9424795929286034
+        },
+        {
+          "epoch": 8,
+          "train_mse": 0.015402274206280708,
+          "train_rmse": 1.1169530924388622,
+          "val_mse": 0.0477515272796154,
+          "val_rmse": 1.966691055974183
+        },
+        {
+          "epoch": 9,
+          "train_mse": 0.012044820003211498,
+          "train_rmse": 0.9877400570292425,
+          "val_mse": 0.04902312159538269,
+          "val_rmse": 1.9927049077136327
+        }
+      ],
+      "epochs_completed": 9,
+      "best_epoch": 6,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3001,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "b5a1393b8d7a0722768092944db20cdf9b0b28ceea5ca7cf0fc442c5102ea658",
+          "bytes": 1412780
+        }
+      },
+      "validation": {
+        "pairs": 3001,
+        "rmse_rating_scale": 1.9295935810309592,
+        "mae_rating_scale": 1.4418754600278936
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.9295935810309592,
+          "mae_rating_scale": 1.4418754600278936
+        },
+        "all_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.9295935810309592,
+          "mae_rating_scale": 1.4418754600278936
+        },
+        "availability": {
+          "both_known": 3001,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            11549,
+            3474
+          ],
+          [
+            13063,
+            853
+          ],
+          [
+            8154,
+            421
+          ],
+          [
+            7494,
+            3776
+          ],
+          [
+            7893,
+            1590
+          ],
+          [
+            12162,
+            2158
+          ],
+          [
+            2461,
+            1773
+          ],
+          [
+            11323,
+            2126
+          ]
+        ],
+        "targets_normalized": [
+          0.8888888955116272,
+          1.0,
+          0.7777777910232544,
+          0.6666666865348816,
+          0.7777777910232544,
+          0.6666666865348816,
+          0.2222222238779068,
+          0.5555555820465088
+        ],
+        "predictions_before": [
+          0.8045141696929932,
+          0.9210947155952454,
+          0.8197793960571289,
+          0.7857288122177124,
+          0.7863100171089172,
+          0.6362392902374268,
+          0.3618631958961487,
+          0.5706599950790405
+        ],
+        "predictions_after": [
+          0.8047906756401062,
+          0.9213544726371765,
+          0.8200626373291016,
+          0.7859928607940674,
+          0.7865810990333557,
+          0.6364973783493042,
+          0.36215847730636597,
+          0.5709531903266907
+        ],
+        "mse_before": 0.01949690654873848,
+        "regularization_loss": 0.0,
+        "total_loss_before": 0.01949690654873848,
+        "mse_after": 0.019494982436299324,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.0,
+          "residual_rating_model/book_embedding/embeddings": 0.0,
+          "residual_rating_model/hidden_1/kernel": 0.0,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 0.0,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 0.00012691352458205074,
+          "residual_rating_model/rating_residual/bias": 0.0016529735876247287
+        },
+        "user_embedding_before": [
+          -0.032320618629455566,
+          -0.0005802884697914124,
+          -0.007025230675935745,
+          0.049625907093286514,
+          0.010255564004182816,
+          0.002795018255710602,
+          -0.048250164836645126,
+          0.013471309095621109,
+          -0.04767888784408569,
+          0.015882279723882675,
+          -0.03879847377538681,
+          -0.01868661493062973,
+          -0.01223456859588623,
+          -0.04916882514953613,
+          0.04698408767580986,
+          0.03409362956881523
+        ],
+        "user_embedding_gradient": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "user_embedding_after": [
+          -0.032320618629455566,
+          -0.0005802884697914124,
+          -0.007025230675935745,
+          0.049625907093286514,
+          0.010255564004182816,
+          0.002795018255710602,
+          -0.048250164836645126,
+          0.013471309095621109,
+          -0.04767888784408569,
+          0.015882279723882675,
+          -0.03879847377538681,
+          -0.01868661493062973,
+          -0.01223456859588623,
+          -0.04916882514953613,
+          0.04698408767580986,
+          0.03409362956881523
+        ],
+        "embedding_delta_norm": 0.0,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.8045141696929932,
+          0.9210947155952454,
+          0.8197793960571289,
+          0.7857288122177124,
+          0.7863100171089172,
+          0.6362392902374268,
+          0.3618631958961487,
+          0.5706599950790405
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros; first data update learns the residual head",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "7eecc3f4d76071fd8b02b980911a5abdac883d0ea4ce84aaea36eb3ebee67153",
+          "bytes": 1412780
+        },
+        "metadata.json": {
+          "sha256": "ed57cc095216c8f60ad8340046e91f96c13d92fb6c4292492090b5727bc29178",
+          "bytes": 11852179
+        }
+      },
+      "seconds": 20.45180241999992,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.835113574939954,
+          "mae_rating_scale": 1.3748924466020453
+        },
+        "all_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.835113574939954,
+          "mae_rating_scale": 1.3748924466020453
+        },
+        "availability": {
+          "both_known": 3005,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split29_mlp_seed7",
+      "kind": "neural",
+      "split_seed": 29,
+      "initialization_seed": 7,
+      "architecture": "mlp",
+      "l2": 1e-05,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.03242509067058563,
+          "train_rmse": 1.6206271453722587,
+          "val_mse": 0.03986036032438278,
+          "val_rmse": 1.7968553604213682
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.02499920316040516,
+          "train_rmse": 1.4230022684426114,
+          "val_mse": 0.036303017288446426,
+          "val_rmse": 1.7148015629699431
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.02286517806351185,
+          "train_rmse": 1.360911247342919,
+          "val_mse": 0.03602338582277298,
+          "val_rmse": 1.7081844899321066
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.02217230573296547,
+          "train_rmse": 1.340133114421923,
+          "val_mse": 0.03660472482442856,
+          "val_rmse": 1.7219125154254247
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.021823974326252937,
+          "train_rmse": 1.3295645604582305,
+          "val_mse": 0.036961011588573456,
+          "val_rmse": 1.7302722151946062
+        },
+        {
+          "epoch": 6,
+          "train_mse": 0.02163705788552761,
+          "train_rmse": 1.3238586362326366,
+          "val_mse": 0.03757703676819801,
+          "val_rmse": 1.7446317600640082
+        }
+      ],
+      "epochs_completed": 6,
+      "best_epoch": 3,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3001,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "c00fd097abba1985c3fd7047cf938997279e83eec811acc0aa5fad84ca0998ee",
+          "bytes": 1330347
+        }
+      },
+      "validation": {
+        "pairs": 3001,
+        "rmse_rating_scale": 1.7081845419917445,
+        "mae_rating_scale": 1.3343818954371167
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.7081845419917445,
+          "mae_rating_scale": 1.3343818954371167
+        },
+        "all_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.7081845419917445,
+          "mae_rating_scale": 1.3343818954371167
+        },
+        "availability": {
+          "both_known": 3001,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            5203,
+            214
+          ],
+          [
+            2847,
+            1048
+          ],
+          [
+            6878,
+            1227
+          ],
+          [
+            6079,
+            1502
+          ],
+          [
+            8570,
+            4738
+          ],
+          [
+            12299,
+            2589
+          ],
+          [
+            6238,
+            1240
+          ],
+          [
+            4871,
+            196
+          ]
+        ],
+        "targets_normalized": [
+          0.7777777910232544,
+          0.5555555820465088,
+          0.5555555820465088,
+          0.5555555820465088,
+          0.5555555820465088,
+          0.6666666865348816,
+          0.5555555820465088,
+          0.7777777910232544
+        ],
+        "predictions_before": [
+          0.4956980049610138,
+          0.49636828899383545,
+          0.4981606602668762,
+          0.49643611907958984,
+          0.4997349679470062,
+          0.4988288879394531,
+          0.4974307715892792,
+          0.4969359040260315
+        ],
+        "predictions_after": [
+          0.49677351117134094,
+          0.4980247914791107,
+          0.499590128660202,
+          0.497400164604187,
+          0.5013241767883301,
+          0.5007414221763611,
+          0.49896910786628723,
+          0.4987666606903076
+        ],
+        "mse_before": 0.1024286150932312,
+        "regularization_loss": 0.003302361350506544,
+        "total_loss_before": 0.10573097318410873,
+        "mse_after": 0.10144558548927307,
+        "gradient_norms": {
+          "neural_rating_model/user_embedding/embeddings": 0.0023181659635156393,
+          "neural_rating_model/book_embedding/embeddings": 0.0021925698965787888,
+          "neural_rating_model/hidden_1/kernel": 0.0013174364576116204,
+          "neural_rating_model/hidden_1/bias": 0.042095962911844254,
+          "neural_rating_model/hidden_2/kernel": 0.0056927381083369255,
+          "neural_rating_model/hidden_2/bias": 0.09438354521989822,
+          "neural_rating_model/rating/kernel": 0.005726892501115799,
+          "neural_rating_model/rating/bias": 0.13092868030071259
+        },
+        "user_embedding_before": [
+          0.02295764908194542,
+          0.028826717287302017,
+          0.03880859538912773,
+          0.019625868648290634,
+          -0.043586909770965576,
+          -0.04560139402747154,
+          -0.006457127630710602,
+          0.02472337707877159,
+          -0.013507295399904251,
+          -0.033467162400484085,
+          0.030485954135656357,
+          -0.024204660207033157,
+          0.00408337265253067,
+          0.04642465338110924,
+          -0.00903109461069107,
+          0.03020324930548668
+        ],
+        "user_embedding_gradient": [
+          -1.7539116470288718e-06,
+          5.11675852976623e-06,
+          -2.753442686298513e-06,
+          5.40090377398883e-06,
+          2.014066922129132e-06,
+          -3.2708736398490146e-05,
+          -5.246865384833654e-06,
+          7.493943485314958e-06,
+          -6.3778184085094836e-06,
+          -3.274341224823729e-06,
+          1.0203853889834136e-05,
+          -1.782130857463926e-05,
+          1.4603920135414228e-05,
+          -1.3619056517200079e-05,
+          -6.726915216859197e-06,
+          2.090426642098464e-05
+        ],
+        "user_embedding_after": [
+          0.02331440895795822,
+          0.02820868417620659,
+          0.03927403688430786,
+          0.01899516023695469,
+          -0.04397599771618843,
+          -0.04468955844640732,
+          -0.005833183880895376,
+          0.024020135402679443,
+          -0.012838772498071194,
+          -0.03295845910906792,
+          0.0297225471585989,
+          -0.02335536852478981,
+          0.0032613722141832113,
+          0.047236207872629166,
+          -0.008350870572030544,
+          0.029334653168916702
+        ],
+        "embedding_delta_norm": 0.0027480206917971373,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "64510863632d09331173db8470d8d281de422004922e303d018b62dcdbd4b663",
+          "bytes": 1330347
+        },
+        "metadata.json": {
+          "sha256": "39498cd58f6564360590599774074f862a689690a98fc9f094562908f84832d5",
+          "bytes": 11850615
+        }
+      },
+      "seconds": 12.400151376000053,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.601035388238345,
+          "mae_rating_scale": 1.2606395607185046
+        },
+        "all_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.601035388238345,
+          "mae_rating_scale": 1.2606395607185046
+        },
+        "availability": {
+          "both_known": 3005,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split29_residual_seed7",
+      "kind": "neural",
+      "split_seed": 29,
+      "initialization_seed": 7,
+      "architecture": "residual",
+      "l2": 0.0,
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.022498570382595062,
+          "train_rmse": 1.3499571107965618,
+          "val_mse": 0.046180784702301025,
+          "val_rmse": 1.9340743421302045
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.02249765954911709,
+          "train_rmse": 1.3499297846475142,
+          "val_mse": 0.04617183655500412,
+          "val_rmse": 1.933886956612339
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.022484825924038887,
+          "train_rmse": 1.3495447009444146,
+          "val_mse": 0.04616768658161163,
+          "val_rmse": 1.9338000447591635
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.022297557443380356,
+          "train_rmse": 1.3439130005003332,
+          "val_mse": 0.046102337539196014,
+          "val_rmse": 1.9324309407259233
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.020355740562081337,
+          "train_rmse": 1.284061908760083,
+          "val_mse": 0.046022236347198486,
+          "val_rmse": 1.930751445454095
+        },
+        {
+          "epoch": 6,
+          "train_mse": 0.015760300680994987,
+          "train_rmse": 1.1298603255095712,
+          "val_mse": 0.046605080366134644,
+          "val_rmse": 1.9429388846942424
+        },
+        {
+          "epoch": 7,
+          "train_mse": 0.011837152764201164,
+          "train_rmse": 0.97918811977081,
+          "val_mse": 0.04795115813612938,
+          "val_rmse": 1.970797759544718
+        },
+        {
+          "epoch": 8,
+          "train_mse": 0.009169497527182102,
+          "train_rmse": 0.8618174398918546,
+          "val_mse": 0.049956560134887695,
+          "val_rmse": 2.0115867793674482
+        }
+      ],
+      "epochs_completed": 8,
+      "best_epoch": 5,
+      "original_test_used": false,
+      "assessment_scored": true,
+      "selection_known_pairs": 3001,
+      "selection_unknown_pairs": 0,
+      "initial_network_fingerprint": {
+        "initial_network.keras": {
+          "sha256": "06294a148f215822c65029e54a739b493529135c02970529599929e2ceaec291",
+          "bytes": 1412780
+        }
+      },
+      "validation": {
+        "pairs": 3001,
+        "rmse_rating_scale": 1.93075147135623,
+        "mae_rating_scale": 1.447590452478314
+      },
+      "selection": {
+        "known_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.93075147135623,
+          "mae_rating_scale": 1.447590452478314
+        },
+        "all_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.93075147135623,
+          "mae_rating_scale": 1.447590452478314
+        },
+        "availability": {
+          "both_known": 3001,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            5203,
+            214
+          ],
+          [
+            2847,
+            1048
+          ],
+          [
+            6878,
+            1227
+          ],
+          [
+            6079,
+            1502
+          ],
+          [
+            8570,
+            4738
+          ],
+          [
+            12299,
+            2589
+          ],
+          [
+            6238,
+            1240
+          ],
+          [
+            4871,
+            196
+          ]
+        ],
+        "targets_normalized": [
+          0.7777777910232544,
+          0.5555555820465088,
+          0.5555555820465088,
+          0.5555555820465088,
+          0.5555555820465088,
+          0.6666666865348816,
+          0.5555555820465088,
+          0.7777777910232544
+        ],
+        "predictions_before": [
+          0.8566377758979797,
+          0.7429630756378174,
+          0.6310456991195679,
+          0.6758153438568115,
+          0.6460057497024536,
+          0.7155455350875854,
+          0.4039106070995331,
+          0.9058787822723389
+        ],
+        "predictions_after": [
+          0.8563611507415771,
+          0.7427166104316711,
+          0.6308055520057678,
+          0.675538957118988,
+          0.6457273960113525,
+          0.7152703404426575,
+          0.40365850925445557,
+          0.9056234955787659
+        ],
+        "mse_before": 0.020634733140468597,
+        "regularization_loss": 0.0,
+        "total_loss_before": 0.020634733140468597,
+        "mse_after": 0.020633429288864136,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.0,
+          "residual_rating_model/book_embedding/embeddings": 0.0,
+          "residual_rating_model/hidden_1/kernel": 0.0,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 0.0,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 0.00014976605598349124,
+          "residual_rating_model/rating_residual/bias": 0.0009385462035425007
+        },
+        "user_embedding_before": [
+          0.02295764908194542,
+          0.028826717287302017,
+          0.03880859538912773,
+          0.019625868648290634,
+          -0.043586909770965576,
+          -0.04560139402747154,
+          -0.006457127630710602,
+          0.02472337707877159,
+          -0.013507295399904251,
+          -0.033467162400484085,
+          0.030485954135656357,
+          -0.024204660207033157,
+          0.00408337265253067,
+          0.04642465338110924,
+          -0.00903109461069107,
+          0.03020324930548668
+        ],
+        "user_embedding_gradient": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "user_embedding_after": [
+          0.02295764908194542,
+          0.028826717287302017,
+          0.03880859538912773,
+          0.019625868648290634,
+          -0.043586909770965576,
+          -0.04560139402747154,
+          -0.006457127630710602,
+          0.02472337707877159,
+          -0.013507295399904251,
+          -0.033467162400484085,
+          0.030485954135656357,
+          -0.024204660207033157,
+          0.00408337265253067,
+          0.04642465338110924,
+          -0.00903109461069107,
+          0.03020324930548668
+        ],
+        "embedding_delta_norm": 0.0,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.8566377758979797,
+          0.7429630756378174,
+          0.6310456991195679,
+          0.6758153438568115,
+          0.6460057497024536,
+          0.7155455350875854,
+          0.4039106070995331,
+          0.9058787822723389
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros; first data update learns the residual head",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "model_roundtrip_verified": true,
+      "selected_model_fingerprints": {
+        "network.keras": {
+          "sha256": "3271a17594376412ad7abed525afad8fe148ad14b40f9b6e40d33445e0268c9b",
+          "bytes": 1412780
+        },
+        "metadata.json": {
+          "sha256": "37389e89a41afe128255bf85ccfec77d9e5e1848f9dfad460205f429b3271968",
+          "bytes": 11852000
+        }
+      },
+      "seconds": 18.731911531999913,
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.8439273596506423,
+          "mae_rating_scale": 1.382909408028233
+        },
+        "all_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.8439273596506423,
+          "mae_rating_scale": 1.382909408028233
+        },
+        "availability": {
+          "both_known": 3005,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    }
+  ],
+  "controls": [
+    {
+      "name": "split17_global_mean",
+      "kind": "control",
+      "control_kind": "global_mean",
+      "split_seed": 17,
+      "label": "global_mean on known pairs; common train-only fallback on cold pairs",
+      "selection": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.774471294472041,
+          "mae_rating_scale": 1.389138483120361
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.774471294472041,
+          "mae_rating_scale": 1.389138483120361
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.7914485901645991,
+          "mae_rating_scale": 1.4112815200523312
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.7914485901645991,
+          "mae_rating_scale": 1.4112815200523312
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split17_user_mean",
+      "kind": "control",
+      "control_kind": "user_mean",
+      "split_seed": 17,
+      "label": "user_mean on known pairs; common train-only fallback on cold pairs",
+      "selection": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.9148031487971269,
+          "mae_rating_scale": 1.4019556397235626
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.9148031487971269,
+          "mae_rating_scale": 1.4019556397235626
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.9709885035381185,
+          "mae_rating_scale": 1.4476741873523382
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.9709885035381185,
+          "mae_rating_scale": 1.4476741873523382
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split17_bias",
+      "kind": "control",
+      "control_kind": "bias",
+      "split_seed": 17,
+      "label": "bias on known pairs; common train-only fallback on cold pairs",
+      "selection": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.8655125933944234,
+          "mae_rating_scale": 1.381689319723372
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.8655125933944234,
+          "mae_rating_scale": 1.381689319723372
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.9229168528927776,
+          "mae_rating_scale": 1.4180182483019947
+        },
+        "all_pairs": {
+          "pairs": 3002,
+          "rmse_rating_scale": 1.9229168528927776,
+          "mae_rating_scale": 1.4180182483019947
+        },
+        "availability": {
+          "both_known": 3002,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split29_global_mean",
+      "kind": "control",
+      "control_kind": "global_mean",
+      "split_seed": 29,
+      "label": "global_mean on known pairs; common train-only fallback on cold pairs",
+      "selection": {
+        "known_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.8847068328065804,
+          "mae_rating_scale": 1.4765095114859825
+        },
+        "all_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.8847068328065804,
+          "mae_rating_scale": 1.4765095114859825
+        },
+        "availability": {
+          "both_known": 3001,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.7578636478074252,
+          "mae_rating_scale": 1.388179272632305
+        },
+        "all_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.7578636478074252,
+          "mae_rating_scale": 1.388179272632305
+        },
+        "availability": {
+          "both_known": 3005,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split29_user_mean",
+      "kind": "control",
+      "control_kind": "user_mean",
+      "split_seed": 29,
+      "label": "user_mean on known pairs; common train-only fallback on cold pairs",
+      "selection": {
+        "known_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.9888316085821853,
+          "mae_rating_scale": 1.4745317827333666
+        },
+        "all_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.9888316085821853,
+          "mae_rating_scale": 1.4745317827333666
+        },
+        "availability": {
+          "both_known": 3001,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.8885181217469427,
+          "mae_rating_scale": 1.394309970496383
+        },
+        "all_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.8885181217469427,
+          "mae_rating_scale": 1.394309970496383
+        },
+        "availability": {
+          "both_known": 3005,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    },
+    {
+      "name": "split29_bias",
+      "kind": "control",
+      "control_kind": "bias",
+      "split_seed": 29,
+      "label": "bias on known pairs; common train-only fallback on cold pairs",
+      "selection": {
+        "known_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.9337795305145706,
+          "mae_rating_scale": 1.4453589261591098
+        },
+        "all_pairs": {
+          "pairs": 3001,
+          "rmse_rating_scale": 1.9337795305145706,
+          "mae_rating_scale": 1.4453589261591098
+        },
+        "availability": {
+          "both_known": 3001,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      },
+      "assessment": {
+        "known_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.8372425521107307,
+          "mae_rating_scale": 1.373296704625528
+        },
+        "all_pairs": {
+          "pairs": 3005,
+          "rmse_rating_scale": 1.8372425521107307,
+          "mae_rating_scale": 1.373296704625528
+        },
+        "availability": {
+          "both_known": 3005,
+          "known_user_unknown_isbn": 0,
+          "unknown_user_known_isbn": 0,
+          "both_unknown": 0
+        },
+        "known_pair_retention_rate": 1.0,
+        "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+      }
+    }
+  ],
+  "selection": {
+    "metric": "known_selection_rmse_rating_scale",
+    "by_split": [
+      {
+        "split_seed": 17,
+        "best_neural_candidate": "split17_mlp_seed42",
+        "best_candidate": "split17_mlp_seed42"
+      },
+      {
+        "split_seed": 29,
+        "best_neural_candidate": "split29_mlp_seed7",
+        "best_candidate": "split29_mlp_seed7"
+      }
+    ],
+    "all_weights_locked": true,
+    "assessment_used_for_selection": false,
+    "weights_locked_utc": "2026-10-13T21:03:56.444862+00:00"
+  },
+  "assessment_performed": true,
+  "assessment_results": [
+    {
+      "split_seed": 17,
+      "models": {
+        "split17_global_mean": {
+          "known_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.7914485901645991,
+            "mae_rating_scale": 1.4112815200523312
+          },
+          "all_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.7914485901645991,
+            "mae_rating_scale": 1.4112815200523312
+          },
+          "availability": {
+            "both_known": 3002,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split17_user_mean": {
+          "known_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.9709885035381185,
+            "mae_rating_scale": 1.4476741873523382
+          },
+          "all_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.9709885035381185,
+            "mae_rating_scale": 1.4476741873523382
+          },
+          "availability": {
+            "both_known": 3002,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split17_bias": {
+          "known_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.9229168528927776,
+            "mae_rating_scale": 1.4180182483019947
+          },
+          "all_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.9229168528927776,
+            "mae_rating_scale": 1.4180182483019947
+          },
+          "availability": {
+            "both_known": 3002,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split17_mlp_seed42": {
+          "known_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.6270996160585327,
+            "mae_rating_scale": 1.2786225722997209
+          },
+          "all_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.6270996160585327,
+            "mae_rating_scale": 1.2786225722997209
+          },
+          "availability": {
+            "both_known": 3002,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split17_residual_seed42": {
+          "known_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.9167312964750267,
+            "mae_rating_scale": 1.4134601804115707
+          },
+          "all_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.9167312964750267,
+            "mae_rating_scale": 1.4134601804115707
+          },
+          "availability": {
+            "both_known": 3002,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split17_mlp_seed2026": {
+          "known_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.6350774138397075,
+            "mae_rating_scale": 1.2894748383407033
+          },
+          "all_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.6350774138397075,
+            "mae_rating_scale": 1.2894748383407033
+          },
+          "availability": {
+            "both_known": 3002,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split17_residual_seed2026": {
+          "known_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.92275411097418,
+            "mae_rating_scale": 1.4177007819318042
+          },
+          "all_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.92275411097418,
+            "mae_rating_scale": 1.4177007819318042
+          },
+          "availability": {
+            "both_known": 3002,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split17_mlp_seed7": {
+          "known_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.6368475713446196,
+            "mae_rating_scale": 1.2918097890273164
+          },
+          "all_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.6368475713446196,
+            "mae_rating_scale": 1.2918097890273164
+          },
+          "availability": {
+            "both_known": 3002,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split17_residual_seed7": {
+          "known_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.920624312809428,
+            "mae_rating_scale": 1.4166713745732216
+          },
+          "all_pairs": {
+            "pairs": 3002,
+            "rmse_rating_scale": 1.920624312809428,
+            "mae_rating_scale": 1.4166713745732216
+          },
+          "availability": {
+            "both_known": 3002,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        }
+      },
+      "paired_comparisons": [
+        {
+          "candidate": "split17_mlp_seed42",
+          "reference": "split17_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.2958172368342451,
+            "interval_95_percent": [
+              -0.3375688042868189,
+              -0.25379311434680407
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_mlp_seed42",
+          "reference": "split17_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.2958172368342451,
+            "interval_95_percent": [
+              -0.3375688042868189,
+              -0.25379311434680407
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed42",
+          "reference": "split17_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.0061855564177513145,
+            "interval_95_percent": [
+              -0.008856197786417918,
+              -0.0034843690060044237
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed42",
+          "reference": "split17_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.0061855564177513145,
+            "interval_95_percent": [
+              -0.008856197786417918,
+              -0.0034843690060044237
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed42",
+          "reference": "split17_mlp_seed42",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": 0.2896316804164938,
+            "interval_95_percent": [
+              0.2475485983542708,
+              0.3320252205893433
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed42",
+          "reference": "split17_mlp_seed42",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": 0.2896316804164938,
+            "interval_95_percent": [
+              0.2475485983542708,
+              0.3320252205893433
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_mlp_seed2026",
+          "reference": "split17_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.2878394390530703,
+            "interval_95_percent": [
+              -0.3330513104774859,
+              -0.24477450941761308
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_mlp_seed2026",
+          "reference": "split17_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.2878394390530703,
+            "interval_95_percent": [
+              -0.3330513104774859,
+              -0.24477450941761308
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed2026",
+          "reference": "split17_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.00016274191859788623,
+            "interval_95_percent": [
+              -0.0003231226019548061,
+              -9.370140827114071e-06
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed2026",
+          "reference": "split17_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.00016274191859788623,
+            "interval_95_percent": [
+              -0.0003231226019548061,
+              -9.370140827114071e-06
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed2026",
+          "reference": "split17_mlp_seed2026",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": 0.2876766971344724,
+            "interval_95_percent": [
+              0.2446922042092598,
+              0.33288674422357517
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed2026",
+          "reference": "split17_mlp_seed2026",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": 0.2876766971344724,
+            "interval_95_percent": [
+              0.2446922042092598,
+              0.33288674422357517
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_mlp_seed7",
+          "reference": "split17_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.28606928154815825,
+            "interval_95_percent": [
+              -0.33032789307265975,
+              -0.2420951755079074
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_mlp_seed7",
+          "reference": "split17_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.28606928154815825,
+            "interval_95_percent": [
+              -0.33032789307265975,
+              -0.2420951755079074
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed7",
+          "reference": "split17_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.002292540083350003,
+            "interval_95_percent": [
+              -0.003344301652121595,
+              -0.0012630541733007873
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed7",
+          "reference": "split17_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": -0.002292540083350003,
+            "interval_95_percent": [
+              -0.003344301652121595,
+              -0.0012630541733007873
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed7",
+          "reference": "split17_mlp_seed7",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": 0.28377674146480825,
+            "interval_95_percent": [
+              0.23972912277816125,
+              0.32757049888539647
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split17_residual_seed7",
+          "reference": "split17_mlp_seed7",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3002,
+            "point_estimate": 0.28377674146480825,
+            "interval_95_percent": [
+              0.23972912277816125,
+              0.32757049888539647
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        }
+      ],
+      "predictions_file": "splits/split_17/assessment_predictions.csv"
+    },
+    {
+      "split_seed": 29,
+      "models": {
+        "split29_global_mean": {
+          "known_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.7578636478074252,
+            "mae_rating_scale": 1.388179272632305
+          },
+          "all_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.7578636478074252,
+            "mae_rating_scale": 1.388179272632305
+          },
+          "availability": {
+            "both_known": 3005,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split29_user_mean": {
+          "known_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.8885181217469427,
+            "mae_rating_scale": 1.394309970496383
+          },
+          "all_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.8885181217469427,
+            "mae_rating_scale": 1.394309970496383
+          },
+          "availability": {
+            "both_known": 3005,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split29_bias": {
+          "known_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.8372425521107307,
+            "mae_rating_scale": 1.373296704625528
+          },
+          "all_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.8372425521107307,
+            "mae_rating_scale": 1.373296704625528
+          },
+          "availability": {
+            "both_known": 3005,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split29_mlp_seed42": {
+          "known_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.5918291292409281,
+            "mae_rating_scale": 1.2603584448232032
+          },
+          "all_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.5918291292409281,
+            "mae_rating_scale": 1.2603584448232032
+          },
+          "availability": {
+            "both_known": 3005,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split29_residual_seed42": {
+          "known_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.8344857733261708,
+            "mae_rating_scale": 1.3747121044482646
+          },
+          "all_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.8344857733261708,
+            "mae_rating_scale": 1.3747121044482646
+          },
+          "availability": {
+            "both_known": 3005,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split29_mlp_seed2026": {
+          "known_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.5987025862819229,
+            "mae_rating_scale": 1.2591594915025048
+          },
+          "all_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.5987025862819229,
+            "mae_rating_scale": 1.2591594915025048
+          },
+          "availability": {
+            "both_known": 3005,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split29_residual_seed2026": {
+          "known_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.835113574939954,
+            "mae_rating_scale": 1.3748924466020453
+          },
+          "all_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.835113574939954,
+            "mae_rating_scale": 1.3748924466020453
+          },
+          "availability": {
+            "both_known": 3005,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split29_mlp_seed7": {
+          "known_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.601035388238345,
+            "mae_rating_scale": 1.2606395607185046
+          },
+          "all_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.601035388238345,
+            "mae_rating_scale": 1.2606395607185046
+          },
+          "availability": {
+            "both_known": 3005,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        },
+        "split29_residual_seed7": {
+          "known_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.8439273596506423,
+            "mae_rating_scale": 1.382909408028233
+          },
+          "all_pairs": {
+            "pairs": 3005,
+            "rmse_rating_scale": 1.8439273596506423,
+            "mae_rating_scale": 1.382909408028233
+          },
+          "availability": {
+            "both_known": 3005,
+            "known_user_unknown_isbn": 0,
+            "unknown_user_known_isbn": 0,
+            "both_unknown": 0
+          },
+          "known_pair_retention_rate": 1.0,
+          "fallback_policy": "All compared models: both IDs known uses their own predictor; otherwise known user uses fit user mean, otherwise known ISBN uses fit item mean, otherwise fit global mean."
+        }
+      },
+      "paired_comparisons": [
+        {
+          "candidate": "split29_mlp_seed42",
+          "reference": "split29_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.2454134228698024,
+            "interval_95_percent": [
+              -0.2908852042486838,
+              -0.2023453045004934
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_mlp_seed42",
+          "reference": "split29_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.2454134228698024,
+            "interval_95_percent": [
+              -0.2908852042486838,
+              -0.2023453045004934
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed42",
+          "reference": "split29_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.0027567787845597103,
+            "interval_95_percent": [
+              -0.007393616565446343,
+              0.0018160325400971707
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed42",
+          "reference": "split29_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.0027567787845597103,
+            "interval_95_percent": [
+              -0.007393616565446343,
+              0.0018160325400971707
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed42",
+          "reference": "split29_mlp_seed42",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": 0.24265664408524268,
+            "interval_95_percent": [
+              0.2013310708302299,
+              0.28642017792896624
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed42",
+          "reference": "split29_mlp_seed42",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": 0.24265664408524268,
+            "interval_95_percent": [
+              0.2013310708302299,
+              0.28642017792896624
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_mlp_seed2026",
+          "reference": "split29_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.23853996582880765,
+            "interval_95_percent": [
+              -0.2803272820081717,
+              -0.1987455277195598
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_mlp_seed2026",
+          "reference": "split29_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.23853996582880765,
+            "interval_95_percent": [
+              -0.2803272820081717,
+              -0.1987455277195598
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed2026",
+          "reference": "split29_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.002128977170776425,
+            "interval_95_percent": [
+              -0.006011296524944998,
+              0.001640790420595371
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed2026",
+          "reference": "split29_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.002128977170776425,
+            "interval_95_percent": [
+              -0.006011296524944998,
+              0.001640790420595371
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed2026",
+          "reference": "split29_mlp_seed2026",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": 0.23641098865803123,
+            "interval_95_percent": [
+              0.19765060358576117,
+              0.27706924209813283
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed2026",
+          "reference": "split29_mlp_seed2026",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": 0.23641098865803123,
+            "interval_95_percent": [
+              0.19765060358576117,
+              0.27706924209813283
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_mlp_seed7",
+          "reference": "split29_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.2362071638723855,
+            "interval_95_percent": [
+              -0.2786420759287645,
+              -0.19734791071766564
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_mlp_seed7",
+          "reference": "split29_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": -0.2362071638723855,
+            "interval_95_percent": [
+              -0.2786420759287645,
+              -0.19734791071766564
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed7",
+          "reference": "split29_bias",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": 0.006684807539911741,
+            "interval_95_percent": [
+              0.0007583061940660941,
+              0.012670794465690156
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed7",
+          "reference": "split29_bias",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": 0.006684807539911741,
+            "interval_95_percent": [
+              0.0007583061940660941,
+              0.012670794465690156
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed7",
+          "reference": "split29_mlp_seed7",
+          "scope": "known_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": 0.24289197141229724,
+            "interval_95_percent": [
+              0.20494098848090975,
+              0.28517579765532625
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        },
+        {
+          "candidate": "split29_residual_seed7",
+          "reference": "split29_mlp_seed7",
+          "scope": "all_pairs",
+          "bootstrap": {
+            "draws": 1000,
+            "seed": 123,
+            "clusters": 3000,
+            "pairs": 3005,
+            "point_estimate": 0.24289197141229724,
+            "interval_95_percent": [
+              0.20494098848090975,
+              0.28517579765532625
+            ],
+            "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+            "difference": "candidate_rmse_minus_reference_rmse",
+            "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+          }
+        }
+      ],
+      "predictions_file": "splits/split_29/assessment_predictions.csv"
+    }
+  ],
+  "seed_summary": [
+    {
+      "split_seed": 17,
+      "architecture": "mlp",
+      "initialization_seeds": [
+        42,
+        2026,
+        7
+      ],
+      "models": [
+        "split17_mlp_seed42",
+        "split17_mlp_seed2026",
+        "split17_mlp_seed7"
+      ],
+      "known_rmse_mean": 1.6330082004142865,
+      "known_rmse_std": 0.005192965551093495,
+      "all_rmse_mean": 1.6330082004142865,
+      "all_rmse_std": 0.005192965551093495,
+      "best_epochs": [
+        2,
+        2,
+        2
+      ],
+      "variation_scope": "Training seeds change initialization and minibatch order; split held fixed",
+      "interpretation": "Descriptive sample SD across training seeds, not a confidence interval"
+    },
+    {
+      "split_seed": 17,
+      "architecture": "residual",
+      "initialization_seeds": [
+        42,
+        2026,
+        7
+      ],
+      "models": [
+        "split17_residual_seed42",
+        "split17_residual_seed2026",
+        "split17_residual_seed7"
+      ],
+      "known_rmse_mean": 1.920036573419545,
+      "known_rmse_std": 0.0030541204651450267,
+      "all_rmse_mean": 1.920036573419545,
+      "all_rmse_std": 0.0030541204651450267,
+      "best_epochs": [
+        4,
+        1,
+        4
+      ],
+      "variation_scope": "Training seeds change initialization and minibatch order; split held fixed",
+      "interpretation": "Descriptive sample SD across training seeds, not a confidence interval"
+    },
+    {
+      "split_seed": 29,
+      "architecture": "mlp",
+      "initialization_seeds": [
+        42,
+        2026,
+        7
+      ],
+      "models": [
+        "split29_mlp_seed42",
+        "split29_mlp_seed2026",
+        "split29_mlp_seed7"
+      ],
+      "known_rmse_mean": 1.5971890345870652,
+      "known_rmse_std": 0.004786118493271395,
+      "all_rmse_mean": 1.5971890345870652,
+      "all_rmse_std": 0.004786118493271395,
+      "best_epochs": [
+        2,
+        3,
+        3
+      ],
+      "variation_scope": "Training seeds change initialization and minibatch order; split held fixed",
+      "interpretation": "Descriptive sample SD across training seeds, not a confidence interval"
+    },
+    {
+      "split_seed": 29,
+      "architecture": "residual",
+      "initialization_seeds": [
+        42,
+        2026,
+        7
+      ],
+      "models": [
+        "split29_residual_seed42",
+        "split29_residual_seed2026",
+        "split29_residual_seed7"
+      ],
+      "known_rmse_mean": 1.837842235972256,
+      "known_rmse_std": 0.005279212190517883,
+      "all_rmse_mean": 1.837842235972256,
+      "all_rmse_std": 0.005279212190517883,
+      "best_epochs": [
+        5,
+        6,
+        5
+      ],
+      "variation_scope": "Training seeds change initialization and minibatch order; split held fixed",
+      "interpretation": "Descriptive sample SD across training seeds, not a confidence interval"
+    }
+  ],
+  "all_candidates_completed": true,
+  "training": {
+    "total_neural_epochs": 75
+  },
+  "original_test_used": false,
+  "original_validation_used": false,
+  "model_promotion_to_application": false,
+  "total_seconds": 203.879569499,
+  "limitations": [
+    "Internal development assessment derives from previously used training ratings; it is not a fresh independent test.",
+    "All assessment users retain fit history; this is not a cold-user evaluation.",
+    "The fixed book catalog was originally selected from the full original training data before this repartition.",
+    "Split populations overlap across seeds; no observations or bootstrap draws are pooled across splits.",
+    "RMSE/MAE weight rating rows; multiple editions are clustered by user during bootstrap.",
+    "Seed means and sample SD are descriptive; confidence intervals are conditional and unadjusted for multiple comparisons.",
+    "Only rating prediction is evaluated; ranking and production promotion remain out of scope."
+  ]
+}

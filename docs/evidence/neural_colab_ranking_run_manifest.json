@@ -1,0 +1,547 @@
+{
+  "schema_version": 1,
+  "project": "System-Recommendation",
+  "session_name": "book-recommendation-neural-20261014-ranking",
+  "experiment_directory": "experiment",
+  "account_free_without_paid_balance_confirmed_by_user": true,
+  "paid_resources_authorized": false,
+  "gpu": "Tesla T4, 15360 MiB, 580.82.07",
+  "tensorflow_version": "2.21.0",
+  "deterministic_operations": true,
+  "candidate_count": 18,
+  "all_candidates_completed": true,
+  "ranking_completed": true,
+  "total_neural_epochs": 106,
+  "new_architecture": "matched work two-tower MLP: rating MSE, pairwise BPR, and BPR with fit-only metadata",
+  "original_validation_uploaded": false,
+  "original_test_uploaded": false,
+  "original_validation_used": false,
+  "original_test_used": false,
+  "assessment_is_internal_development": true,
+  "assessment_previously_inspected": true,
+  "assessment_weights_locked_utc": "2026-10-14T09:04:06.418044+00:00",
+  "model_promotion_to_application": false,
+  "backups": [
+    {
+      "archive": "inputs_backup.tar.gz",
+      "sha256": "cc889970fc081b68b9b944e0cb6ec37af568e364511119249e27363a1683a771",
+      "bytes": 11689575,
+      "kind": "training_inputs",
+      "epoch": null,
+      "members": 35,
+      "verified_utc": "2026-10-14T08:57:32.896054+00:00"
+    },
+    {
+      "archive": "epoch_001_snapshot.tar.gz",
+      "sha256": "57483e3d4771579f2a1c52676dc5363d4bb842c1a7e23b5ddb180650cb8fde64",
+      "bytes": 10300332,
+      "kind": "epoch_checkpoint",
+      "epoch": 4,
+      "members": 9,
+      "verified_utc": "2026-10-14T08:58:06.851363+00:00"
+    },
+    {
+      "archive": "epoch_002_snapshot.tar.gz",
+      "sha256": "8280f5e745bf4b8507489e9089a413eef29b0bd8622db9bfa77c00dfe116f918",
+      "bytes": 15750437,
+      "kind": "epoch_checkpoint",
+      "epoch": 5,
+      "members": 17,
+      "verified_utc": "2026-10-14T08:58:25.063322+00:00"
+    },
+    {
+      "archive": "epoch_003_snapshot.tar.gz",
+      "sha256": "f72ebb4ce67426f76f6bb51979e96eb97721fcf4fa89c38f80cb59047e957cc0",
+      "bytes": 9708833,
+      "kind": "epoch_checkpoint",
+      "epoch": 9,
+      "members": 9,
+      "verified_utc": "2026-10-14T08:58:34.726982+00:00"
+    },
+    {
+      "archive": "epoch_004_snapshot.tar.gz",
+      "sha256": "f5218416ee88229860d3ff624776519eeaa9c2ab22733e0f668fb94af8b92797",
+      "bytes": 15130985,
+      "kind": "epoch_checkpoint",
+      "epoch": 9,
+      "members": 17,
+      "verified_utc": "2026-10-14T08:58:50.625016+00:00"
+    },
+    {
+      "archive": "epoch_005_snapshot.tar.gz",
+      "sha256": "99ad5c1317eb33d7f5fc403f0839e314b108ef83442c9c6eff0f472fc7b278be",
+      "bytes": 10176552,
+      "kind": "epoch_checkpoint",
+      "epoch": 13,
+      "members": 9,
+      "verified_utc": "2026-10-14T08:59:39.164379+00:00"
+    },
+    {
+      "archive": "epoch_006_snapshot.tar.gz",
+      "sha256": "b81c410a6e11b4653eb3c91bc6d125dd34eb49258cba0976dd4f18f8652a13f9",
+      "bytes": 16074991,
+      "kind": "epoch_checkpoint",
+      "epoch": 15,
+      "members": 17,
+      "verified_utc": "2026-10-14T08:59:56.109470+00:00"
+    },
+    {
+      "archive": "epoch_007_snapshot.tar.gz",
+      "sha256": "31bb4cd28db66fe127622beffde76318fc7b3e8ca606d15865f366cc04a2fd46",
+      "bytes": 10314702,
+      "kind": "epoch_checkpoint",
+      "epoch": 19,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:00:07.595787+00:00"
+    },
+    {
+      "archive": "epoch_008_snapshot.tar.gz",
+      "sha256": "f5b6bf1b616c51cca153013cc364cf81e1063a4c88ac4d083492899b7f7e8ebc",
+      "bytes": 15752186,
+      "kind": "epoch_checkpoint",
+      "epoch": 19,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:00:26.791082+00:00"
+    },
+    {
+      "archive": "epoch_009_snapshot.tar.gz",
+      "sha256": "c62c740b0c257952aaaf13e12781e94ca1bd3d5f7ce3e9053254d20f6b1349bf",
+      "bytes": 9707420,
+      "kind": "epoch_checkpoint",
+      "epoch": 23,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:00:38.184687+00:00"
+    },
+    {
+      "archive": "epoch_010_snapshot.tar.gz",
+      "sha256": "5c0fc1382416d1fe9f94ff99e833a920345d78209d8e08c80416b253e11b4b69",
+      "bytes": 9708816,
+      "kind": "epoch_checkpoint",
+      "epoch": 27,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:00:47.599266+00:00"
+    },
+    {
+      "archive": "epoch_011_snapshot.tar.gz",
+      "sha256": "8bf6d8f2761f99306dd4403a00aafed1d3205d40d6b7f3a62c716c32809aaff5",
+      "bytes": 9708647,
+      "kind": "epoch_checkpoint",
+      "epoch": 31,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:00:58.174722+00:00"
+    },
+    {
+      "archive": "epoch_012_snapshot.tar.gz",
+      "sha256": "321479b3979a9a5b66d9ec4297171395391328874a8effa534b7fea5b1b96e8b",
+      "bytes": 15152925,
+      "kind": "epoch_checkpoint",
+      "epoch": 31,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:01:15.027424+00:00"
+    },
+    {
+      "archive": "epoch_013_snapshot.tar.gz",
+      "sha256": "99f1bfbb3141669f46a84e06f2b2e506c427c39bc32d9ff9d936a477d20d1478",
+      "bytes": 10179628,
+      "kind": "epoch_checkpoint",
+      "epoch": 35,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:02:07.936508+00:00"
+    },
+    {
+      "archive": "epoch_014_snapshot.tar.gz",
+      "sha256": "6f6a1e3d1ec418561aa2802e6a360d23027ac42a0699a35fb43c8c7106013074",
+      "bytes": 10180233,
+      "kind": "epoch_checkpoint",
+      "epoch": 39,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:02:17.276377+00:00"
+    },
+    {
+      "archive": "epoch_015_snapshot.tar.gz",
+      "sha256": "1aa5321a222e60ed14895c5b1ffbead45e251ec7f624f91307cd09ce63518890",
+      "bytes": 16094514,
+      "kind": "epoch_checkpoint",
+      "epoch": 40,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:02:37.193793+00:00"
+    },
+    {
+      "archive": "epoch_016_snapshot.tar.gz",
+      "sha256": "a0bc9b0be3e44d56651f40e0b14d5d5cee299671c89c9ee2d207371f278476cc",
+      "bytes": 10319986,
+      "kind": "epoch_checkpoint",
+      "epoch": 44,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:02:48.923108+00:00"
+    },
+    {
+      "archive": "epoch_017_snapshot.tar.gz",
+      "sha256": "c85e973096ca078bf6caadc30b8f3e08b96692f595d94024bbf3bddbd2aaa668",
+      "bytes": 15755685,
+      "kind": "epoch_checkpoint",
+      "epoch": 44,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:03:05.272889+00:00"
+    },
+    {
+      "archive": "epoch_018_snapshot.tar.gz",
+      "sha256": "876cd2470a9ab73e6f58609291d24ab61668e45933695047ec2d2bfd1a454402",
+      "bytes": 9721982,
+      "kind": "epoch_checkpoint",
+      "epoch": 48,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:03:15.087277+00:00"
+    },
+    {
+      "archive": "epoch_019_snapshot.tar.gz",
+      "sha256": "945dbcc89d7c766e29639ecf22ba7c272e573dae58809d25c12bd03de5762367",
+      "bytes": 15146917,
+      "kind": "epoch_checkpoint",
+      "epoch": 50,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:03:30.015859+00:00"
+    },
+    {
+      "archive": "epoch_020_snapshot.tar.gz",
+      "sha256": "e0000767e184c2b6236f8b64ba08c8d513af64f1cf75803e08b68e850d2089f9",
+      "bytes": 10193669,
+      "kind": "epoch_checkpoint",
+      "epoch": 54,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:03:41.000038+00:00"
+    },
+    {
+      "archive": "epoch_021_snapshot.tar.gz",
+      "sha256": "07b03d7ec150b862c016464020a3703fda9862336069c529d1566749c8099f21",
+      "bytes": 16094014,
+      "kind": "epoch_checkpoint",
+      "epoch": 56,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:03:56.990750+00:00"
+    },
+    {
+      "archive": "epoch_022_snapshot.tar.gz",
+      "sha256": "a917194b9afcae04a0e5efece05faa7da0fc230ee02a8a8a69063199e9b752e4",
+      "bytes": 10328311,
+      "kind": "epoch_checkpoint",
+      "epoch": 60,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:04:07.587205+00:00"
+    },
+    {
+      "archive": "epoch_023_snapshot.tar.gz",
+      "sha256": "3b4be4e9c705dc2f96a6572c7eefb46bd66242bf9a52e8597e04a7ad0ef79317",
+      "bytes": 15777615,
+      "kind": "epoch_checkpoint",
+      "epoch": 60,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:04:26.693442+00:00"
+    },
+    {
+      "archive": "epoch_024_snapshot.tar.gz",
+      "sha256": "ce655f02a3633bbd764b427839585972a1047efa6a80a54802df71da8e8e9859",
+      "bytes": 9721526,
+      "kind": "epoch_checkpoint",
+      "epoch": 64,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:04:37.579425+00:00"
+    },
+    {
+      "archive": "epoch_025_snapshot.tar.gz",
+      "sha256": "64d2a22c550c69df60ffd79db7b17b4b8b568422979c164adfa0210ea6afc09b",
+      "bytes": 15140848,
+      "kind": "epoch_checkpoint",
+      "epoch": 66,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:04:55.243897+00:00"
+    },
+    {
+      "archive": "epoch_026_snapshot.tar.gz",
+      "sha256": "61268d73cc9a02e4c6f9de27376c373db617e14c3bb55dfbc4a778e41d59d8a9",
+      "bytes": 10194903,
+      "kind": "epoch_checkpoint",
+      "epoch": 70,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:06:10.052907+00:00"
+    },
+    {
+      "archive": "epoch_027_snapshot.tar.gz",
+      "sha256": "c3ef1fde1ad4a3a62ff3f467bedc8c64d00d8b548669824f3079322ae1cbce05",
+      "bytes": 16088020,
+      "kind": "epoch_checkpoint",
+      "epoch": 72,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:06:28.894821+00:00"
+    },
+    {
+      "archive": "epoch_028_snapshot.tar.gz",
+      "sha256": "9f6d0ed529481bdb6cb24ae9f5bf8f130d0b4bfb40cc5695b19f7ae059634220",
+      "bytes": 10336718,
+      "kind": "epoch_checkpoint",
+      "epoch": 76,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:06:39.761143+00:00"
+    },
+    {
+      "archive": "epoch_029_snapshot.tar.gz",
+      "sha256": "b2efb2557999bb04f37a1da27de84ef34ff84fe883143ea67c6b5253289a8736",
+      "bytes": 15765950,
+      "kind": "epoch_checkpoint",
+      "epoch": 76,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:06:57.817694+00:00"
+    },
+    {
+      "archive": "epoch_030_snapshot.tar.gz",
+      "sha256": "a2559592d3fe9962dc26e48a6eae99beb49e080c756f0bbb1efdf92ff5d4ec92",
+      "bytes": 9720053,
+      "kind": "epoch_checkpoint",
+      "epoch": 80,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:07:11.409008+00:00"
+    },
+    {
+      "archive": "epoch_031_snapshot.tar.gz",
+      "sha256": "933e0eda0d5f117621fe043108fa10556523785ff0683c6ab6dc5fd5144b1a72",
+      "bytes": 15140123,
+      "kind": "epoch_checkpoint",
+      "epoch": 83,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:07:29.749424+00:00"
+    },
+    {
+      "archive": "epoch_032_snapshot.tar.gz",
+      "sha256": "1cf1669e051282bf2bdde8bac7fde483b8c1ae428006156bbc73798df4626c78",
+      "bytes": 10183837,
+      "kind": "epoch_checkpoint",
+      "epoch": 87,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:07:54.539788+00:00"
+    },
+    {
+      "archive": "epoch_033_snapshot.tar.gz",
+      "sha256": "15f01232393067c26039b0b68246a8249c3b856c328872665dd9ab24101c3468",
+      "bytes": 16086959,
+      "kind": "epoch_checkpoint",
+      "epoch": 90,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:08:18.648441+00:00"
+    },
+    {
+      "archive": "epoch_034_snapshot.tar.gz",
+      "sha256": "d6839f7de1a329c8401c19bd1b7f67bd18c8d09c1ff518e1786df30f754b6b56",
+      "bytes": 10342188,
+      "kind": "epoch_checkpoint",
+      "epoch": 94,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:08:33.623064+00:00"
+    },
+    {
+      "archive": "epoch_035_snapshot.tar.gz",
+      "sha256": "ff16f6dbe920ed64bfb936b2bc85650870f4f78910abe54b5884d5f29583fa09",
+      "bytes": 15771049,
+      "kind": "epoch_checkpoint",
+      "epoch": 94,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:08:53.699021+00:00"
+    },
+    {
+      "archive": "epoch_036_snapshot.tar.gz",
+      "sha256": "5be8add316dcfc144ced29fc6ea2d833c4948557b4248d8f1b9ae9be95757624",
+      "bytes": 9734166,
+      "kind": "epoch_checkpoint",
+      "epoch": 98,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:09:13.768248+00:00"
+    },
+    {
+      "archive": "epoch_037_snapshot.tar.gz",
+      "sha256": "ac0cc119c148ea9261e4620a9df335c4c2d12009019dcd1905d1cec04e7495ea",
+      "bytes": 15154097,
+      "kind": "epoch_checkpoint",
+      "epoch": 100,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:09:37.525566+00:00"
+    },
+    {
+      "archive": "epoch_038_snapshot.tar.gz",
+      "sha256": "310c470635fa37f0afb0b65086ec26c4442accb16d7d35267a50a8c808f8d250",
+      "bytes": 10203947,
+      "kind": "epoch_checkpoint",
+      "epoch": 104,
+      "members": 9,
+      "verified_utc": "2026-10-14T09:09:48.640103+00:00"
+    },
+    {
+      "archive": "epoch_039_snapshot.tar.gz",
+      "sha256": "66c31c9f9bfddaa25443278682c5ffae83d1bbe8a2c6da2f64f2156296f8b37c",
+      "bytes": 16096337,
+      "kind": "epoch_checkpoint",
+      "epoch": 106,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:10:08.594755+00:00"
+    },
+    {
+      "archive": "epoch_040_snapshot.tar.gz",
+      "sha256": "c7d614fef6ba965ad5caa2ad8ef13853830eced21093e8347366cf46d81b804f",
+      "bytes": 10215833,
+      "kind": "epoch_checkpoint",
+      "epoch": 106,
+      "members": 11,
+      "verified_utc": "2026-10-14T09:10:18.921768+00:00"
+    },
+    {
+      "archive": "final_backup.tar.gz",
+      "sha256": "b3fc2d7bbd00b83e04569b23fc7ca1166c46e537bfeb4e620a0fb6023c9092b0",
+      "bytes": 135478705,
+      "kind": "completed_experiment",
+      "epoch": null,
+      "members": 256,
+      "verified_utc": "2026-10-14T09:12:54.666329+00:00"
+    },
+    {
+      "archive": "runtime_verification.tar.gz",
+      "sha256": "e58c3101194f867c2774cc2377be09d771524e1003e3173888f82a0c85928112",
+      "bytes": 59644,
+      "kind": "runtime_verification",
+      "epoch": null,
+      "members": 17,
+      "verified_utc": "2026-10-14T09:07:47.396583+00:00"
+    }
+  ],
+  "verification": {
+    "all_backups_verified": true,
+    "method": "SHA-256, byte size, gzip CRC, tar containment, and every extracted file hash",
+    "source_metadata_matches_archived_executed_source": true,
+    "verified_utc": "2026-10-14T09:18:13.914974+00:00",
+    "status": "passed",
+    "fingerprinted_files": 183,
+    "selection_candidates": 18,
+    "selection_user_outcomes": 32067,
+    "assessment_user_outcomes": 60894,
+    "cohort_summaries": 156,
+    "ranking_bootstraps": 360,
+    "exact_popularity_or_fallback_top10": 13896,
+    "reused_prior_models": 16,
+    "audit_script_sha256": "4aad660df6b2098d5b0a3d1791d4baa883ac3d9164df283103f667c454a8c8c7",
+    "downloaded_final_files_rehashed": 183,
+    "fit_only_metadata_features_reproduced": true,
+    "metadata_zero_feature_works": {
+      "17": 13,
+      "29": 13
+    },
+    "metadata_vocabulary_cutoffs": {
+      "17": {
+        "selected_minimum_term_frequency": 10,
+        "excluded_maximum_term_frequency": 10,
+        "terms_tied_at_cutoff": 114,
+        "selected_terms_at_cutoff": 17
+      },
+      "29": {
+        "selected_minimum_term_frequency": 10,
+        "excluded_maximum_term_frequency": 10,
+        "terms_tied_at_cutoff": 114,
+        "selected_terms_at_cutoff": 17
+      }
+    },
+    "locked_artifact_and_frozen_input_hashes_verified": true,
+    "executed_source_matches_verification_archive": true,
+    "all_18_completion_gate_verified": true,
+    "paired_initialization_records_verified": true,
+    "selection_decisions_reproduced": true,
+    "ranking_and_cohort_metrics_reproduced": true,
+    "prior_ranking_parity_verified": true,
+    "independent_bootstrap_oracles": true,
+    "total_neural_epochs": 106,
+    "limitations": [
+      "Neural scores were not recomputed from Keras locally; locked model hashes, remote roundtrip records, saved score order, and target-outcome consistency were checked.",
+      "All popularity and shared-fallback recommendations were independently recomputed over the complete fit catalogue.",
+      "Initial trainable equality is verified from recorded GPU hashes; nontrainable metadata intentionally differs between ID and metadata arms.",
+      "This is reused development assessment with adaptive experiment design, not an independent confirmation test."
+    ]
+  },
+  "runtime_tests": {
+    "passed": 23,
+    "file": "verification/ranking_tests.log"
+  },
+  "shutdown": {
+    "stopped": true,
+    "after_backup_and_result_verification": null,
+    "stop_attempt_after_backup_and_result_verification": true,
+    "inactive_state_verified_after_backup_and_result_verification": true,
+    "stop_operation": "artifacts/colab/operations/ranking-stop-owned-session-20261014T091823-3afd5bee.json",
+    "server_check_operation": "artifacts/colab/operations/ranking-verify-server-stopped-20261014T091832-d8ac99a7.json",
+    "server_reports_no_active_sessions": true,
+    "completed_at_utc": "2026-10-14T09:18:36.836067+00:00",
+    "stop_command_succeeded": false,
+    "stop_returned_not_found": true,
+    "exact_termination_time_known": false,
+    "note": "Stop was attempted after verified backups and numerical audit; unassign returned Not Found. Subsequent server query confirmed no active sessions and pruned stale local state. Exact runtime termination time/cause is unknown."
+  },
+  "local_artifact_path_relative_to_project": "artifacts/colab/run-20261014-ranking",
+  "predeclared_protocol": {
+    "declared_utc": "2026-10-14T08:52:37.700458+00:00",
+    "session": "book-recommendation-neural-20261014-ranking",
+    "free_account_confirmed": true,
+    "scope": "Adaptive experiment on reused internal development assessment; not independent test",
+    "original_test_uploaded": false,
+    "original_validation_uploaded": false,
+    "split_seeds": [
+      17,
+      29
+    ],
+    "training_seeds": [
+      42,
+      2026,
+      7
+    ],
+    "arms": [
+      "mse_id",
+      "bpr_id",
+      "bpr_metadata"
+    ],
+    "fits": 18,
+    "architecture": {
+      "user": "ID embedding32 -> Dense64 ReLU -> Dense32",
+      "work": "concat(ID embedding32, metadata linear projection32 without bias) -> Dense64 ReLU -> Dense32",
+      "score": "dot(user,work)/sqrt32 + trainable work bias + fixed global fit mean logit",
+      "user_bias": false,
+      "paired_trainable_initialization": true
+    },
+    "metadata": "TF-IDF1024 padded; title+author+publisher pooled unique values from fit-observed ISBNs only; ID arms zero feature matrix",
+    "mse": "All fit user/work pairs; sigmoid rawscore vs normalized mean edition rating",
+    "bpr": "Deduplicated positive fit user/work anyedition rating>=8; softplus(negative score-positive score)",
+    "negatives": "Uniform fit catalogue excluding ALL fit user/work observations; no heldout labels used; unknown preference not known dislike",
+    "regularization": "1e-5*(mean observed userID norm squared + mean observed itemID norm squared + mean observed workbias squared + sum(all Dense kernel squared)/number Dense kernel params); BPR concatenates positive and negative pairs; no tower output penalty",
+    "optimizer": "Adam lr0.001 batch1024",
+    "max_epochs": 12,
+    "patience": 3,
+    "selection": "Full catalogue selection NDCG@10 then Recall@10 then earlier epoch; primary seed same metrics then declaration order",
+    "training_budget_seconds": 1200,
+    "ranking_budget_seconds": 300,
+    "gate": "All18fits complete; selected artifacts hashes locked before assessment",
+    "fallback": "Identical fit-only positive popularity for all newarms userswithoutfitrating>=8",
+    "cohorts": [
+      "all_relevant",
+      "fit_positive_history",
+      "no_fit_positive_history"
+    ],
+    "evaluation": "One heldout relevantwork/user anyedition>=8; allfitworks excluded; stable lexicographic work tie order; Recall/NDCG/MRR@10, exposure coverage/entropy",
+    "bootstrap": "1000paireduserdraws seed123; allrelevant andpositivehistory; eachnewmodel vs popularity, oldprimaryMLP, same-seedMSE/BPR; within split; unadjusted no pooling",
+    "prior_primary_mlp": {
+      "17": "split17_mlp_seed42",
+      "29": "split29_mlp_seed7"
+    },
+    "limitations": [
+      "MSE vs BPR changes supervision/sampling and updates per epoch; not pure loss causal effect",
+      "Metadata warm-catalog experiment is not cold-start evaluation",
+      "Previously inspected development assessment; no fresh confirmation",
+      "Three seeds only; report all seeds and descriptive dispersion"
+    ],
+    "backup": "Model+Adam+NumPyRNG everyepoch; immutable local backup every4epochs andcandidatecompletion plus inputs/final",
+    "shutdown": "Stop owned runtime after verified local backups",
+    "promotion_to_application": false,
+    "input_manifest_sha256": "10a2f0d6d788bdbda329a04b26672bbb3d3c0919752d3169dc8e56d6792cf26d"
+  }
+}

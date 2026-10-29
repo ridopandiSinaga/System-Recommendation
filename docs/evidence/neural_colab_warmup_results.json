@@ -1,0 +1,2817 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "completed_utc": "2026-10-13T20:35:48.066345+00:00",
+  "test_used": false,
+  "configuration": {
+    "started_utc": "2026-10-13T20:34:45.113564+00:00",
+    "preset": "warmup",
+    "candidates": [
+      {
+        "name": "residual_l2_0_zero_head_fixed12",
+        "kind": "neural",
+        "l2": 0.0,
+        "head_initialization": "zeros"
+      },
+      {
+        "name": "residual_l2_1e7_zero_head_fixed12",
+        "kind": "neural",
+        "l2": 1e-07,
+        "head_initialization": "zeros"
+      }
+    ],
+    "candidate_count": 2,
+    "max_neural_epochs_each": 12,
+    "min_neural_epochs_each": 12,
+    "patience": 12,
+    "early_stopping_enabled": false,
+    "snapshot_interval_epochs": 4,
+    "rationale": "Adaptive followup after observing delayed signal at epoch 3\u20134 in ablation; decided 12 epochs before followup training",
+    "previous_controls_reference": "docs/evidence/neural_colab_ablation_results.json",
+    "previous_controls_rerun": false,
+    "selection_note": "Best validation epoch selected after all 12 epochs; no early stopping",
+    "batch_size": 1024,
+    "embedding_size": 16,
+    "hidden_units": [
+      32,
+      16
+    ],
+    "learning_rate": 0.001,
+    "user_shrinkage": 0.0,
+    "item_shrinkage": 20.0,
+    "neural_residual_scale": 0.25,
+    "seed": 42,
+    "diagnostic_sample_seed": 2026,
+    "max_training_seconds": 600,
+    "require_gpu": true,
+    "test_used": false,
+    "selection_metric": "known_validation_rmse_rating_scale",
+    "selection_tie_breaker": "earlier candidate in predeclared order",
+    "initialization_ablation": "Only output kernel changes: N(0,0.001), numpy seed 2026; bias zero",
+    "paired_training": "Every neural candidate has identical seed, row order and batch order",
+    "scalar_control": "Mean normalized train target minus raw frozen baseline; no validation fit",
+    "diagnostic_protocol": "Fixed train sample, gradient batch and known validation IDs across candidates",
+    "prediction_convention": "Train raw normalized MSE plus L2; validation clipped to ratings 1\u201310",
+    "checkpoint_protocol": "Network+Adam+RNG each epoch; immutable backup every 4 epochs and completion",
+    "test_policy": "Test CSV prohibited in input directory; no test metrics computed",
+    "model_promotion_to_application": false
+  },
+  "gpu": {
+    "checked_utc": "2026-10-13T20:34:45.636647+00:00",
+    "tensorflow_version": "2.21.0",
+    "cuda_build": true,
+    "physical_gpu_names": [
+      "/physical_device:GPU:0"
+    ],
+    "gpu_details": [
+      {
+        "compute_capability": [
+          7,
+          5
+        ],
+        "device_name": "Tesla T4"
+      }
+    ],
+    "logical_gpu_names": [
+      "/device:GPU:0"
+    ],
+    "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "probe_value": 128.0,
+    "probe_seconds": 0.2842034570001033,
+    "nvidia_smi_exit_code": 0,
+    "nvidia_smi": "Tesla T4, 15360 MiB, 580.82.07"
+  },
+  "dataset": {
+    "train_pairs": 111875,
+    "train_users": 15312,
+    "train_isbns": 5000,
+    "validation_pairs": 500,
+    "validation_known_pairs": 140,
+    "input_bytes_match_original_experiment": true,
+    "canonical_work_leakage_checks_passed": true,
+    "test_used": false,
+    "split_policy": "Unchanged previous user/work holdout and train-only catalog"
+  },
+  "candidate_validation_results": [
+    {
+      "name": "residual_l2_0_zero_head_fixed12",
+      "kind": "neural",
+      "l2": 0.0,
+      "head_initialization": "zeros",
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.022760268300771713,
+          "train_rmse": 1.3577855988198242,
+          "val_mse": 0.03766104206442833,
+          "val_rmse": 1.7465807760360512
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.022760681807994843,
+          "train_rmse": 1.3577979328484715,
+          "val_mse": 0.03771943226456642,
+          "val_rmse": 1.7479342131298534
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.022719508036971092,
+          "train_rmse": 1.3565692577213515,
+          "val_mse": 0.03767605498433113,
+          "val_rmse": 1.7469288633859197
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.02248208411037922,
+          "train_rmse": 1.3494624162757245,
+          "val_mse": 0.03766872361302376,
+          "val_rmse": 1.7467588879564704
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.02114410325884819,
+          "train_rmse": 1.308691088059632,
+          "val_mse": 0.038610730320215225,
+          "val_rmse": 1.768465197830433
+        },
+        {
+          "epoch": 6,
+          "train_mse": 0.019075606018304825,
+          "train_rmse": 1.2430302037692773,
+          "val_mse": 0.04077214002609253,
+          "val_rmse": 1.8172901095074212
+        },
+        {
+          "epoch": 7,
+          "train_mse": 0.016200533136725426,
+          "train_rmse": 1.1455318345968215,
+          "val_mse": 0.04381122067570686,
+          "val_rmse": 1.8838017079120233
+        },
+        {
+          "epoch": 8,
+          "train_mse": 0.013020348735153675,
+          "train_rmse": 1.026960684518861,
+          "val_mse": 0.04789053648710251,
+          "val_rmse": 1.9695515874064593
+        },
+        {
+          "epoch": 9,
+          "train_mse": 0.010395013727247715,
+          "train_rmse": 0.9176034611459707,
+          "val_mse": 0.051233235746622086,
+          "val_rmse": 2.03712839445048
+        },
+        {
+          "epoch": 10,
+          "train_mse": 0.008215940557420254,
+          "train_rmse": 0.8157764308626725,
+          "val_mse": 0.053184155374765396,
+          "val_rmse": 2.0755521157889527
+        },
+        {
+          "epoch": 11,
+          "train_mse": 0.006719332654029131,
+          "train_rmse": 0.7377438206968321,
+          "val_mse": 0.053961191326379776,
+          "val_rmse": 2.0906593451437185
+        },
+        {
+          "epoch": 12,
+          "train_mse": 0.005505525041371584,
+          "train_rmse": 0.6677930280791334,
+          "val_mse": 0.05436984822154045,
+          "val_rmse": 2.0985608654372587
+        }
+      ],
+      "diagnostics": [
+        {
+          "stage": "initial",
+          "epoch": 0,
+          "optimizer_iterations": 0,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02495831623673439,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.0,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.0,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.0,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0002556671679485589,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0035096004139631987,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.0035189005053365024,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 14.29158878326416,
+            "book_l2": 8.176395416259766
+          },
+          "output_head_kernel_norm": 0.0,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.0,
+              "std_rating": 0.0,
+              "min_rating": 0.0,
+              "max_rating": 0.0,
+              "absolute_p95_rating": 0.0
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.0,
+              "std_rating": 0.0,
+              "min_rating": 0.0,
+              "max_rating": 0.0,
+              "absolute_p95_rating": 0.0
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "after_first_update",
+          "epoch": 0,
+          "optimizer_iterations": 1,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02496173232793808,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 3.1982915515982313e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 3.6521498714137124e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 8.85585279775114e-07,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 7.145016752474476e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 7.151389240789285e-07,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 8.427874490735121e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0002585887268651277,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0036339485086500645,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.0036431575365974884,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 14.29158878326416,
+            "book_l2": 8.176395416259766
+          },
+          "output_head_kernel_norm": 0.003102333750575781,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.002239718261989765,
+              "std_rating": 0.00010774626516511965,
+              "min_rating": 0.0018426775932312012,
+              "max_rating": 0.002664506435394287,
+              "absolute_p95_rating": 0.002418091893196106
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.002229743344443185,
+              "std_rating": 0.00010830749889386641,
+              "min_rating": 0.0019268989562988281,
+              "max_rating": 0.0025137662887573242,
+              "absolute_p95_rating": 0.002410903573036194
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 1,
+          "optimizer_iterations": 110,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02492804080247879,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 3.063698750338517e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 3.136083614663221e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 6.969291462155525e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 5.7009074225788936e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 5.510861683433177e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 5.900434553041123e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.00018527109932620078,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.002293908968567848,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.002303275135828149,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 14.29323959350586,
+            "book_l2": 8.182600975036621
+          },
+          "output_head_kernel_norm": 0.022525792941451073,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.021866001639864407,
+              "std_rating": 0.0010438553110770454,
+              "min_rating": -0.02625882625579834,
+              "max_rating": -0.01999533176422119,
+              "absolute_p95_rating": 0.023834645748138428
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.0218050411769322,
+              "std_rating": 0.0010043721511387822,
+              "min_rating": -0.024674713611602783,
+              "max_rating": -0.020043611526489258,
+              "absolute_p95_rating": 0.023656037449836725
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 2,
+          "optimizer_iterations": 220,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.024970825761556625,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 3.671596641652286e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 3.3601267205085605e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 8.743998478166759e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 8.771367720328271e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 7.288971573871095e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.00010972589370794594,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.00018057861598208547,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0039881630800664425,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.003995046125470552,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 14.310976028442383,
+            "book_l2": 8.237812995910645
+          },
+          "output_head_kernel_norm": 0.0426005944609642,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.00863716499588918,
+              "std_rating": 0.001187250707810604,
+              "min_rating": 0.0030426979064941406,
+              "max_rating": 0.012542009353637695,
+              "absolute_p95_rating": 0.010533732175827025
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.008632913870470865,
+              "std_rating": 0.0012187868482629266,
+              "min_rating": 0.0053054094314575195,
+              "max_rating": 0.011712133884429932,
+              "absolute_p95_rating": 0.01043103039264679
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 3,
+          "optimizer_iterations": 330,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.024893393740057945,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.00018077583808917552,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.0002579959109425545,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 5.461051478050649e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.0005436502979137003,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 6.0782542277593166e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0004444353107828647,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0004943119711242616,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0030174837447702885,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.003154132128829139,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 14.471953392028809,
+            "book_l2": 8.68856143951416
+          },
+          "output_head_kernel_norm": 0.12220554798841476,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.008896366838598624,
+              "std_rating": 0.01074848180994288,
+              "min_rating": -0.06559610366821289,
+              "max_rating": 0.006286025047302246,
+              "absolute_p95_rating": 0.03175716698169706
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.008128980440752847,
+              "std_rating": 0.009743535734150897,
+              "min_rating": -0.04892188310623169,
+              "max_rating": 0.0032899975776672363,
+              "absolute_p95_rating": 0.028189051151275592
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 4,
+          "optimizer_iterations": 440,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02458786964416504,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.00044417049502953887,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.0007225369336083531,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0002204962365794927,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.0017982886638492346,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0002513774670660496,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0011467287549749017,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0014315195148810744,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0031838822178542614,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.004191221698388917,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 15.567414283752441,
+            "book_l2": 10.32699966430664
+          },
+          "output_head_kernel_norm": 0.26285335421562195,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.005869873246410862,
+              "std_rating": 0.04387570904748761,
+              "min_rating": -0.27515172958374023,
+              "max_rating": 0.14197683334350586,
+              "absolute_p95_rating": 0.09844318628311156
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.003937448348317827,
+              "std_rating": 0.035268508134554274,
+              "min_rating": -0.14638209342956543,
+              "max_rating": 0.08753979206085205,
+              "absolute_p95_rating": 0.08684619963169096
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 5,
+          "optimizer_iterations": 550,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02298164926469326,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.0019460741896182299,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.0025836580898612738,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0007825209759175777,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.0031896859873086214,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0006638485356234014,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0012056005652993917,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0027100613806396723,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0012184299994260073,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.005654387818661118,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 17.69709014892578,
+            "book_l2": 11.837905883789062
+          },
+          "output_head_kernel_norm": 0.562061071395874,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.0392124863283243,
+              "std_rating": 0.19794104991856068,
+              "min_rating": -1.051190972328186,
+              "max_rating": 0.7596895694732666,
+              "absolute_p95_rating": 0.4599815726280206
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.024559924645083293,
+              "std_rating": 0.13794679383086664,
+              "min_rating": -0.6481520533561707,
+              "max_rating": 0.34408771991729736,
+              "absolute_p95_rating": 0.2714992851018904
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 6,
+          "optimizer_iterations": 660,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.020586596801877022,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.0033333853352814913,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.0037466043140739202,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0012235307367518544,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.006339295767247677,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.001112245605327189,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0028316518291831017,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.004014980513602495,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.003816796001046896,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.010333225177776241,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 20.132369995117188,
+            "book_l2": 13.59255313873291
+          },
+          "output_head_kernel_norm": 0.8187798261642456,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.014346408694109414,
+              "std_rating": 0.33828049162122087,
+              "min_rating": -1.6778081059455872,
+              "max_rating": 1.5794053673744202,
+              "absolute_p95_rating": 0.7347051948308945
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.01445685944386891,
+              "std_rating": 0.275781818459387,
+              "min_rating": -0.9429815411567688,
+              "max_rating": 0.6447064876556396,
+              "absolute_p95_rating": 0.6347635656595229
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 7,
+          "optimizer_iterations": 770,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.017187708988785744,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.004813666455447674,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.005226031877100468,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0021171479020267725,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.015815269201993942,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.002042800886556506,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.006066981237381697,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.005099926609545946,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0062830084934830666,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.020286808350358114,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 22.53057098388672,
+            "book_l2": 15.194384574890137
+          },
+          "output_head_kernel_norm": 1.074938178062439,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.07043491704098415,
+              "std_rating": 0.534782773657016,
+              "min_rating": -2.6822634637355804,
+              "max_rating": 2.1654240489006042,
+              "absolute_p95_rating": 1.1256393045186988
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.03738022851092475,
+              "std_rating": 0.47483521614533736,
+              "min_rating": -1.6019257307052612,
+              "max_rating": 1.2902348041534424,
+              "absolute_p95_rating": 1.1040169984102248
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 8,
+          "optimizer_iterations": 880,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.013995684683322906,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.005888951942324638,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.0063300603069365025,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0022707032039761543,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.004139861091971397,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0011813578894361854,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.001329578342847526,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0037340407725423574,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.00018633264699019492,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.01068574408962117,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 24.438947677612305,
+            "book_l2": 16.47725486755371
+          },
+          "output_head_kernel_norm": 1.257373332977295,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.03570595302153379,
+              "std_rating": 0.7015277274694305,
+              "min_rating": -3.7371186017990112,
+              "max_rating": 2.2074429988861084,
+              "absolute_p95_rating": 1.4138187378644942
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.0779710947402886,
+              "std_rating": 0.6420059759308184,
+              "min_rating": -2.496350437402725,
+              "max_rating": 1.593268096446991,
+              "absolute_p95_rating": 1.245099154114719
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 9,
+          "optimizer_iterations": 990,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.011147494427859783,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.006644320674240589,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.006973912473767996,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0027368697337806225,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.006655294448137283,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.001161693362519145,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0018543705809861422,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0031729224137961864,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.000985021935775876,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.012664587601777126,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 25.82170295715332,
+            "book_l2": 17.460355758666992
+          },
+          "output_head_kernel_norm": 1.4000749588012695,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.05011233757250011,
+              "std_rating": 0.8528434624118622,
+              "min_rating": -4.221174716949463,
+              "max_rating": 2.406582534313202,
+              "absolute_p95_rating": 1.7465734004974363
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.07660540299756187,
+              "std_rating": 0.7688257541896428,
+              "min_rating": -2.6583255529403687,
+              "max_rating": 1.7724090814590454,
+              "absolute_p95_rating": 1.5952932178974146
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 10,
+          "optimizer_iterations": 1100,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.009039432741701603,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.0070898281410336494,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.007538933772593737,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0033630323596298695,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.017845943570137024,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0020175999961793423,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0051777902990579605,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.003786188317462802,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0038409719709306955,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.022290297975571083,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 26.816797256469727,
+            "book_l2": 18.178876876831055
+          },
+          "output_head_kernel_norm": 1.5039646625518799,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.033532019799167756,
+              "std_rating": 0.9696484973973492,
+              "min_rating": -5.20340234041214,
+              "max_rating": 3.0437257289886475,
+              "absolute_p95_rating": 1.9614064604043957
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.012688601655619485,
+              "std_rating": 0.8814258145950634,
+              "min_rating": -3.231964498758316,
+              "max_rating": 2.0688586235046387,
+              "absolute_p95_rating": 1.7328055948019025
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 11,
+          "optimizer_iterations": 1210,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.0076560392044484615,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.007414680905640125,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.007870465517044067,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0044976817443966866,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.01773831434547901,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0020338217727839947,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.004392992705106735,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.003312609624117613,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.002875325968489051,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.022236779333747615,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 27.547714233398438,
+            "book_l2": 18.729488372802734
+          },
+          "output_head_kernel_norm": 1.5803616046905518,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.012011165024887305,
+              "std_rating": 1.0399682359284323,
+              "min_rating": -5.164040923118591,
+              "max_rating": 3.312581777572632,
+              "absolute_p95_rating": 2.1081582695245737
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.048799775540828705,
+              "std_rating": 0.9475067198323983,
+              "min_rating": -3.209933638572693,
+              "max_rating": 2.0372477173805237,
+              "absolute_p95_rating": 1.8509934872388838
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 12,
+          "optimizer_iterations": 1320,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.006396534852683544,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.007621169555932283,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.007867202162742615,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0028975915629416704,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.017242934554815292,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0015558837912976742,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0045222751796245575,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0026932316832244396,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.002875272184610367,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.021542570840185123,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 28.122150421142578,
+            "book_l2": 19.182632446289062
+          },
+          "output_head_kernel_norm": 1.6417512893676758,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.019795963351498358,
+              "std_rating": 1.1030428457168817,
+              "min_rating": -5.30264675617218,
+              "max_rating": 3.5330620408058167,
+              "absolute_p95_rating": 2.2383599840104575
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.01567686413015638,
+              "std_rating": 0.9729757805856705,
+              "min_rating": -3.3344857692718506,
+              "max_rating": 2.0641229152679443,
+              "absolute_p95_rating": 1.8223680540919285
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "restored_best",
+          "epoch": 1,
+          "optimizer_iterations": 1320,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02492804080247879,
+          "regularization_loss": 0.0,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 3.063698750338517e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 3.136083614663221e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 6.969291462155525e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 5.700907786376774e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 5.510861683433177e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 5.900434553041123e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.00018527109932620078,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.002293908968567848,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.002303275135918194,
+            "l2": 0.0
+          },
+          "embedding_norms": {
+            "user_l2": 14.29323959350586,
+            "book_l2": 8.182600975036621
+          },
+          "output_head_kernel_norm": 0.022525792941451073,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.021866001639864407,
+              "std_rating": 0.0010438553110770454,
+              "min_rating": -0.02625882625579834,
+              "max_rating": -0.01999533176422119,
+              "absolute_p95_rating": 0.023834645748138428
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.0218050411769322,
+              "std_rating": 0.0010043721511387822,
+              "min_rating": -0.024674713611602783,
+              "max_rating": -0.020043611526489258,
+              "absolute_p95_rating": 0.023656037449836725
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices",
+          "weights_epoch": 1,
+          "optimizer_state_epoch": 12,
+          "state_note": "Inference-only best weights; optimizer remains at last epoch. Recovery checkpoint separately retains matched last-epoch network+Adam."
+        }
+      ],
+      "epochs_completed": 12,
+      "best_epoch": 1,
+      "test_used": false,
+      "validation": {
+        "pairs": 140,
+        "rmse_rating_scale": 1.746580802414081,
+        "mae_rating_scale": 1.2908650875091552
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            14257,
+            496
+          ],
+          [
+            6281,
+            2902
+          ],
+          [
+            5640,
+            136
+          ],
+          [
+            10973,
+            2850
+          ],
+          [
+            12009,
+            427
+          ],
+          [
+            8097,
+            492
+          ],
+          [
+            5832,
+            3301
+          ],
+          [
+            5860,
+            3259
+          ]
+        ],
+        "targets_normalized": [
+          0.6666666865348816,
+          0.4444444477558136,
+          0.7777777910232544,
+          0.7777777910232544,
+          1.0,
+          0.7777777910232544,
+          0.3333333432674408,
+          0.3333333432674408
+        ],
+        "predictions_before": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "predictions_after": [
+          0.7501654624938965,
+          0.7942573428153992,
+          0.8478458523750305,
+          0.7409061193466187,
+          0.6093111038208008,
+          0.912757158279419,
+          0.6004160046577454,
+          0.24124011397361755
+        ],
+        "mse_before": 0.021850187331438065,
+        "regularization_loss": 0.0,
+        "total_loss_before": 0.021850187331438065,
+        "mse_after": 0.021849244832992554,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 0.0,
+          "residual_rating_model/book_embedding/embeddings": 0.0,
+          "residual_rating_model/hidden_1/kernel": 0.0,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 0.0,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 9.354171197628602e-05,
+          "residual_rating_model/rating_residual/bias": 0.0007716756081208587
+        },
+        "user_embedding_before": [
+          -0.04974351078271866,
+          -0.010197926312685013,
+          0.0013237372040748596,
+          0.013852965086698532,
+          -0.02267543040215969,
+          0.001559235155582428,
+          -0.020605003461241722,
+          -0.016761384904384613,
+          -0.0402938611805439,
+          0.04074013605713844,
+          -0.006402552127838135,
+          0.020116988569498062,
+          0.01314595714211464,
+          0.011956442147493362,
+          -0.0458027720451355,
+          -0.010971210896968842
+        ],
+        "user_embedding_gradient": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "user_embedding_after": [
+          -0.04974351078271866,
+          -0.010197926312685013,
+          0.0013237372040748596,
+          0.013852965086698532,
+          -0.02267543040215969,
+          0.001559235155582428,
+          -0.020605003461241722,
+          -0.016761384904384613,
+          -0.0402938611805439,
+          0.04074013605713844,
+          -0.006402552127838135,
+          0.020116988569498062,
+          0.01314595714211464,
+          0.011956442147493362,
+          -0.0458027720451355,
+          -0.010971210896968842
+        ],
+        "embedding_delta_norm": 0.0,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "baseline_summary": {
+        "train_pairs": 111875,
+        "users": 15312,
+        "books": 5000,
+        "global_mean_rating": 7.780013500899776,
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "biases_trainable": false,
+        "normalization": "(rating - 1) / 9",
+        "prediction_reporting": "clip normalized prediction to [0, 1]",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "hidden_activation": "leaky_relu (negative_slope=0.2)"
+      },
+      "model_roundtrip_verified": true,
+      "seconds": 31.935813168999857
+    },
+    {
+      "name": "residual_l2_1e7_zero_head_fixed12",
+      "kind": "neural",
+      "l2": 1e-07,
+      "head_initialization": "zeros",
+      "status": "completed",
+      "history": [
+        {
+          "epoch": 1,
+          "train_mse": 0.022760331630706787,
+          "train_rmse": 1.3577874878224683,
+          "val_mse": 0.03766117990016937,
+          "val_rmse": 1.746583972190779
+        },
+        {
+          "epoch": 2,
+          "train_mse": 0.022761145606637,
+          "train_rmse": 1.3578117668283762,
+          "val_mse": 0.037720318883657455,
+          "val_rmse": 1.7479547561582518
+        },
+        {
+          "epoch": 3,
+          "train_mse": 0.022738879546523094,
+          "train_rmse": 1.3571474655572144,
+          "val_mse": 0.037675369530916214,
+          "val_rmse": 1.746912972075087
+        },
+        {
+          "epoch": 4,
+          "train_mse": 0.022664550691843033,
+          "train_rmse": 1.3549275279657158,
+          "val_mse": 0.03766745701432228,
+          "val_rmse": 1.7467295206070415
+        },
+        {
+          "epoch": 5,
+          "train_mse": 0.021635692566633224,
+          "train_rmse": 1.3238168672053137,
+          "val_mse": 0.03819962963461876,
+          "val_rmse": 1.7590252983979848
+        },
+        {
+          "epoch": 6,
+          "train_mse": 0.020420456305146217,
+          "train_rmse": 1.2861014581738268,
+          "val_mse": 0.039328813552856445,
+          "val_rmse": 1.7848344174688509
+        },
+        {
+          "epoch": 7,
+          "train_mse": 0.01869416981935501,
+          "train_rmse": 1.2305396195847398,
+          "val_mse": 0.041017547249794006,
+          "val_rmse": 1.8227510327066927
+        },
+        {
+          "epoch": 8,
+          "train_mse": 0.016648270189762115,
+          "train_rmse": 1.1612535835771323,
+          "val_mse": 0.04237508773803711,
+          "val_rmse": 1.852668914507124
+        },
+        {
+          "epoch": 9,
+          "train_mse": 0.014363646507263184,
+          "train_rmse": 1.078635882533266,
+          "val_mse": 0.04532024636864662,
+          "val_rmse": 1.915969716843243
+        },
+        {
+          "epoch": 10,
+          "train_mse": 0.011751402169466019,
+          "train_rmse": 0.9756349602831725,
+          "val_mse": 0.04837056249380112,
+          "val_rmse": 1.9793977776075962
+        },
+        {
+          "epoch": 11,
+          "train_mse": 0.009478721767663956,
+          "train_rmse": 0.8762285450616069,
+          "val_mse": 0.05287821590900421,
+          "val_rmse": 2.06957374563685
+        },
+        {
+          "epoch": 12,
+          "train_mse": 0.007576598320156336,
+          "train_rmse": 0.7833929179745392,
+          "val_mse": 0.055042099207639694,
+          "val_rmse": 2.1114947397090087
+        }
+      ],
+      "diagnostics": [
+        {
+          "stage": "initial",
+          "epoch": 0,
+          "optimizer_iterations": 0,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02495831623673439,
+          "regularization_loss": 3.305537757114507e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.0,
+              "l2": 2.858317884602002e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.0,
+              "l2": 1.6352790908058523e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0,
+              "l2": 1.2280860346436384e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.0,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0,
+              "l2": 9.32651232687931e-07
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0002556671679485589,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0035096004139631987,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.0035189005053365024,
+            "l2": 3.636227779524205e-06
+          },
+          "embedding_norms": {
+            "user_l2": 14.29158878326416,
+            "book_l2": 8.176395416259766
+          },
+          "output_head_kernel_norm": 0.0,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.0,
+              "std_rating": 0.0,
+              "min_rating": 0.0,
+              "max_rating": 0.0,
+              "absolute_p95_rating": 0.0
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.0,
+              "std_rating": 0.0,
+              "min_rating": 0.0,
+              "max_rating": 0.0,
+              "absolute_p95_rating": 0.0
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "after_first_update",
+          "epoch": 0,
+          "optimizer_iterations": 1,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02496173232793808,
+          "regularization_loss": 3.305121572338976e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 3.1978931929188548e-06,
+              "l2": 2.8581375772773754e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 3.6516944419417996e-06,
+              "l2": 1.6351759768440388e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 8.854744351083355e-07,
+              "l2": 1.2280092960281763e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 7.1445729190600105e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 7.150491683205473e-07,
+              "l2": 9.32593252400693e-07
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 8.427875400229823e-06,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0002585402107797563,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0036339485086500645,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.0036431540915626234,
+            "l2": 3.6359988849623927e-06
+          },
+          "embedding_norms": {
+            "user_l2": 14.29068660736084,
+            "book_l2": 8.17587947845459
+          },
+          "output_head_kernel_norm": 0.003102333750575781,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.002239718392957002,
+              "std_rating": 0.00010772483892091317,
+              "min_rating": 0.0018426775932312012,
+              "max_rating": 0.002664506435394287,
+              "absolute_p95_rating": 0.002418091893196106
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.0022297586713518414,
+              "std_rating": 0.00010829069740479098,
+              "min_rating": 0.0019268989562988281,
+              "max_rating": 0.0025137662887573242,
+              "absolute_p95_rating": 0.002410903573036194
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 1,
+          "optimizer_iterations": 110,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.024928027763962746,
+          "regularization_loss": 3.026696140295826e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 2.9378828912740573e-05,
+              "l2": 2.7302594389766455e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 3.024848956556525e-05,
+              "l2": 1.5671688515794813e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 6.6491306824900676e-06,
+              "l2": 1.1797998240581364e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 4.883232759311795e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 5.08799530507531e-06,
+              "l2": 8.969516329671023e-07
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 4.7289911890402436e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0001792766124708578,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0022887762170284986,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.002297195201271197,
+            "l2": 3.4794805172916227e-06
+          },
+          "embedding_norms": {
+            "user_l2": 13.651296615600586,
+            "book_l2": 7.835844039916992
+          },
+          "output_head_kernel_norm": 0.022321904078125954,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.021961266684229486,
+              "std_rating": 0.0009754536730590764,
+              "min_rating": -0.025997579097747803,
+              "max_rating": -0.020151972770690918,
+              "absolute_p95_rating": 0.02375718355178833
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.02189718272004809,
+              "std_rating": 0.0009352043958799322,
+              "min_rating": -0.02450627088546753,
+              "max_rating": -0.02023458480834961,
+              "absolute_p95_rating": 0.023540917038917537
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 2,
+          "optimizer_iterations": 220,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02497153729200363,
+          "regularization_loss": 2.630760718602687e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 2.940219928859733e-05,
+              "l2": 2.529538505768869e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 2.7276728360448033e-05,
+              "l2": 1.4742191751793143e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 6.989794201217592e-06,
+              "l2": 1.1104636996606132e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 7.252136856550351e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 6.37571338302223e-06,
+              "l2": 8.473639923067822e-07
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.00010495056631043553,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.00020211251103319228,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.003981329500675201,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.003988709822299368,
+            "l2": 3.2439239498415814e-06
+          },
+          "embedding_norms": {
+            "user_l2": 12.647692680358887,
+            "book_l2": 7.371095657348633
+          },
+          "output_head_kernel_norm": 0.0410119965672493,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.008493790184729733,
+              "std_rating": 0.0008621510124565907,
+              "min_rating": 0.004218041896820068,
+              "max_rating": 0.011021733283996582,
+              "absolute_p95_rating": 0.009823617339134215
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.008461083897522518,
+              "std_rating": 0.0008965115900199755,
+              "min_rating": 0.006088614463806152,
+              "max_rating": 0.0107441246509552,
+              "absolute_p95_rating": 0.00980502963066101
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 3,
+          "optimizer_iterations": 330,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.024915911257267,
+          "regularization_loss": 2.322187356185168e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.00013223272981122136,
+              "l2": 2.328355549252592e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.00018698691565077752,
+              "l2": 1.4398069652088452e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 3.565267252270132e-05,
+              "l2": 1.0629548796714516e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.00036125784390605986,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 3.986689989687875e-05,
+              "l2": 8.15224836969719e-07
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0003331058251205832,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.00035727734211832285,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0029272018000483513,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.0029988221491335024,
+            "l2": 3.0477447845626606e-06
+          },
+          "embedding_norms": {
+            "user_l2": 11.641778945922852,
+            "book_l2": 7.199034690856934
+          },
+          "output_head_kernel_norm": 0.09756114333868027,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.01043374722939916,
+              "std_rating": 0.006561362405578348,
+              "min_rating": -0.041680991649627686,
+              "max_rating": -0.00034493207931518555,
+              "absolute_p95_rating": 0.02374755442142486
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.0098496960742133,
+              "std_rating": 0.006250900823889503,
+              "min_rating": -0.03217953443527222,
+              "max_rating": -0.0020406246185302734,
+              "absolute_p95_rating": 0.023337578773498523
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 4,
+          "optimizer_iterations": 440,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.02483651041984558,
+          "regularization_loss": 2.6246285415254533e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.0002144214668078348,
+              "l2": 2.3700461042608367e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.00035192412906326354,
+              "l2": 1.7436018424632493e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.00011210848606424406,
+              "l2": 1.0759852102637524e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.0008994031813926995,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.00012410010094754398,
+              "l2": 8.267434168374166e-07
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0005793582531623542,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0007227356545627117,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.003215263830497861,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.0034932286927766955,
+            "l2": 3.2401411653435018e-06
+          },
+          "embedding_norms": {
+            "user_l2": 11.850229263305664,
+            "book_l2": 8.718008995056152
+          },
+          "output_head_kernel_norm": 0.18398842215538025,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.00547249180090148,
+              "std_rating": 0.0182981921150654,
+              "min_rating": -0.12839573621749878,
+              "max_rating": 0.05165290832519531,
+              "absolute_p95_rating": 0.04188526868820187
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.0046401104756764,
+              "std_rating": 0.015945861719575957,
+              "min_rating": -0.06853419542312622,
+              "max_rating": 0.031313180923461914,
+              "absolute_p95_rating": 0.04067065715789792
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 5,
+          "optimizer_iterations": 550,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.023459356278181076,
+          "regularization_loss": 3.384892988833599e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.0014116223901510239,
+              "l2": 2.6839534257305786e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.002249253448098898,
+              "l2": 2.0219063117110636e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0005640786839649081,
+              "l2": 1.1902329788426869e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.0029242585878819227,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0005361138610169291,
+              "l2": 9.117048875850742e-07
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.001435919664800167,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0026177011895924807,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.002222080947831273,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.0054827528221786685,
+            "l2": 3.6796156688979345e-06
+          },
+          "embedding_norms": {
+            "user_l2": 13.419766426086426,
+            "book_l2": 10.10953140258789
+          },
+          "output_head_kernel_norm": 0.4587036669254303,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.023358033184194937,
+              "std_rating": 0.1585625918524689,
+              "min_rating": -0.7814626693725586,
+              "max_rating": 0.5827463865280151,
+              "absolute_p95_rating": 0.36260378658771464
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.013052090789590564,
+              "std_rating": 0.10608312068918463,
+              "min_rating": -0.46226370334625244,
+              "max_rating": 0.30489635467529297,
+              "absolute_p95_rating": 0.22866360247135095
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 6,
+          "optimizer_iterations": 660,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.022353876382112503,
+          "regularization_loss": 4.498655107454397e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.00236662570387125,
+              "l2": 3.125942839687923e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.0033057695254683495,
+              "l2": 2.326469711988466e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0008250832906924188,
+              "l2": 1.3370262195167015e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.004461126402020454,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.000746919889934361,
+              "l2": 1.0114350743606337e-06
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.001973239239305258,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.002789873629808426,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.004256749525666237,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.008213788066488984,
+            "l2": 4.242006598193586e-06
+          },
+          "embedding_norms": {
+            "user_l2": 15.629714012145996,
+            "book_l2": 11.63234806060791
+          },
+          "output_head_kernel_norm": 0.6501482129096985,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.014195341456797905,
+              "std_rating": 0.27124713815860113,
+              "min_rating": -1.564229965209961,
+              "max_rating": 1.2532718181610107,
+              "absolute_p95_rating": 0.6185623526573177
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.011023179761001043,
+              "std_rating": 0.1978345017395061,
+              "min_rating": -0.7212443947792053,
+              "max_rating": 0.8097513914108276,
+              "absolute_p95_rating": 0.521446564793586
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 7,
+          "optimizer_iterations": 770,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.020526131615042686,
+          "regularization_loss": 5.792755837319419e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.0034720979165285826,
+              "l2": 3.5630137062980793e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.004227197729051113,
+              "l2": 2.636394810906495e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.001177903963252902,
+              "l2": 1.5164509932219516e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.007383100222796202,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.001085889176465571,
+              "l2": 1.1071382459704182e-06
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.003371229162439704,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0034086285158991814,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0050763632170856,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.01165138809195655,
+            "l2": 4.813628878588063e-06
+          },
+          "embedding_norms": {
+            "user_l2": 17.8150691986084,
+            "book_l2": 13.181974411010742
+          },
+          "output_head_kernel_norm": 0.8440828323364258,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.037777085017296486,
+              "std_rating": 0.40949886238248195,
+              "min_rating": -2.2557581663131714,
+              "max_rating": 2.0784700512886047,
+              "absolute_p95_rating": 0.9233760148286818
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": 0.010370111678327833,
+              "std_rating": 0.34958742121808467,
+              "min_rating": -1.4405989050865173,
+              "max_rating": 1.4540963172912598,
+              "absolute_p95_rating": 0.7812731578946106
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 8,
+          "optimizer_iterations": 880,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.018199987709522247,
+          "regularization_loss": 7.250634371303022e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.004573368467390537,
+              "l2": 4.01072611566633e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.005001176614314318,
+              "l2": 2.916214498327463e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0015818501124158502,
+              "l2": 1.7238317013834603e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.006105653941631317,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.001192527124658227,
+              "l2": 1.2002984703940456e-06
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.002507813274860382,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.003856989089399576,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0021759525407105684,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.010631608963791808,
+            "l2": 5.385400925452821e-06
+          },
+          "embedding_norms": {
+            "user_l2": 20.05362892150879,
+            "book_l2": 14.581071853637695
+          },
+          "output_head_kernel_norm": 1.0064626932144165,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.006943633678019978,
+              "std_rating": 0.5148936593137029,
+              "min_rating": -3.1869146525859833,
+              "max_rating": 2.277589738368988,
+              "absolute_p95_rating": 1.1108864575624466
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.04264751608882632,
+              "std_rating": 0.43997602300789723,
+              "min_rating": -1.780284583568573,
+              "max_rating": 1.3883666396141052,
+              "absolute_p95_rating": 0.993896359205246
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 9,
+          "optimizer_iterations": 990,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.015727369114756584,
+          "regularization_loss": 8.65823240019381e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.0055119129829108715,
+              "l2": 4.378752691991394e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.005774232558906078,
+              "l2": 3.153581246806425e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0017996453680098057,
+              "l2": 1.9692590740305604e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.010155635885894299,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0013277835678309202,
+              "l2": 1.2792174857167993e-06
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0035681286826729774,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0039018921088427305,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.00311580509878695,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.014475018653347809,
+            "l2": 5.884974808293265e-06
+          },
+          "embedding_norms": {
+            "user_l2": 21.89376449584961,
+            "book_l2": 15.767906188964844
+          },
+          "output_head_kernel_norm": 1.156814694404602,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.01465635890053818,
+              "std_rating": 0.6537315798797049,
+              "min_rating": -3.3231665790081024,
+              "max_rating": 2.53068083524704,
+              "absolute_p95_rating": 1.4003806024789807
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.0423136442899704,
+              "std_rating": 0.5877938975062335,
+              "min_rating": -1.6242717504501343,
+              "max_rating": 2.0180479288101196,
+              "absolute_p95_rating": 1.2667921364307397
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 10,
+          "optimizer_iterations": 1100,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.012755980715155602,
+          "regularization_loss": 0.00010068517440231517,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.006415821146219969,
+              "l2": 4.700612862507114e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.006766102276742458,
+              "l2": 3.356341039761901e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.002209338126704097,
+              "l2": 2.2482704480353277e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.012226358987390995,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.001398687600158155,
+              "l2": 1.3632895843329607e-06
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.0039556813426315784,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.003976671490818262,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.003067756537348032,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.01685635542612625,
+            "l2": 6.346185071097205e-06
+          },
+          "embedding_norms": {
+            "user_l2": 23.50306510925293,
+            "book_l2": 16.781705856323242
+          },
+          "output_head_kernel_norm": 1.3106842041015625,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.01184521028335439,
+              "std_rating": 0.7778582420695043,
+              "min_rating": -3.999689429998398,
+              "max_rating": 2.5937588810920715,
+              "absolute_p95_rating": 1.6030410200357432
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.09411209310804095,
+              "std_rating": 0.7215211588171316,
+              "min_rating": -2.3232610523700714,
+              "max_rating": 2.1510897874832153,
+              "absolute_p95_rating": 1.5305886805057523
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 11,
+          "optimizer_iterations": 1210,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.010410082526504993,
+          "regularization_loss": 0.0001128675285144709,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.007138933055102825,
+              "l2": 4.939759946864797e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.007485165726393461,
+              "l2": 3.5258542538940674e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.003286405000835657,
+              "l2": 2.5040540094778407e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.01641400344669819,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.0018717230996116996,
+              "l2": 1.4296313111117342e-06
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.004098874516785145,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.003947770688682795,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.002912500873208046,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.020774592956478932,
+            "l2": 6.71915238110029e-06
+          },
+          "embedding_norms": {
+            "user_l2": 24.698801040649414,
+            "book_l2": 17.6292724609375
+          },
+          "output_head_kernel_norm": 1.4362528324127197,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.012886027281638235,
+              "std_rating": 0.9034145520177772,
+              "min_rating": -4.288473218679428,
+              "max_rating": 2.8914754986763,
+              "absolute_p95_rating": 1.8531507343053815
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.1056136640054839,
+              "std_rating": 0.8400578706361627,
+              "min_rating": -3.0450552999973297,
+              "max_rating": 2.2426013946533203,
+              "absolute_p95_rating": 1.613067948818205
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "epoch_end",
+          "epoch": 12,
+          "optimizer_iterations": 1320,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.008209261111915112,
+          "regularization_loss": 0.00012245542893651873,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 0.007401126902550459,
+              "l2": 5.11135658598505e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 0.007468866184353828,
+              "l2": 3.6562369132298045e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 0.0032386525999754667,
+              "l2": 2.7024045721191214e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 0.021761374548077583,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 0.002260525245219469,
+              "l2": 1.4782232256038697e-06
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 0.005286464001983404,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0040874360129237175,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.003532764269039035,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.025629107806581418,
+            "l2": 6.998726233457199e-06
+          },
+          "embedding_norms": {
+            "user_l2": 25.55678367614746,
+            "book_l2": 18.28118324279785
+          },
+          "output_head_kernel_norm": 1.532888650894165,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": 0.027882089394552168,
+              "std_rating": 0.9882170953605877,
+              "min_rating": -4.528824090957642,
+              "max_rating": 3.1717663407325745,
+              "absolute_p95_rating": 2.0224450618028635
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.11781805796282632,
+              "std_rating": 0.9437410370467101,
+              "min_rating": -3.204073816537857,
+              "max_rating": 2.34173047542572,
+              "absolute_p95_rating": 1.9362267941236442
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices"
+        },
+        {
+          "stage": "restored_best",
+          "epoch": 1,
+          "optimizer_iterations": 1320,
+          "gradient_probe_pairs": 1024,
+          "data_mse": 0.024928027763962746,
+          "regularization_loss": 3.026696140295826e-05,
+          "gradient_norms": {
+            "residual_rating_model/user_embedding/embeddings": {
+              "data": 2.9378828912740573e-05,
+              "l2": 2.7302594389766455e-06
+            },
+            "residual_rating_model/book_embedding/embeddings": {
+              "data": 3.024848956556525e-05,
+              "l2": 1.5671688515794813e-06
+            },
+            "residual_rating_model/hidden_1/kernel": {
+              "data": 6.6491306824900676e-06,
+              "l2": 1.1797998240581364e-06
+            },
+            "residual_rating_model/hidden_1/bias": {
+              "data": 4.883233123109676e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/hidden_2/kernel": {
+              "data": 5.08799530507531e-06,
+              "l2": 8.969516329671023e-07
+            },
+            "residual_rating_model/hidden_2/bias": {
+              "data": 4.7289911890402436e-05,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/kernel": {
+              "data": 0.0001792766124708578,
+              "l2": 0.0
+            },
+            "residual_rating_model/rating_residual/bias": {
+              "data": 0.0022887762170284986,
+              "l2": 0.0
+            }
+          },
+          "gradient_norm_totals": {
+            "data": 0.002297195201348531,
+            "l2": 3.4794805172916227e-06
+          },
+          "embedding_norms": {
+            "user_l2": 13.651296615600586,
+            "book_l2": 7.835844039916992
+          },
+          "output_head_kernel_norm": 0.022321904078125954,
+          "corrections": {
+            "train_sample": {
+              "pairs": 2048,
+              "mean_rating": -0.021961266684229486,
+              "std_rating": 0.0009754536730590764,
+              "min_rating": -0.025997579097747803,
+              "max_rating": -0.020151972770690918,
+              "absolute_p95_rating": 0.02375718355178833
+            },
+            "validation": {
+              "pairs": 140,
+              "mean_rating": -0.02189718272004809,
+              "std_rating": 0.0009352043958799322,
+              "min_rating": -0.02450627088546753,
+              "max_rating": -0.02023458480834961,
+              "absolute_p95_rating": 0.023540917038917537
+            }
+          },
+          "observational_only": true,
+          "gradient_definition": "L2 norm after summing duplicate embedding indices",
+          "weights_epoch": 1,
+          "optimizer_state_epoch": 12,
+          "state_note": "Inference-only best weights; optimizer remains at last epoch. Recovery checkpoint separately retains matched last-epoch network+Adam."
+        }
+      ],
+      "epochs_completed": 12,
+      "best_epoch": 1,
+      "test_used": false,
+      "validation": {
+        "pairs": 140,
+        "rmse_rating_scale": 1.7465840074293517,
+        "mae_rating_scale": 1.2908753940037319
+      },
+      "first_step_trace": {
+        "encoded_pairs": [
+          [
+            14257,
+            496
+          ],
+          [
+            6281,
+            2902
+          ],
+          [
+            5640,
+            136
+          ],
+          [
+            10973,
+            2850
+          ],
+          [
+            12009,
+            427
+          ],
+          [
+            8097,
+            492
+          ],
+          [
+            5832,
+            3301
+          ],
+          [
+            5860,
+            3259
+          ]
+        ],
+        "targets_normalized": [
+          0.6666666865348816,
+          0.4444444477558136,
+          0.7777777910232544,
+          0.7777777910232544,
+          1.0,
+          0.7777777910232544,
+          0.3333333432674408,
+          0.3333333432674408
+        ],
+        "predictions_before": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "predictions_after": [
+          0.7501654624938965,
+          0.7942573428153992,
+          0.8478458523750305,
+          0.7409061193466187,
+          0.6093111038208008,
+          0.912757158279419,
+          0.6004159450531006,
+          0.24124011397361755
+        ],
+        "mse_before": 0.021850187331438065,
+        "regularization_loss": 3.305537757114507e-05,
+        "total_loss_before": 0.021883241832256317,
+        "mse_after": 0.021849246695637703,
+        "gradient_norms": {
+          "residual_rating_model/user_embedding/embeddings": 2.858317884602002e-06,
+          "residual_rating_model/book_embedding/embeddings": 1.6352790908058523e-06,
+          "residual_rating_model/hidden_1/kernel": 1.2280860346436384e-06,
+          "residual_rating_model/hidden_1/bias": 0.0,
+          "residual_rating_model/hidden_2/kernel": 9.32651232687931e-07,
+          "residual_rating_model/hidden_2/bias": 0.0,
+          "residual_rating_model/rating_residual/kernel": 9.354171197628602e-05,
+          "residual_rating_model/rating_residual/bias": 0.0007716756081208587
+        },
+        "user_embedding_before": [
+          -0.04974351078271866,
+          -0.010197926312685013,
+          0.0013237372040748596,
+          0.013852965086698532,
+          -0.02267543040215969,
+          0.001559235155582428,
+          -0.020605003461241722,
+          -0.016761384904384613,
+          -0.0402938611805439,
+          0.04074013605713844,
+          -0.006402552127838135,
+          0.020116988569498062,
+          0.01314595714211464,
+          0.011956442147493362,
+          -0.0458027720451355,
+          -0.010971210896968842
+        ],
+        "user_embedding_gradient": [
+          -9.94870230641709e-09,
+          -2.039585389468357e-09,
+          2.647474461880961e-10,
+          2.7705930882859775e-09,
+          -4.5350860844450835e-09,
+          3.1184704818443265e-10,
+          -4.121000873880121e-09,
+          -3.352277122559144e-09,
+          -8.058772316132945e-09,
+          8.14802714188545e-09,
+          -1.280510475432095e-09,
+          4.023397615071644e-09,
+          2.6291915311560388e-09,
+          2.3912885005472617e-09,
+          -9.160554093057272e-09,
+          -2.1942421213339003e-09
+        ],
+        "user_embedding_after": [
+          -0.049740374088287354,
+          -0.010197281837463379,
+          0.001323653501458466,
+          0.013852089643478394,
+          -0.022673998028039932,
+          0.0015591365518048406,
+          -0.02060370147228241,
+          -0.0167603250592947,
+          -0.04029132053256035,
+          0.040737565606832504,
+          -0.006402147468179464,
+          0.020115718245506287,
+          0.013145126402378082,
+          0.01195568684488535,
+          -0.04579988494515419,
+          -0.010970517061650753
+        ],
+        "embedding_delta_norm": 6.389399004547158e-06,
+        "optimizer": "Adam",
+        "optimizer_iterations": 1,
+        "model_kind": "bias_residual_neural",
+        "baseline_predictions_normalized": [
+          0.7499221563339233,
+          0.7940151691436768,
+          0.847577691078186,
+          0.740661084651947,
+          0.6090538501739502,
+          0.9125105142593384,
+          0.6001471877098083,
+          0.2410012036561966
+        ],
+        "residual_scale": 0.25,
+        "embedding_data_gradient_norm_before": 0.0,
+        "head_initialization": "zeros",
+        "embedding_first_step_note": "At initialization the zero head blocks the data gradient to embeddings; L2 may update them. Data gradients propagate after the head learns.",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "prediction_reporting": "clip normalized prediction to [0, 1]"
+      },
+      "baseline_summary": {
+        "train_pairs": 111875,
+        "users": 15312,
+        "books": 5000,
+        "global_mean_rating": 7.780013500899776,
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0,
+        "biases_trainable": false,
+        "normalization": "(rating - 1) / 9",
+        "prediction_reporting": "clip normalized prediction to [0, 1]",
+        "training_objective": "raw linear normalized MSE plus L2",
+        "hidden_activation": "leaky_relu (negative_slope=0.2)"
+      },
+      "model_roundtrip_verified": true,
+      "seconds": 28.811810695000077
+    }
+  ],
+  "selection": {
+    "selected_utc": "2026-10-13T20:35:48.063362+00:00",
+    "metric": "known_validation_rmse_rating_scale",
+    "best_candidate": "residual_l2_0_zero_head_fixed12",
+    "best_neural_candidate": "residual_l2_0_zero_head_fixed12",
+    "validation": {
+      "pairs": 140,
+      "rmse_rating_scale": 1.746580802414081,
+      "mae_rating_scale": 1.2908650875091552
+    },
+    "best_neural_validation": {
+      "pairs": 140,
+      "rmse_rating_scale": 1.746580802414081,
+      "mae_rating_scale": 1.2908650875091552
+    },
+    "completed_candidates": 2,
+    "declared_candidates": 2,
+    "test_used": false,
+    "model_promotion_to_application": false,
+    "scope": "Diagnostic candidate ranking on the existing development validation only"
+  },
+  "all_candidates_completed": true,
+  "training": {
+    "total_neural_epochs": 24
+  },
+  "small_batch_overfit": {
+    "status": "not_run_scope",
+    "test_used": false,
+    "validation_used": false,
+    "reason": "Train-only capacity diagnostic already completed in the ablation run",
+    "previous_results_reference": "docs/evidence/neural_colab_ablation_results.json"
+  },
+  "limitations": [
+    "One seed and only 140 known validation pairs on a previously used development split.",
+    "No fresh holdout, test, ranking evaluation or claim of independent superiority.",
+    "Correction variability demonstrates nonconstant output, not useful personalization by itself.",
+    "Controls use fixed train-derived biases; scalar is fitted on train only."
+  ],
+  "model_promotion_to_application": false,
+  "total_seconds": 62.95280502700007
+}

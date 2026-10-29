@@ -1,0 +1,232 @@
+{
+  "status": "completed",
+  "completed_utc": "2026-10-13T17:15:17.436623+00:00",
+  "configuration": {
+    "data_dir": "/content/book-recommendation-neural-20261013/dataset",
+    "output": "/content/book-recommendation-neural-20261013/experiment",
+    "requested_epochs": 8,
+    "sample_users": 1000,
+    "max_books": 5000,
+    "max_content_books": 5000,
+    "batch_size": 1024,
+    "seed": 42,
+    "embedding_size": 16,
+    "hidden_units": [
+      32,
+      16
+    ],
+    "learning_rate": 0.001,
+    "l2": 1e-05,
+    "patience": 3,
+    "validation_fraction": 0.5,
+    "min_interactions": 3,
+    "min_relevant_rating_for_split": 1,
+    "ranking_relevant_rating": 8,
+    "min_user_ratings": 2,
+    "min_book_ratings": 2,
+    "require_gpu": true,
+    "started_utc": "2026-10-13T17:13:33.730514+00:00",
+    "dataset_source": "https://www.kaggle.com/datasets/arashnic/book-recommendation-dataset",
+    "dataset_origin": "https://www2.informatik.uni-freiburg.de/~cziegler/BX/",
+    "dataset_format": "Kaggle distribution of Book-Crossing in three CSV schemas"
+  },
+  "gpu": {
+    "checked_utc": "2026-10-13T17:13:34.231193+00:00",
+    "tensorflow_version": "2.21.0",
+    "cuda_build": true,
+    "physical_gpu_names": [
+      "/physical_device:GPU:0"
+    ],
+    "gpu_details": [
+      {
+        "compute_capability": [
+          7,
+          5
+        ],
+        "device_name": "Tesla T4"
+      }
+    ],
+    "logical_gpu_names": [
+      "/device:GPU:0"
+    ],
+    "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "probe_value": 128.0,
+    "probe_seconds": 0.27390778400013005,
+    "nvidia_smi_exit_code": 0,
+    "nvidia_smi": "Tesla T4, 15360 MiB, 580.82.07"
+  },
+  "dataset": {
+    "raw_books_rows": 271360,
+    "raw_ratings_rows": 1149780,
+    "raw_users_rows": 278858,
+    "raw_explicit_rating_rows": 433671,
+    "implicit_interactions_excluded": 716109,
+    "clean_catalog_books": 271359,
+    "clean_explicit_interactions_with_metadata": 383843,
+    "explicit_interactions": 383843,
+    "train_pairs": 111875,
+    "train_users": 15312,
+    "train_isbns": 5000,
+    "validation_pairs": 500,
+    "validation_known_pairs": 140,
+    "test_pairs": 500,
+    "canonical_work_leakage_checks_passed": true,
+    "selection_scope": "split canonical works first, then select train-only catalog/k-core"
+  },
+  "training": {
+    "epochs_completed": 5,
+    "best_epoch": 2,
+    "history": [
+      {
+        "epoch": 1,
+        "train_mse": 0.030511293560266495,
+        "train_rmse": 1.5720734010794746,
+        "val_mse": 0.03488485515117645,
+        "val_rmse": 1.6809739043915266
+      },
+      {
+        "epoch": 2,
+        "train_mse": 0.02414088509976864,
+        "train_rmse": 1.3983603588064344,
+        "val_mse": 0.032440729439258575,
+        "val_rmse": 1.6210179161810472
+      },
+      {
+        "epoch": 3,
+        "train_mse": 0.02273964323103428,
+        "train_rmse": 1.357170255242052,
+        "val_mse": 0.03307783231139183,
+        "val_rmse": 1.6368580931842378
+      },
+      {
+        "epoch": 4,
+        "train_mse": 0.022181961685419083,
+        "train_rmse": 1.3404248940238859,
+        "val_mse": 0.03429625555872917,
+        "val_rmse": 1.6667323421164728
+      },
+      {
+        "epoch": 5,
+        "train_mse": 0.021867569535970688,
+        "train_rmse": 1.3308918560174698,
+        "val_mse": 0.03433173522353172,
+        "val_rmse": 1.6675942411468294
+      }
+    ],
+    "training_and_preparation_seconds": 71.8471254179999,
+    "optimizer_iterations": 550,
+    "normalized_loss": "MSE plus L2 regularization; history MSE excludes L2",
+    "restored_best_validation_weights": true
+  },
+  "rating_test": {
+    "test_explicit_pairs": 500,
+    "known_pairs": 135,
+    "unknown_user_pairs": 209,
+    "unknown_isbn_pairs": 307,
+    "unknown_user_and_isbn_pairs": 151,
+    "known_pair_retention_rate": 0.27,
+    "scale": "original explicit ratings 1 through 10",
+    "models": {
+      "train_global_mean": {
+        "known_pairs": 135,
+        "scope": "same_known_user_and_isbn_pairs_as_neural",
+        "rmse_rating_scale": 1.753670668465948,
+        "mae_rating_scale": 1.4158481350651493
+      },
+      "train_user_mean": {
+        "known_pairs": 135,
+        "scope": "same_known_user_and_isbn_pairs_as_neural",
+        "rmse_rating_scale": 1.4225087127027538,
+        "mae_rating_scale": 1.1392572968094437
+      },
+      "neural": {
+        "explicit_pairs": 500,
+        "known_pairs": 135,
+        "unknown_pairs": 365,
+        "mse_normalized": 0.027932338416576385,
+        "rmse_rating_scale": 1.5041673483168976,
+        "scope": "known_user_and_book_pairs_only",
+        "mae_rating_scale": 1.1892129156324598
+      }
+    }
+  },
+  "ranking_test": {
+    "availability": {
+      "test_holdouts": 500,
+      "relevant_test_holdouts_rating_ge_8": 272,
+      "candidate_work_available": 129,
+      "train_user_history_available": 160,
+      "candidate_and_history_available": 93,
+      "candidate_isbns": 5000,
+      "candidate_canonical_works": 4364,
+      "scope": "all relevant test holdouts; unavailable targets remain explicit misses",
+      "paired": true,
+      "top_k": 10
+    },
+    "models": {
+      "neural_with_popularity_fallback": {
+        "count": 272,
+        "metrics": {
+          "precision_at_10": 0.0007352941176470588,
+          "recall_at_10": 0.007352941176470588,
+          "hit_rate_at_10": 0.007352941176470588,
+          "map_at_10": 0.004136029411764706,
+          "mrr_at_10": 0.004136029411764706,
+          "ndcg_at_10": 0.004836267929359297
+        },
+        "conditional_count": 93,
+        "conditional_metrics": {
+          "precision_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "hit_rate_at_10": 0.0,
+          "map_at_10": 0.0,
+          "mrr_at_10": 0.0,
+          "ndcg_at_10": 0.0
+        }
+      },
+      "item_based_with_popularity_fallback": {
+        "count": 272,
+        "metrics": {
+          "precision_at_10": 0.001838235294117647,
+          "recall_at_10": 0.01838235294117647,
+          "hit_rate_at_10": 0.01838235294117647,
+          "map_at_10": 0.011488970588235295,
+          "mrr_at_10": 0.011488970588235295,
+          "ndcg_at_10": 0.013151927882090603
+        },
+        "conditional_count": 93,
+        "conditional_metrics": {
+          "precision_at_10": 0.0032258064516129037,
+          "recall_at_10": 0.03225806451612903,
+          "hit_rate_at_10": 0.03225806451612903,
+          "map_at_10": 0.021505376344086023,
+          "mrr_at_10": 0.021505376344086023,
+          "ndcg_at_10": 0.024321069969278658
+        }
+      },
+      "popularity": {
+        "count": 272,
+        "metrics": {
+          "precision_at_10": 0.001838235294117647,
+          "recall_at_10": 0.01838235294117647,
+          "hit_rate_at_10": 0.01838235294117647,
+          "map_at_10": 0.012014180672268907,
+          "mrr_at_10": 0.012014180672268907,
+          "ndcg_at_10": 0.013414699301908316
+        },
+        "conditional_count": 93,
+        "conditional_metrics": {
+          "precision_at_10": 0.0032258064516129037,
+          "recall_at_10": 0.03225806451612903,
+          "hit_rate_at_10": 0.03225806451612903,
+          "map_at_10": 0.02304147465437788,
+          "mrr_at_10": 0.02304147465437788,
+          "ndcg_at_10": 0.025089605734767026
+        }
+      }
+    }
+  },
+  "final_model_roundtrip_verified": true,
+  "interpretation": "One seed/split exploratory run; no claim that neural is superior. Rating metrics are conditional on known user/ISBN pairs. Ranking compares all relevant test holdouts using a shared candidate catalog.",
+  "total_seconds": 103.70799705500008
+}

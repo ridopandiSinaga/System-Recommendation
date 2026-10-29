@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "project": "System-Recommendation",
+  "session_name": "book-recommendation-neural-20261014-ablation",
+  "experiment_directory": "warmup_experiment",
+  "account_free_without_paid_balance_confirmed_by_user": true,
+  "paid_resources_authorized": false,
+  "same_owned_runtime_shared_by_ablation_and_warmup": true,
+  "gpu": "Tesla T4, 15360 MiB, 580.82.07",
+  "tensorflow_version": "2.21.0",
+  "candidate_count": 2,
+  "all_candidates_completed": true,
+  "total_neural_epochs": 24,
+  "test_uploaded_as_experiment_input": false,
+  "test_used": false,
+  "model_promotion_to_application": false,
+  "backups": [
+    {
+      "archive": "inputs_backup.tar.gz",
+      "sha256": "6fad36cc57fb323a42e17efae70c3deacbe2a678753a22dc1779c66c08eb8e0b",
+      "bytes": 1054439,
+      "kind": "training_inputs",
+      "epoch": null,
+      "members": 9,
+      "verified_utc": "2026-10-13T20:35:05.350894+00:00"
+    },
+    {
+      "archive": "epoch_001_snapshot.tar.gz",
+      "sha256": "a1a10b2bff305217835520cbf31c24d87e2879be2fedb631e43eb8d127567980",
+      "bytes": 6269215,
+      "kind": "epoch_checkpoint",
+      "epoch": 4,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:35:10.749989+00:00"
+    },
+    {
+      "archive": "epoch_002_snapshot.tar.gz",
+      "sha256": "f48c2ecb8bf89c2b66710a6d526f51e3b65a160071b73979a22a122bd20bdfd7",
+      "bytes": 6269515,
+      "kind": "epoch_checkpoint",
+      "epoch": 8,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:35:39.395780+00:00"
+    },
+    {
+      "archive": "epoch_003_snapshot.tar.gz",
+      "sha256": "b22d7ff7da6f74940252f29a80adb7ce6f7da9636843c765f2ebd63014952a68",
+      "bytes": 6269561,
+      "kind": "epoch_checkpoint",
+      "epoch": 12,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:35:53.636107+00:00"
+    },
+    {
+      "archive": "epoch_004_snapshot.tar.gz",
+      "sha256": "c2176910c048cf0b6f6b337bd617bb2642e05410412987711e22b4e3deda79ff",
+      "bytes": 6284799,
+      "kind": "epoch_checkpoint",
+      "epoch": 12,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:36:02.760771+00:00"
+    },
+    {
+      "archive": "epoch_005_snapshot.tar.gz",
+      "sha256": "456195e25809ee7f51ddf654639452e4402f7185efb9271bbe63169970ec0f59",
+      "bytes": 6264421,
+      "kind": "epoch_checkpoint",
+      "epoch": 16,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:38:16.024005+00:00"
+    },
+    {
+      "archive": "epoch_006_snapshot.tar.gz",
+      "sha256": "ad4feda54d094aed66f69228c149f49d090a62151c1fa896ffa9976a5e4d3077",
+      "bytes": 6282362,
+      "kind": "epoch_checkpoint",
+      "epoch": 20,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:38:22.800141+00:00"
+    },
+    {
+      "archive": "epoch_007_snapshot.tar.gz",
+      "sha256": "76552b68d9a3c121a8bc186dd116122a05b0100569192bea6189470121e6fb4e",
+      "bytes": 6279463,
+      "kind": "epoch_checkpoint",
+      "epoch": 24,
+      "members": 11,
+      "verified_utc": "2026-10-13T20:38:31.307713+00:00"
+    },
+    {
+      "archive": "epoch_008_snapshot.tar.gz",
+      "sha256": "0e7974a1eead3efd33e46257b5995d68f86ab064b4a16ddac609cf4cc6399f6d",
+      "bytes": 6297447,
+      "kind": "epoch_checkpoint",
+      "epoch": 24,
+      "members": 12,
+      "verified_utc": "2026-10-13T20:38:40.896192+00:00"
+    },
+    {
+      "archive": "final_backup.tar.gz",
+      "sha256": "020e19c3fd7c5a9c75bf868cb1bc056df6aae38eb67d9c74dfdab9bc4502ca8b",
+      "bytes": 12653899,
+      "kind": "completed_experiment",
+      "epoch": null,
+      "members": 37,
+      "verified_utc": "2026-10-13T20:39:11.871731+00:00"
+    },
+    {
+      "archive": "runtime_verification.tar.gz",
+      "sha256": "82226c400a15d90dbbb741a1232ae18fa2bae88e56296297fdc1ab2248c7c587",
+      "bytes": 32973,
+      "kind": "warmup_verification",
+      "epoch": null,
+      "members": 9,
+      "verified_utc": "2026-10-13T20:44:52.951563+00:00"
+    }
+  ],
+  "verification": {
+    "all_backups_verified": true,
+    "method": "SHA-256, byte size, gzip CRC, tar containment, and every extracted file hash",
+    "all_candidate_model_roundtrips_verified": true,
+    "source_metadata_matches_archived_executed_source": true,
+    "no_test_csv_in_archived_inputs": true
+  },
+  "runtime_tests": {
+    "passed": 13,
+    "file": "verification/warmup_tests.log"
+  },
+  "local_monitor_tests": {
+    "passed": 26
+  },
+  "shutdown": {
+    "stopped": true,
+    "after_both_runs_backed_up_and_verified": true,
+    "stop_operation": "artifacts/colab/operations/ablation-stop-owned-session-20261013T204458-e6a9c8c5.json",
+    "server_check_operation": "artifacts/colab/operations/ablation-verify-server-stopped-20261013T204527-aa481b58.json",
+    "server_reports_no_active_sessions": true,
+    "completed_at_utc": "2026-10-13T20:45:08.692124+00:00"
+  },
+  "local_artifact_path_relative_to_project": "artifacts/colab/run-20261014-warmup",
+  "paired_trajectory_comparison": {
+    "comparisons": [
+      {
+        "candidate": "residual_l2_0_zero_head_fixed12",
+        "reference": "residual_l2_0_zero_head",
+        "first_four_epochs_bit_identical": true,
+        "first_epoch_identical": true,
+        "best_validation_metric_identical": true,
+        "max_absolute_train_rmse_difference": 0.0,
+        "max_absolute_val_rmse_difference": 0.0
+      },
+      {
+        "candidate": "residual_l2_1e7_zero_head_fixed12",
+        "reference": "residual_l2_1e7_zero_head",
+        "first_four_epochs_bit_identical": false,
+        "first_epoch_identical": true,
+        "best_validation_metric_identical": true,
+        "max_absolute_train_rmse_difference": 0.00011390858494819689,
+        "max_absolute_val_rmse_difference": 3.2905836905738894e-05
+      }
+    ],
+    "tensorflow_deterministic_ops_required": false,
+    "limitation": "Small later-epoch numerical differences were observed; their source was not isolated. No exact trajectory reproducibility is claimed for L2=1e-7."
+  },
+  "connection_recovery": {
+    "transient_kernel_connection_lost": true,
+    "monitor_resumed_using_verified_cache": true,
+    "training_restarted": false,
+    "all_remaining_archives_recovered": true
+  }
+}

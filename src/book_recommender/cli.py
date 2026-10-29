@@ -98,6 +98,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Book recommendation project CLI.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    from book_recommender.neural_cli import register_neural_commands
+
+    register_neural_commands(subparsers)
+
     check = subparsers.add_parser("check-data", help="Validate that Kaggle CSV files exist.")
     add_data_dir_arg(check)
     check.set_defaults(func=check_data)

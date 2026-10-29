@@ -1,0 +1,397 @@
+{
+  "schema_version": 1,
+  "project": "System-Recommendation",
+  "session_name": "book-recommendation-neural-20261014-multiseed",
+  "experiment_directory": "experiment",
+  "account_free_without_paid_balance_confirmed_by_user": true,
+  "paid_resources_authorized": false,
+  "gpu": "Tesla T4, 15360 MiB, 580.82.07",
+  "tensorflow_version": "2.21.0",
+  "deterministic_operations": {
+    "requested": true,
+    "enabled": true
+  },
+  "candidate_count": 12,
+  "control_count": 6,
+  "all_candidates_completed": true,
+  "total_neural_epochs": 75,
+  "original_validation_uploaded": false,
+  "original_test_uploaded": false,
+  "original_validation_used": false,
+  "original_test_used": false,
+  "assessment_is_internal_development": true,
+  "assessment_weights_locked_utc": "2026-10-13T21:03:56.444862+00:00",
+  "model_promotion_to_application": false,
+  "backups": [
+    {
+      "archive": "inputs_backup.tar.gz",
+      "sha256": "aaed92c57ae105eaf80b67704c59fd76169b3416f45304cd9c3ebc2c30f0d906",
+      "bytes": 7634616,
+      "kind": "training_inputs",
+      "epoch": null,
+      "members": 21,
+      "verified_utc": "2026-10-13T21:02:01.662308+00:00"
+    },
+    {
+      "archive": "epoch_001_snapshot.tar.gz",
+      "sha256": "5c59b26d654b898a2fc94c7a1af5d89aab75cd0fbbf8296d01bf25e2f3e79080",
+      "bytes": 6109813,
+      "kind": "epoch_checkpoint",
+      "epoch": 4,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:02:13.945788+00:00"
+    },
+    {
+      "archive": "epoch_002_snapshot.tar.gz",
+      "sha256": "a479a658b0a95c5cd47e3b0ff1889ae1bae597c389a599a15e596c9cf53c031b",
+      "bytes": 6114471,
+      "kind": "epoch_checkpoint",
+      "epoch": 5,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:02:28.057381+00:00"
+    },
+    {
+      "archive": "epoch_003_snapshot.tar.gz",
+      "sha256": "e3dc8550bc3c502dc5c01a1af1c3b8f26d8d432d66df66b0160a5d960f71ffff",
+      "bytes": 6280442,
+      "kind": "epoch_checkpoint",
+      "epoch": 9,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:03:12.637839+00:00"
+    },
+    {
+      "archive": "epoch_004_snapshot.tar.gz",
+      "sha256": "9455148b5585ecac9beafeff3c60e8f6843158bdefc3b1a397ff0e50e8ace3ab",
+      "bytes": 6281735,
+      "kind": "epoch_checkpoint",
+      "epoch": 12,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:03:22.075090+00:00"
+    },
+    {
+      "archive": "epoch_005_snapshot.tar.gz",
+      "sha256": "6d8c61a97fabd2824acef2c057beda84240a13a671efa0ed35e18924a20ce699",
+      "bytes": 6110136,
+      "kind": "epoch_checkpoint",
+      "epoch": 16,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:03:36.668267+00:00"
+    },
+    {
+      "archive": "epoch_006_snapshot.tar.gz",
+      "sha256": "ca04212a652712ef95a90eda58257679671d7b5cd06a0d36343828ed59a48fb8",
+      "bytes": 6114231,
+      "kind": "epoch_checkpoint",
+      "epoch": 17,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:03:52.679567+00:00"
+    },
+    {
+      "archive": "epoch_007_snapshot.tar.gz",
+      "sha256": "8292b07a110f6fb1bcc7f13b86f771d79f75eb4254a0139df19cd37dd5d12230",
+      "bytes": 6279902,
+      "kind": "epoch_checkpoint",
+      "epoch": 21,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:04:01.486257+00:00"
+    },
+    {
+      "archive": "epoch_008_snapshot.tar.gz",
+      "sha256": "663cf240916dbe73eba984969e35fbd76513129f9c48ad3ef1c85665f244f582",
+      "bytes": 6281254,
+      "kind": "epoch_checkpoint",
+      "epoch": 21,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:04:12.173451+00:00"
+    },
+    {
+      "archive": "epoch_009_snapshot.tar.gz",
+      "sha256": "f0c98265c80413fa8494b63282c71f9b0a3245d3794966ef497364cc94f4f32e",
+      "bytes": 6113132,
+      "kind": "epoch_checkpoint",
+      "epoch": 25,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:04:20.857806+00:00"
+    },
+    {
+      "archive": "epoch_010_snapshot.tar.gz",
+      "sha256": "6179b3dd9fa705bf51a49741e1d868632ddc99e084e680f9be0fbe97ee0f74bb",
+      "bytes": 6116428,
+      "kind": "epoch_checkpoint",
+      "epoch": 26,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:04:42.159747+00:00"
+    },
+    {
+      "archive": "epoch_011_snapshot.tar.gz",
+      "sha256": "a5836c17fdf1a989a011f40e4b2dc353cfd10fdde09915e14072c1ca072fd23b",
+      "bytes": 6289006,
+      "kind": "epoch_checkpoint",
+      "epoch": 30,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:04:50.304035+00:00"
+    },
+    {
+      "archive": "epoch_012_snapshot.tar.gz",
+      "sha256": "2dafcb7fc6652711047021208eed3c6b27ba8e722de4ea8371b9014182650902",
+      "bytes": 6285861,
+      "kind": "epoch_checkpoint",
+      "epoch": 33,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:05:09.888632+00:00"
+    },
+    {
+      "archive": "epoch_013_snapshot.tar.gz",
+      "sha256": "af983461d4dad0a98caf38831e199de7565f97c11f571bfb1fbb60576aa2028c",
+      "bytes": 6124012,
+      "kind": "epoch_checkpoint",
+      "epoch": 37,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:05:23.282929+00:00"
+    },
+    {
+      "archive": "epoch_014_snapshot.tar.gz",
+      "sha256": "c34fd9822c9dbbd3e64cd1c6db76c80523653d48a9639099e66e11be7d3a4ee7",
+      "bytes": 6128830,
+      "kind": "epoch_checkpoint",
+      "epoch": 38,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:05:33.656296+00:00"
+    },
+    {
+      "archive": "epoch_015_snapshot.tar.gz",
+      "sha256": "fc4cd336d7698129dfe0cc4b63410fd0daafdf8d92ba9d7a493932554c9b34f5",
+      "bytes": 6293474,
+      "kind": "epoch_checkpoint",
+      "epoch": 42,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:05:45.870839+00:00"
+    },
+    {
+      "archive": "epoch_016_snapshot.tar.gz",
+      "sha256": "3f361107adc1e72875f0e0be174aaf72dcb990904d6aed9c22a5af88cd9d7157",
+      "bytes": 6292033,
+      "kind": "epoch_checkpoint",
+      "epoch": 46,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:05:56.561450+00:00"
+    },
+    {
+      "archive": "epoch_017_snapshot.tar.gz",
+      "sha256": "f9c831d0abedcbe25e96ae0ff9318c775e4c9536980d2cc38677580e8ed8b4ae",
+      "bytes": 6293172,
+      "kind": "epoch_checkpoint",
+      "epoch": 46,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:07:00.907554+00:00"
+    },
+    {
+      "archive": "epoch_018_snapshot.tar.gz",
+      "sha256": "b3f46fa2f04bee8eafbed9247afc1f93a24106f5b68c8912938619556e55a628",
+      "bytes": 6122736,
+      "kind": "epoch_checkpoint",
+      "epoch": 50,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:07:16.747988+00:00"
+    },
+    {
+      "archive": "epoch_019_snapshot.tar.gz",
+      "sha256": "3e8e28fb184f56d9f1b5a244eb4184c5d6b2db90e578380171c0af6c50e56577",
+      "bytes": 6128454,
+      "kind": "epoch_checkpoint",
+      "epoch": 52,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:07:32.849861+00:00"
+    },
+    {
+      "archive": "epoch_020_snapshot.tar.gz",
+      "sha256": "a19f601e7f05d8436d58fb30378e77d4247e21f83d27264daea1ebdc6d43c3c8",
+      "bytes": 6292509,
+      "kind": "epoch_checkpoint",
+      "epoch": 56,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:07:54.123751+00:00"
+    },
+    {
+      "archive": "epoch_021_snapshot.tar.gz",
+      "sha256": "0bb73f7a13415fd12b8bcbd24d2623fb7b52ba55226e3030b3b4268a92195ecd",
+      "bytes": 6296432,
+      "kind": "epoch_checkpoint",
+      "epoch": 60,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:08:05.075560+00:00"
+    },
+    {
+      "archive": "epoch_022_snapshot.tar.gz",
+      "sha256": "dfe645ed1e289b9e18af3e5dcade09fa70218ba0eedb144ce114adc269afa23b",
+      "bytes": 6296741,
+      "kind": "epoch_checkpoint",
+      "epoch": 61,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:08:20.605804+00:00"
+    },
+    {
+      "archive": "epoch_023_snapshot.tar.gz",
+      "sha256": "3603f523cf06209dff159cab41ab2ace337496a13febe15f3ef0508248f461e6",
+      "bytes": 6125274,
+      "kind": "epoch_checkpoint",
+      "epoch": 65,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:08:34.658928+00:00"
+    },
+    {
+      "archive": "epoch_024_snapshot.tar.gz",
+      "sha256": "f97a6ab185b5e70ea575e2f6be3fa3c55284ded1eb137012078dcd53f5bf1e3a",
+      "bytes": 6129895,
+      "kind": "epoch_checkpoint",
+      "epoch": 67,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:08:44.734899+00:00"
+    },
+    {
+      "archive": "epoch_025_snapshot.tar.gz",
+      "sha256": "cf3be02c52296202ad1a90a761bf85f3952b3b1fe6675d2444ed4516fa395124",
+      "bytes": 6304705,
+      "kind": "epoch_checkpoint",
+      "epoch": 71,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:09:02.480780+00:00"
+    },
+    {
+      "archive": "epoch_026_snapshot.tar.gz",
+      "sha256": "323602bf7812292c06fdab17c4bc69a58229d4af4a96cdaedec44d093ee84a13",
+      "bytes": 6295719,
+      "kind": "epoch_checkpoint",
+      "epoch": 75,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:09:14.675249+00:00"
+    },
+    {
+      "archive": "epoch_027_snapshot.tar.gz",
+      "sha256": "c461fd06efadde735c8b5ef2b84d8a8bb66ae4f46810d44739e1b08aeff71686",
+      "bytes": 6296784,
+      "kind": "epoch_checkpoint",
+      "epoch": 75,
+      "members": 11,
+      "verified_utc": "2026-10-13T21:09:28.146816+00:00"
+    },
+    {
+      "archive": "epoch_028_snapshot.tar.gz",
+      "sha256": "c6b1f79954004e429f667b37c67904a0d3a911d54ef6ad1d9b27567e8fc4faa7",
+      "bytes": 6299378,
+      "kind": "epoch_checkpoint",
+      "epoch": 75,
+      "members": 12,
+      "verified_utc": "2026-10-13T21:09:36.419057+00:00"
+    },
+    {
+      "archive": "final_backup.tar.gz",
+      "sha256": "b0c50291d1819f5a79d6206f357f407384f2465afbceb2f403c951d2dceb9224",
+      "bytes": 65968312,
+      "kind": "completed_experiment",
+      "epoch": null,
+      "members": 133,
+      "verified_utc": "2026-10-13T21:11:12.933707+00:00"
+    },
+    {
+      "archive": "runtime_verification.tar.gz",
+      "sha256": "5ace2ac7aeb766b104fede24ed97d637f151829df7ac815cbb44fdd8ae3c01e4",
+      "bytes": 57297,
+      "kind": "runtime_verification",
+      "epoch": null,
+      "members": 14,
+      "verified_utc": "2026-10-13T21:09:21.178639+00:00"
+    }
+  ],
+  "verification": {
+    "all_backups_verified": true,
+    "method": "SHA-256, byte size, gzip CRC, tar containment, and every extracted file hash",
+    "source_metadata_matches_archived_executed_source": true,
+    "verified_utc": "2026-10-13T21:12:00.290495+00:00",
+    "all_locked_artifact_hashes_match": true,
+    "verified_fingerprinted_files": 53,
+    "metrics_recomputed_from_prediction_csv": 72,
+    "split_row_accounting_and_user_work_separation_verified": true,
+    "all_partition_rows_match_frozen_source_exactly": true,
+    "known_masks_recomputed_from_fit": true,
+    "seed_summary_means_and_sample_standard_deviations_verified": true,
+    "all_12_model_roundtrips_verified": true,
+    "all_weights_locked_before_assessment": true,
+    "original_validation_and_test_absent": true
+  },
+  "runtime_tests": {
+    "passed": 9,
+    "file": "verification/multiseed_tests.log"
+  },
+  "shutdown": {
+    "stopped": true,
+    "after_backup_and_result_verification": true,
+    "stop_operation": "artifacts/colab/operations/multiseed-stop-owned-session-20261013T211216-cff0442e.json",
+    "server_check_operation": "artifacts/colab/operations/multiseed-verify-server-stopped-20261013T211255-c93990f0.json",
+    "server_reports_no_active_sessions": true,
+    "completed_at_utc": "2026-10-13T21:12:28.596457+00:00"
+  },
+  "local_artifact_path_relative_to_project": "artifacts/colab/run-20261014-multiseed",
+  "predeclared_protocol": {
+    "declared_utc": "2026-10-13T20:55:34.810942+00:00",
+    "purpose": "Robustness of existing MLP and residual across larger internal development holdouts and initialization seeds",
+    "scope": "Resplit of previously used original training data; not fresh independent test",
+    "input_files": [
+      "train_books.csv",
+      "train_ratings.csv"
+    ],
+    "original_validation_or_test_uploaded": false,
+    "split_seeds": [
+      17,
+      29
+    ],
+    "initialization_seeds": [
+      42,
+      2026,
+      7
+    ],
+    "users_per_selection": 3000,
+    "users_per_assessment": 3000,
+    "split_rule": "Uniformly sample 6000 users with at least 2 canonical works; disjoint sets of 3000 selection and 3000 assessment users; hold out one uniformly sampled work per user and all its edition rows; retain at least 1 fit work per user.",
+    "neural_fits": 12,
+    "max_epochs_each": 12,
+    "patience": 3,
+    "batch_size": 1024,
+    "architectures": [
+      {
+        "name": "original_mlp",
+        "embedding": 16,
+        "hidden_units": [
+          32,
+          16
+        ],
+        "l2": 1e-05,
+        "learning_rate": 0.001
+      },
+      {
+        "name": "residual_no_l2",
+        "embedding": 16,
+        "hidden_units": [
+          32,
+          16
+        ],
+        "l2": 0.0,
+        "learning_rate": 0.001,
+        "residual_scale": 0.25,
+        "user_shrinkage": 0.0,
+        "item_shrinkage": 20.0
+      }
+    ],
+    "controls": [
+      "train_global_mean",
+      "train_user_mean",
+      "train_bias_u0_i20"
+    ],
+    "assessment_policy": "Lock and hash all trained model weights before assessment; selection only for checkpoint; no best seed chosen using assessment",
+    "uncertainty": "1000-draw paired user-cluster percentile bootstrap within each split; descriptive mean and sample standard deviation across initialization seeds; no pooling of overlapping splits.",
+    "time_budget_training_seconds": 900,
+    "free_account_confirmed_in_conversation": true,
+    "session": "book-recommendation-neural-20261014-multiseed",
+    "shutdown_policy": "Stop only owned session after local backup integrity verified"
+  }
+}

@@ -1,0 +1,590 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "analysis_kind": "posthoc_neural_vs_global_control",
+  "created_utc": "2026-10-13T21:12:31.243006+00:00",
+  "predeclared": false,
+  "posthoc": true,
+  "rationale": "The global-mean control was strongest among non-neural controls after viewing the completed run; compare every declared neural candidate without selecting a subset.",
+  "no_new_training": true,
+  "no_new_predictions": true,
+  "original_test_used": false,
+  "ranking_evaluated": false,
+  "serving_changed": false,
+  "source_results": {
+    "path": "artifacts/colab/run-20261014-multiseed/final/results.json",
+    "sha256": "0da69c6c04c86ce84ce5edf645ec032bafc24ba30cc9c6f674ca1e54221801ce",
+    "bytes": 165407
+  },
+  "prediction_csv_fingerprints": {
+    "split_17": {
+      "path": "artifacts/colab/run-20261014-multiseed/final/splits/split_17/assessment_predictions.csv",
+      "sha256": "f9067060092bcc92297f9b78aef41c0806329e68cf3d04dec1c451d96d66cf52",
+      "bytes": 708968
+    },
+    "split_29": {
+      "path": "artifacts/colab/run-20261014-multiseed/final/splits/split_29/assessment_predictions.csv",
+      "sha256": "20bebeb3b8e976fcb8d7f127eb80042b722b790f266c79eb48e6f2c1d19b9a93",
+      "bytes": 708599
+    }
+  },
+  "script_fingerprint": {
+    "path": "scripts/audit_multiseed_assessment.py",
+    "sha256": "76f7c31ee7bae500ec067fb3d5e7125f4a9f0581c6dd733f77fa4d13f2b3e2f2",
+    "bytes": 10125
+  },
+  "comparisons": [
+    {
+      "split_seed": 17,
+      "candidate": "split17_mlp_seed42",
+      "reference": "split17_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.6270996160585327,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": -0.1643489741060662,
+        "interval_95_percent": [
+          -0.19182119551335078,
+          -0.1381815601971795
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_residual_seed42",
+      "reference": "split17_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.9167312964750267,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": 0.1252827063104276,
+        "interval_95_percent": [
+          0.06840770710429137,
+          0.18201273121261358
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_mlp_seed2026",
+      "reference": "split17_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.6350774138397075,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": -0.1563711763248914,
+        "interval_95_percent": [
+          -0.18092548333041308,
+          -0.1306746368363852
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_residual_seed2026",
+      "reference": "split17_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.92275411097418,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": 0.13130552080958102,
+        "interval_95_percent": [
+          0.07327115001497356,
+          0.18662236976618343
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_mlp_seed7",
+      "reference": "split17_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.6368475713446196,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": -0.15460101881997934,
+        "interval_95_percent": [
+          -0.18033078886663795,
+          -0.12977633509698147
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_residual_seed7",
+      "reference": "split17_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.920624312809428,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": 0.1291757226448289,
+        "interval_95_percent": [
+          0.07128951488651536,
+          0.18540598895009378
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_mlp_seed42",
+      "reference": "split17_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.6270996160585327,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": -0.1643489741060662,
+        "interval_95_percent": [
+          -0.19182119551335078,
+          -0.1381815601971795
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_residual_seed42",
+      "reference": "split17_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.9167312964750267,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": 0.1252827063104276,
+        "interval_95_percent": [
+          0.06840770710429137,
+          0.18201273121261358
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_mlp_seed2026",
+      "reference": "split17_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.6350774138397075,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": -0.1563711763248914,
+        "interval_95_percent": [
+          -0.18092548333041308,
+          -0.1306746368363852
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_residual_seed2026",
+      "reference": "split17_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.92275411097418,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": 0.13130552080958102,
+        "interval_95_percent": [
+          0.07327115001497356,
+          0.18662236976618343
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_mlp_seed7",
+      "reference": "split17_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.6368475713446196,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": -0.15460101881997934,
+        "interval_95_percent": [
+          -0.18033078886663795,
+          -0.12977633509698147
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 17,
+      "candidate": "split17_residual_seed7",
+      "reference": "split17_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.920624312809428,
+      "reference_rmse": 1.7914485901645991,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3002,
+        "point_estimate": 0.1291757226448289,
+        "interval_95_percent": [
+          0.07128951488651536,
+          0.18540598895009378
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_mlp_seed42",
+      "reference": "split29_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.5918291292409281,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": -0.1660345185664971,
+        "interval_95_percent": [
+          -0.1951771496947606,
+          -0.13589811356443202
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_residual_seed42",
+      "reference": "split29_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.8344857733261708,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": 0.07662212551874559,
+        "interval_95_percent": [
+          0.019257762220361258,
+          0.1354021386191211
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_mlp_seed2026",
+      "reference": "split29_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.5987025862819229,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": -0.15916106152550236,
+        "interval_95_percent": [
+          -0.1927368232758052,
+          -0.12639203400122967
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_residual_seed2026",
+      "reference": "split29_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.835113574939954,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": 0.07724992713252887,
+        "interval_95_percent": [
+          0.019818735794648802,
+          0.1377382679313366
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_mlp_seed7",
+      "reference": "split29_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.601035388238345,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": -0.1568282595690802,
+        "interval_95_percent": [
+          -0.19079821705095773,
+          -0.12062725205121402
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_residual_seed7",
+      "reference": "split29_global_mean",
+      "scope": "known_pairs",
+      "candidate_rmse": 1.8439273596506423,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": 0.08606371184321704,
+        "interval_95_percent": [
+          0.02775130270765604,
+          0.14640469947133009
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_mlp_seed42",
+      "reference": "split29_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.5918291292409281,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": -0.1660345185664971,
+        "interval_95_percent": [
+          -0.1951771496947606,
+          -0.13589811356443202
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_residual_seed42",
+      "reference": "split29_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.8344857733261708,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": 0.07662212551874559,
+        "interval_95_percent": [
+          0.019257762220361258,
+          0.1354021386191211
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_mlp_seed2026",
+      "reference": "split29_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.5987025862819229,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": -0.15916106152550236,
+        "interval_95_percent": [
+          -0.1927368232758052,
+          -0.12639203400122967
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_residual_seed2026",
+      "reference": "split29_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.835113574939954,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": 0.07724992713252887,
+        "interval_95_percent": [
+          0.019818735794648802,
+          0.1377382679313366
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_mlp_seed7",
+      "reference": "split29_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.601035388238345,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": -0.1568282595690802,
+        "interval_95_percent": [
+          -0.19079821705095773,
+          -0.12062725205121402
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    },
+    {
+      "split_seed": 29,
+      "candidate": "split29_residual_seed7",
+      "reference": "split29_global_mean",
+      "scope": "all_pairs",
+      "candidate_rmse": 1.8439273596506423,
+      "reference_rmse": 1.7578636478074252,
+      "bootstrap": {
+        "draws": 1000,
+        "seed": 123,
+        "clusters": 3000,
+        "pairs": 3005,
+        "point_estimate": 0.08606371184321704,
+        "interval_95_percent": [
+          0.02775130270765604,
+          0.14640469947133009
+        ],
+        "method": "Paired percentile bootstrap of users; all rating rows retained within each user",
+        "difference": "candidate_rmse_minus_reference_rmse",
+        "limitation": "Conditional development-partition interval; not adjusted for multiple comparisons"
+      }
+    }
+  ],
+  "verification": {
+    "backup_manifest_sha256": "2665eea96a50bd990fb703f6cb6f2734f839bc9382aed0e392fabfa006d3f8fd",
+    "backup_verification_path": "artifacts/colab/run-20261014-multiseed/backup_verification.json",
+    "verified_final_archive_sha256": "b0c50291d1819f5a79d6206f357f407384f2465afbceb2f403c951d2dceb9224",
+    "verified_input_files": {
+      "results.json": "0da69c6c04c86ce84ce5edf645ec032bafc24ba30cc9c6f674ca1e54221801ce",
+      "inputs/train_ratings.csv": "ce2c45880b2e09ef899131ae953493502619c300b9ce7362a9788ad50a45d07a",
+      "splits/split_17/assessment_ratings.csv": "2fe5dff4f1be39f7e5aa0f9dd4ac2607b1a884958dc10a572298bb8926bbf6a0",
+      "splits/split_17/assessment_predictions.csv": "f9067060092bcc92297f9b78aef41c0806329e68cf3d04dec1c451d96d66cf52",
+      "splits/split_29/assessment_ratings.csv": "8c9bd6fb798cdf15b41beb1fad240c85edc3e45b204f66ac0b24b2a459c504ae",
+      "splits/split_29/assessment_predictions.csv": "20bebeb3b8e976fcb8d7f127eb80042b722b790f266c79eb48e6f2c1d19b9a93"
+    },
+    "all_prediction_rows_match_source": true,
+    "all_stored_rmse_reproduced": true,
+    "comparison_count": 24,
+    "candidate_count": 12
+  },
+  "limitations": [
+    "Post-hoc exploratory comparisons were not part of the predeclared assessment protocol.",
+    "Intervals are conditional paired user-cluster percentiles and are not adjusted for multiple comparisons.",
+    "The two development splits overlap in their source observations and are never pooled.",
+    "Assessment data came from previously used training data, not fresh independent test data.",
+    "Global mean uses the same fit-derived fallback on cold pairs; saved availability masks are preserved."
+  ]
+}

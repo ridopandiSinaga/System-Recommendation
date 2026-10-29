@@ -9,13 +9,51 @@ permissions:
   contents: read
 
 jobs:
+  neural:
+    name: Neural training and notebook (Python ${{ matrix.python-version }}, CPU)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install optional neural environment
+        run: uv sync --frozen --dev --extra neural --extra api
+      # Enforce the project-wide coverage floor where optional model code can run.
+      - name: Test full suite with neural training and coverage
+        env:
+          BOOK_REC_RUN_TF_TESTS: '1'
+          TF_CPP_MIN_LOG_LEVEL: '3'
+          TF_NUM_INTRAOP_THREADS: '1'
+          TF_NUM_INTEROP_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+        run: uv run --frozen --extra neural --extra api pytest --cov=book_recommender --cov=app --cov-report=term-missing
+      - name: Validate and smoke-execute neural notebook
+        env:
+          BOOK_RECOMMENDER_DATA_DIR: tests/fixtures/notebook_data
+          BOOK_RECOMMENDER_NEURAL_EPOCHS: '2'
+          TF_CPP_MIN_LOG_LEVEL: '3'
+          TF_NUM_INTRAOP_THREADS: '1'
+          TF_NUM_INTEROP_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+        run: |
+          uv run --extra neural python scripts/notebook_quality.py check-pair notebooks/02_neural_book_recommender.ipynb notebooks/02_neural_book_recommender.py
+          uv run --extra neural python scripts/notebook_quality.py check-saved notebooks/02_neural_book_recommender.ipynb --dependency src/book_recommender/neural.py --dependency src/book_recommender/neural_cli.py
+          mkdir -p "$RUNNER_TEMP/neural-notebook-smoke"
+          uv run --extra neural jupyter nbconvert --to notebook --execute notebooks/02_neural_book_recommender.ipynb --output-dir "$RUNNER_TEMP/neural-notebook-smoke" --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=300
+          uv run --extra neural python scripts/notebook_quality.py check-executed "$RUNNER_TEMP/neural-notebook-smoke/02_neural_book_recommender.ipynb"
+
   quality:
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -36,20 +74,61 @@ jobs:
           git diff --exit-code -- requirements.txt
 
       - name: Lint
-        run: uv run ruff check src tests app scripts notebooks/01_end_to_end_book_recommender.py
+        run: uv run ruff check src tests app scripts notebooks/*.py
 
-      - name: Test with coverage
-        run: uv run pytest --cov=book_recommender --cov=app --cov-report=term-missing
+      - name: Load shipped serving bundle and check real API readiness
+        if: matrix.python-version == '3.12'
+        env:
+          OMP_NUM_THREADS: '1'
+          OPENBLAS_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+        run: uv run --frozen --extra api python scripts/smoke_serving_bundle.py
+
+      - name: Test base environment (optional neural tests skip)
+        run: uv run --frozen --extra api pytest
 
       - name: Validate saved notebook contract
         if: matrix.python-version == '3.12'
         run: |
+          uv run python scripts/build_portfolio_ledger.py --check
           uv run python scripts/catalog_benchmark_summary.py check docs/evidence/catalog_size_benchmark_summary.json
           uv run python scripts/notebook_quality.py check-pair notebooks/01_end_to_end_book_recommender.ipynb notebooks/01_end_to_end_book_recommender.py
           uv run python scripts/notebook_quality.py check-saved notebooks/01_end_to_end_book_recommender.ipynb \
             --dependency docs/evidence/catalog_size_benchmark_summary.json \
             --dependency models/hybrid.joblib \
             --dependency models/hybrid.joblib.manifest.json
+          uv run python scripts/notebook_quality.py check-pair notebooks/03_neural_experiment_history.ipynb notebooks/03_neural_experiment_history.py
+          uv run python scripts/notebook_quality.py check-saved notebooks/03_neural_experiment_history.ipynb \
+            --dependency docs/evidence/neural_colab_t4_results.json \
+            --dependency docs/evidence/neural_colab_t4_first_step_trace.json \
+            --dependency docs/evidence/neural_colab_t4_run_manifest.json \
+            --dependency docs/evidence/neural_colab_residual_results.json \
+            --dependency docs/evidence/neural_colab_residual_run_manifest.json \
+            --dependency docs/evidence/neural_followup_data_audit.json \
+            --dependency docs/evidence/neural_residual_signal_audit.json \
+            --dependency docs/evidence/neural_colab_ablation_results.json \
+            --dependency docs/evidence/neural_colab_ablation_run_manifest.json \
+            --dependency docs/evidence/neural_colab_warmup_results.json \
+            --dependency docs/evidence/neural_colab_warmup_run_manifest.json \
+            --dependency docs/evidence/neural_colab_multiseed_results.json \
+            --dependency docs/evidence/neural_colab_multiseed_run_manifest.json \
+            --dependency docs/evidence/neural_colab_multiseed_additional_comparisons.json \
+            --dependency docs/evidence/neural_colab_comparator_results.json \
+            --dependency docs/evidence/neural_colab_comparator_run_manifest.json \
+            --dependency docs/evidence/neural_colab_ranking_results.json \
+            --dependency docs/evidence/neural_colab_ranking_run_manifest.json \
+            --dependency docs/evidence/neural_colab_history_results.json \
+            --dependency docs/evidence/neural_colab_history_run_manifest.json \
+            --dependency docs/evidence/neural_personalization_diagnosis.json
+          uv run python scripts/notebook_quality.py check-pair notebooks/04_neural_ranking_experiments.ipynb notebooks/04_neural_ranking_experiments.py
+          uv run python scripts/notebook_quality.py check-saved notebooks/04_neural_ranking_experiments.ipynb \
+            --dependency docs/evidence/neural_colab_ranking_results.json \
+            --dependency docs/evidence/neural_colab_ranking_run_manifest.json
+          uv run python scripts/notebook_quality.py check-pair notebooks/05_neural_history_experiments.ipynb notebooks/05_neural_history_experiments.py
+          uv run python scripts/notebook_quality.py check-saved notebooks/05_neural_history_experiments.ipynb \
+            --dependency docs/evidence/neural_colab_history_results.json \
+            --dependency docs/evidence/neural_colab_history_run_manifest.json \
+            --dependency docs/evidence/neural_personalization_diagnosis.json
 
       - name: Smoke-execute notebook
         if: matrix.python-version == '3.12'
@@ -63,6 +142,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/notebook-smoke"
           uv run jupyter nbconvert --to notebook --execute notebooks/01_end_to_end_book_recommender.ipynb --output-dir "$RUNNER_TEMP/notebook-smoke" --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=300
           uv run python scripts/notebook_quality.py check-executed "$RUNNER_TEMP/notebook-smoke/01_end_to_end_book_recommender.ipynb"
+          uv run jupyter nbconvert --to notebook --execute notebooks/03_neural_experiment_history.ipynb --output-dir "$RUNNER_TEMP/notebook-smoke" --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=120
+          uv run python scripts/notebook_quality.py check-executed "$RUNNER_TEMP/notebook-smoke/03_neural_experiment_history.ipynb"
+          uv run jupyter nbconvert --to notebook --execute notebooks/04_neural_ranking_experiments.ipynb --output-dir "$RUNNER_TEMP/notebook-smoke" --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=120
+          uv run python scripts/notebook_quality.py check-executed "$RUNNER_TEMP/notebook-smoke/04_neural_ranking_experiments.ipynb"
+          uv run jupyter nbconvert --to notebook --execute notebooks/05_neural_history_experiments.ipynb --output-dir "$RUNNER_TEMP/notebook-smoke" --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=120
+          uv run python scripts/notebook_quality.py check-executed "$RUNNER_TEMP/notebook-smoke/05_neural_history_experiments.ipynb"
 
       - name: Build package
         if: matrix.python-version == '3.12'

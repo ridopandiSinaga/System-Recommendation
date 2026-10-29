@@ -1,0 +1,356 @@
+{
+  "schema_version": 1,
+  "project": "System-Recommendation",
+  "session_name": "book-recommendation-neural-20261014-comparators",
+  "experiment_directory": "experiment",
+  "account_free_without_paid_balance_confirmed_by_user": true,
+  "paid_resources_authorized": false,
+  "gpu": "Tesla T4, 15360 MiB, 580.82.07",
+  "tensorflow_version": "2.21.0",
+  "deterministic_operations": true,
+  "candidate_count": 18,
+  "bias_configuration_count": 32,
+  "reused_mlp_count": 6,
+  "all_candidates_completed": true,
+  "ranking_completed": true,
+  "total_neural_epochs": 108,
+  "new_architecture": "shallow biased matrix factorization; no new deep MLP training",
+  "original_validation_uploaded": false,
+  "original_test_uploaded": false,
+  "original_validation_used": false,
+  "original_test_used": false,
+  "assessment_is_internal_development": true,
+  "assessment_previously_inspected": true,
+  "assessment_weights_locked_utc": "2026-10-13T21:42:14.070628+00:00",
+  "model_promotion_to_application": false,
+  "backups": [
+    {
+      "archive": "inputs_backup.tar.gz",
+      "sha256": "f95c1c612f75ff251f4547576b19b0a70054e8c2c23b96afda9989ffd6d0511b",
+      "bytes": 21501010,
+      "kind": "training_inputs",
+      "epoch": null,
+      "members": 37,
+      "verified_utc": "2026-10-13T21:41:14.830766+00:00"
+    },
+    {
+      "archive": "epoch_001_snapshot.tar.gz",
+      "sha256": "ff21c24fef9ef7c4ddaa46753f551f580e077f45e92272c9df8c5be7cba8ba31",
+      "bytes": 5029653,
+      "kind": "epoch_checkpoint",
+      "epoch": 0,
+      "members": 102,
+      "verified_utc": "2026-10-13T21:41:29.690915+00:00"
+    },
+    {
+      "archive": "epoch_002_snapshot.tar.gz",
+      "sha256": "ec0435a3b5051419ba016ff77918f628f4b94f3b10bfee6ffca5079ccfb0682c",
+      "bytes": 7960385,
+      "kind": "epoch_checkpoint",
+      "epoch": 6,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:42:00.843834+00:00"
+    },
+    {
+      "archive": "epoch_003_snapshot.tar.gz",
+      "sha256": "e87f6cd4c2e5e417b61d109ef8376987d04589a06f268896d676746f66c2980d",
+      "bytes": 7961263,
+      "kind": "epoch_checkpoint",
+      "epoch": 12,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:42:08.631646+00:00"
+    },
+    {
+      "archive": "epoch_004_snapshot.tar.gz",
+      "sha256": "86bb78d84f0f140a70c1d323bd508030097bfac91f9bf3678e78968de3284610",
+      "bytes": 7962718,
+      "kind": "epoch_checkpoint",
+      "epoch": 18,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:42:51.778491+00:00"
+    },
+    {
+      "archive": "epoch_005_snapshot.tar.gz",
+      "sha256": "fefcc5ae5d433c7ba0ffcb06a031ddc42b62f74e79a4c892fd91dbb1f9ad3da7",
+      "bytes": 7964760,
+      "kind": "epoch_checkpoint",
+      "epoch": 24,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:42:57.799511+00:00"
+    },
+    {
+      "archive": "epoch_006_snapshot.tar.gz",
+      "sha256": "e429ad90fda1bb0cd8749764c97534fa682213a7e0e6006610c4ebd955f649a4",
+      "bytes": 7965412,
+      "kind": "epoch_checkpoint",
+      "epoch": 30,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:43:03.538854+00:00"
+    },
+    {
+      "archive": "epoch_007_snapshot.tar.gz",
+      "sha256": "e22884b4fb137e10aaed728a751feb616937347de7937b7d73a8af76471a3d97",
+      "bytes": 7965955,
+      "kind": "epoch_checkpoint",
+      "epoch": 36,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:43:10.852778+00:00"
+    },
+    {
+      "archive": "epoch_008_snapshot.tar.gz",
+      "sha256": "83e0c3cf55bb867119eb0ccb0dc315672d3287e7521162b8f6fa945536c20164",
+      "bytes": 7972872,
+      "kind": "epoch_checkpoint",
+      "epoch": 42,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:43:16.995993+00:00"
+    },
+    {
+      "archive": "epoch_009_snapshot.tar.gz",
+      "sha256": "55b6f7dff8461f5dba4fe8699aa3e162729e1b139395408fb5d879f202069e29",
+      "bytes": 7974553,
+      "kind": "epoch_checkpoint",
+      "epoch": 48,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:43:23.583469+00:00"
+    },
+    {
+      "archive": "epoch_010_snapshot.tar.gz",
+      "sha256": "379285a73caf95d0e473101fccfce1dbdaca86b6f830d922dfc1f4c57e2dbee4",
+      "bytes": 7976757,
+      "kind": "epoch_checkpoint",
+      "epoch": 54,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:43:30.599912+00:00"
+    },
+    {
+      "archive": "epoch_011_snapshot.tar.gz",
+      "sha256": "c78eac370f1ff36ad6fb4ee30bce5617145beca1c06e6d34000d0e764a25885a",
+      "bytes": 7969398,
+      "kind": "epoch_checkpoint",
+      "epoch": 60,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:43:49.263569+00:00"
+    },
+    {
+      "archive": "epoch_012_snapshot.tar.gz",
+      "sha256": "a3d2e1192f9d124b25f0c167de7d90cfaa18ecda3fd8c9f90e581ee86309a074",
+      "bytes": 7971378,
+      "kind": "epoch_checkpoint",
+      "epoch": 66,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:43:55.586524+00:00"
+    },
+    {
+      "archive": "epoch_013_snapshot.tar.gz",
+      "sha256": "c19be11e69ee157aac477ba98fe1dae6ac4bde2aea606688ebee3eabef5eae38",
+      "bytes": 7971436,
+      "kind": "epoch_checkpoint",
+      "epoch": 72,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:44:03.997443+00:00"
+    },
+    {
+      "archive": "epoch_014_snapshot.tar.gz",
+      "sha256": "c5ac4f585aaf9c0055dd2ce26ce59ff8fdf61b43485c604f4f4494850a5c7fc4",
+      "bytes": 7976800,
+      "kind": "epoch_checkpoint",
+      "epoch": 78,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:44:48.441238+00:00"
+    },
+    {
+      "archive": "epoch_015_snapshot.tar.gz",
+      "sha256": "19f2280cd550f9b846f8e7b05e4227a8374f171e815f4adab3c9cbbc1f2fa6c3",
+      "bytes": 7977803,
+      "kind": "epoch_checkpoint",
+      "epoch": 84,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:44:59.508162+00:00"
+    },
+    {
+      "archive": "epoch_016_snapshot.tar.gz",
+      "sha256": "454ba782d1a1919b321553597412198f64ae6fee8465c4dcde0708af39e75d60",
+      "bytes": 7977854,
+      "kind": "epoch_checkpoint",
+      "epoch": 90,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:45:07.645147+00:00"
+    },
+    {
+      "archive": "epoch_017_snapshot.tar.gz",
+      "sha256": "3d2c4271e0c2a064b47de88abdae8cf1518b0b68ffcac568c3a31584ca134689",
+      "bytes": 7986835,
+      "kind": "epoch_checkpoint",
+      "epoch": 96,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:45:14.339894+00:00"
+    },
+    {
+      "archive": "epoch_018_snapshot.tar.gz",
+      "sha256": "ddb8b14dd06e2c7abf42afac6cae593a73317d66fa088b5c0e64b07feba7f8a4",
+      "bytes": 7988103,
+      "kind": "epoch_checkpoint",
+      "epoch": 102,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:45:20.457103+00:00"
+    },
+    {
+      "archive": "epoch_019_snapshot.tar.gz",
+      "sha256": "307ac5659dcf8d511d4f6d68834424eaa443b585e991352354bba04135751e8c",
+      "bytes": 7989019,
+      "kind": "epoch_checkpoint",
+      "epoch": 108,
+      "members": 16,
+      "verified_utc": "2026-10-13T21:45:28.464608+00:00"
+    },
+    {
+      "archive": "epoch_020_snapshot.tar.gz",
+      "sha256": "c02fc00eff6094e60b18d92aa3857b7d788ce69bc60fc925a94b40d7b9602126",
+      "bytes": 5220405,
+      "kind": "epoch_checkpoint",
+      "epoch": 108,
+      "members": 12,
+      "verified_utc": "2026-10-13T21:45:33.205505+00:00"
+    },
+    {
+      "archive": "final_backup.tar.gz",
+      "sha256": "106795ad52f12c37acac8f9cfd6a4ea0defaacc9604bf40f01b74622acca2cf1",
+      "bytes": 88248871,
+      "kind": "completed_experiment",
+      "epoch": null,
+      "members": 292,
+      "verified_utc": "2026-10-13T21:47:56.515696+00:00"
+    },
+    {
+      "archive": "runtime_verification.tar.gz",
+      "sha256": "2a02bd03be7fffabeed9052d3e30cb9f6d604ce3326cf85ab127e2e463d7ed0a",
+      "bytes": 69738,
+      "kind": "runtime_verification",
+      "epoch": null,
+      "members": 17,
+      "verified_utc": "2026-10-13T21:46:57.852667+00:00"
+    }
+  ],
+  "verification": {
+    "all_backups_verified": true,
+    "method": "SHA-256, byte size, gzip CRC, tar containment, and every extracted file hash",
+    "source_metadata_matches_archived_executed_source": true,
+    "verified_utc": "2026-10-13T21:52:20.928889+00:00",
+    "status": "passed",
+    "fingerprinted_files": 172,
+    "rating_metrics": 104,
+    "rating_bootstraps": 46,
+    "ranking_bootstraps": 126,
+    "ranking_user_outcomes": 28656,
+    "exact_bias_popularity_top10": 7164,
+    "selection_metrics": 100,
+    "locked_artifact_and_frozen_input_hashes_verified": true,
+    "executed_source_matches_verification_archive": true,
+    "selection_decisions_reproduced": true,
+    "reused_mlp_rating_metrics_reproduced": true,
+    "rating_and_ranking_metrics_reproduced": true,
+    "ranking_status": {
+      "17": "completed",
+      "29": "completed"
+    },
+    "independent_bootstrap_oracles": true,
+    "limitations": [
+      "Neural ranking scores were not recomputed from Keras models locally; their artifact hashes, GPU parity checks, stored score ordering and outcome consistency were verified.",
+      "Bias and popularity top-10 lists were recomputed over the complete catalog."
+    ]
+  },
+  "runtime_tests": {
+    "passed": 17,
+    "file": "verification/comparator_tests.log"
+  },
+  "shutdown": {
+    "stopped": true,
+    "after_backup_and_result_verification": true,
+    "stop_operation": "artifacts/colab/operations/comparator-stop-owned-session-20261013T215250-6571d632.json",
+    "server_check_operation": "artifacts/colab/operations/comparator-verify-server-stopped-20261013T215307-e4d5c758.json",
+    "server_reports_no_active_sessions": true,
+    "completed_at_utc": "2026-10-13T21:52:54.291480+00:00"
+  },
+  "local_artifact_path_relative_to_project": "artifacts/colab/run-20261014-comparators",
+  "predeclared_protocol": {
+    "declared_utc": "2026-10-13T21:36:34.716498+00:00",
+    "session": "book-recommendation-neural-20261014-comparators",
+    "free_account_confirmed": true,
+    "scope": "Adaptive comparator study on reused internal development assessment already seen; not fresh independent test",
+    "original_test_uploaded": false,
+    "original_validation_uploaded": false,
+    "split_seeds": [
+      17,
+      29
+    ],
+    "training_seeds": [
+      42,
+      2026,
+      7
+    ],
+    "bias_grid": {
+      "user_shrinkage": [
+        0,
+        5,
+        20,
+        100
+      ],
+      "item_shrinkage": [
+        0,
+        5,
+        20,
+        100
+      ],
+      "max_iterations": 1000,
+      "tolerance": 1e-10,
+      "global_mean": "Fixed fit mean"
+    },
+    "mf": {
+      "fits": 18,
+      "embedding_dimension": 16,
+      "factor_initial_std": 0.05,
+      "bias_initialization": "Selection-chosen joint ridge bias, subsequently trainable",
+      "lambda": [
+        0.0001,
+        0.001,
+        0.01
+      ],
+      "loss": "MSE on normalized rating + lambda * observed-pair mean(sum(user factors\u00b2)+sum(item factors\u00b2)+user bias\u00b2+item bias\u00b2)",
+      "optimizer": "Adam",
+      "learning_rate": 0.005,
+      "batch_size": 1024,
+      "max_epochs": 30,
+      "patience": 5,
+      "training_budget_seconds": 900,
+      "snapshot_interval_epochs": 10,
+      "selection": "Lambda mean selection RMSE across all 3 seeds; primary seed selection RMSE only"
+    },
+    "reused_mlp_models": 6,
+    "primary_mlp": {
+      "17": "split17_mlp_seed42",
+      "29": "split29_mlp_seed7"
+    },
+    "gate": "All declared fits complete and weights hashed/locked before assessment",
+    "ranking": {
+      "catalogue": "Every frozen ISBN; max raw score per canonical work",
+      "exclude": "All fit user/work groups including all editions",
+      "relevance": "One heldout work/user; any heldout edition >=8; unavailable target counts as miss",
+      "popularity": "Distinct fit users rating>=8 per work",
+      "models": "3 reused MLP + 3 MF selected-lambda seeds + tuned bias + popularity",
+      "tie_break": "Lexicographic canonical work key",
+      "metrics": [
+        "Recall@10 (=Hit@10)",
+        "NDCG@10",
+        "MRR@10",
+        "catalogue exposure coverage",
+        "recommendation frequency entropy"
+      ],
+      "bootstrap": "1000 paired user draws seed123 vs chosen bias, popularity, primary MLP; within split; unadjusted; no pooling",
+      "no_ranking_tuning": true,
+      "ranking_budget_seconds": 300
+    },
+    "shutdown": "Stop owned runtime after verified local backups",
+    "model_promotion": false
+  }
+}

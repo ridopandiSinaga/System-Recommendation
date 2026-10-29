@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "generated_utc": "2026-10-13T18:35:35.388247+00:00",
+  "method": "Read saved float32 weights using h5py; manual NumPy forward pass; no TensorFlow import or training.",
+  "architecture_contract": "ResidualRatingModel; concat(user,book,user*book); two LeakyReLU(0.2) layers; linear scaled residual; frozen additive biases.",
+  "scope": "Training and validation only. No test file read or new test evaluation.",
+  "residual_statistics_convention": "Additive neural correction in original rating points, before clipping final predictions to 1-10; population standard deviation.",
+  "baseline_reference": "bias_only_u0_i20",
+  "selected_candidate": "residual_u0_i20_s025_l2e4",
+  "train_pairs": 111875,
+  "validation_pairs": 500,
+  "validation_known_pairs": 140,
+  "provenance": [
+    {
+      "path": "scripts/audit_residual_signal.py",
+      "bytes": 14012,
+      "sha256": "acd5f1a55caf925d6f9817e71c14a633c7972f84e7b06fa74c8050cba4448fee"
+    },
+    {
+      "path": "artifacts/colab/run-20261014-residual/final/results.json",
+      "bytes": 38545,
+      "sha256": "41c56257f7f15ca33a284a40b5e12279edf917f5f5a39c8ffc16d0b140366444"
+    },
+    {
+      "path": "artifacts/colab/run-20261014-residual/final/inputs/train_ratings.csv",
+      "bytes": 2438545,
+      "sha256": "ce2c45880b2e09ef899131ae953493502619c300b9ce7362a9788ad50a45d07a"
+    },
+    {
+      "path": "artifacts/colab/run-20261014-residual/final/inputs/validation_ratings.csv",
+      "bytes": 40126,
+      "sha256": "7fd5277f139a9b390bf7ed3900c7e639a7f8ab4bd594a66bc0fe372f449e83e2"
+    }
+  ],
+  "candidates": [
+    {
+      "name": "bias_only_u0_i20",
+      "kind": "bias_only",
+      "l2": 1e-05,
+      "residual_scale": 0.0,
+      "best_epoch": null,
+      "epochs_completed": 0,
+      "train_residual_rating": {
+        "pairs": 111875,
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "validation_residual_rating": {
+        "pairs": 140,
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "embedding_norms": {
+        "user_embedding": 14.29158893897055,
+        "book_embedding": 8.176395559405512
+      },
+      "embedding_norm_ratio_to_untrained_control": {
+        "user_embedding": 1.0,
+        "book_embedding": 1.0
+      },
+      "untrained_control_checks": {
+        "frozen_bias_arrays_identical": true,
+        "traced_initial_user_embedding_matches_control": null,
+        "initial_embedding_check_scope": "First traced user embedding row, plus matching seed and architecture; no optimizer step exists for the control."
+      },
+      "validation_check": {
+        "saved_rmse": 1.7475726909521183,
+        "numpy_rmse": 1.7475726909521183,
+        "absolute_difference": 0.0,
+        "absolute_tolerance": 1e-05,
+        "passed": true
+      },
+      "artifacts": [
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/bias_only_u0_i20/model/network.keras",
+          "bytes": 1412781,
+          "sha256": "02e822efa5ca5f1d6a59c26a3de3b9e580fe901d13172d854cf4bda5067dc27e"
+        },
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/bias_only_u0_i20/model/metadata.json",
+          "bytes": 12392046,
+          "sha256": "a4c2ef0f39825a5f653c3a1114eb89c451be2146631c3ccb137ea4f0cd337313"
+        },
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/bias_only_u0_i20/validation_result.json",
+          "bytes": 855,
+          "sha256": "5f60488247c2101c03267526482b1ba6afbc79b1fa7d33fbf752fd692a7d1bd1"
+        }
+      ]
+    },
+    {
+      "name": "residual_u0_i20_s025",
+      "kind": "neural",
+      "l2": 1e-05,
+      "residual_scale": 0.25,
+      "best_epoch": 1,
+      "epochs_completed": 4,
+      "train_residual_rating": {
+        "pairs": 111875,
+        "mean": -0.021807402350233252,
+        "std": 1.040322621756931e-05,
+        "min": -0.02185371145606041,
+        "max": -0.021761886775493622
+      },
+      "validation_residual_rating": {
+        "pairs": 140,
+        "mean": -0.021807037919227567,
+        "std": 1.0685258283721202e-05,
+        "min": -0.02183743566274643,
+        "max": -0.021778563037514687
+      },
+      "embedding_norms": {
+        "user_embedding": 0.9634025202269635,
+        "book_embedding": 0.5543370153583937
+      },
+      "embedding_norm_ratio_to_untrained_control": {
+        "user_embedding": 0.06741045550225286,
+        "book_embedding": 0.06779723550932246
+      },
+      "untrained_control_checks": {
+        "frozen_bias_arrays_identical": true,
+        "traced_initial_user_embedding_matches_control": true,
+        "initial_embedding_check_scope": "First traced user embedding row, plus matching seed and architecture; no optimizer step exists for the control."
+      },
+      "validation_check": {
+        "saved_rmse": 1.7466083457956485,
+        "numpy_rmse": 1.7466083457956485,
+        "absolute_difference": 0.0,
+        "absolute_tolerance": 1e-05,
+        "passed": true
+      },
+      "artifacts": [
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/residual_u0_i20_s025/model/network.keras",
+          "bytes": 1412782,
+          "sha256": "313233432843370563c7713facfa3ff33aa9a791426b155c7f699d5047715613"
+        },
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/residual_u0_i20_s025/model/metadata.json",
+          "bytes": 12397005,
+          "sha256": "eeef5377bf9f2e80288e7479e0b59ca6bc289aa965f27b18a4b735bef4e5585e"
+        },
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/residual_u0_i20_s025/validation_result.json",
+          "bytes": 5808,
+          "sha256": "0e08326118a79f47d3e14794aecd5436a8c3131125ed75a8d793d7bee9d6ccfc"
+        }
+      ]
+    },
+    {
+      "name": "residual_u0_i20_s025_l2e4",
+      "kind": "neural",
+      "l2": 0.0001,
+      "residual_scale": 0.25,
+      "best_epoch": 1,
+      "epochs_completed": 4,
+      "train_residual_rating": {
+        "pairs": 111875,
+        "mean": -0.021922738934012764,
+        "std": 1.356260119733789e-06,
+        "min": -0.02192799560725689,
+        "max": -0.02191470004618168
+      },
+      "validation_residual_rating": {
+        "pairs": 140,
+        "mean": -0.021922779349344116,
+        "std": 1.319842980406498e-06,
+        "min": -0.02192600816488266,
+        "max": -0.021916989237070084
+      },
+      "embedding_norms": {
+        "user_embedding": 0.07156433372488982,
+        "book_embedding": 0.04167814947643546
+      },
+      "embedding_norm_ratio_to_untrained_control": {
+        "user_embedding": 0.0050074441708680105,
+        "book_embedding": 0.005097374408273588
+      },
+      "untrained_control_checks": {
+        "frozen_bias_arrays_identical": true,
+        "traced_initial_user_embedding_matches_control": true,
+        "initial_embedding_check_scope": "First traced user embedding row, plus matching seed and architecture; no optimizer step exists for the control."
+      },
+      "validation_check": {
+        "saved_rmse": 1.7466038713583087,
+        "numpy_rmse": 1.7466038713583087,
+        "absolute_difference": 0.0,
+        "absolute_tolerance": 1e-05,
+        "passed": true
+      },
+      "artifacts": [
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/residual_u0_i20_s025_l2e4/model/network.keras",
+          "bytes": 1412783,
+          "sha256": "fd6b2cd515dfeee111b5c278c3c905b10f3ccfc3ff69e7ab78393a9e8148c52d"
+        },
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/residual_u0_i20_s025_l2e4/model/metadata.json",
+          "bytes": 12396995,
+          "sha256": "0963cbe0a1661c3a9d73763f3365008d8a5f3aa5d85dab8a76e5290e59646fd5"
+        },
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/residual_u0_i20_s025_l2e4/validation_result.json",
+          "bytes": 5805,
+          "sha256": "c5e344e20e43b585ff37b6ea486d22dbbf157231e9410a29e20e6077786adaf1"
+        }
+      ]
+    },
+    {
+      "name": "residual_u0_i20_s100",
+      "kind": "neural",
+      "l2": 1e-05,
+      "residual_scale": 1.0,
+      "best_epoch": 1,
+      "epochs_completed": 4,
+      "train_residual_rating": {
+        "pairs": 111875,
+        "mean": -0.01730457781689793,
+        "std": 8.82698517777798e-06,
+        "min": -0.01735405996441841,
+        "max": -0.017261870205402374
+      },
+      "validation_residual_rating": {
+        "pairs": 140,
+        "mean": -0.017304348440042566,
+        "std": 9.134293549381891e-06,
+        "min": -0.017326779663562775,
+        "max": -0.0172712504863739
+      },
+      "embedding_norms": {
+        "user_embedding": 0.9855390278261784,
+        "book_embedding": 0.6004699108147713
+      },
+      "embedding_norm_ratio_to_untrained_control": {
+        "user_embedding": 0.06895937407902866,
+        "book_embedding": 0.07343943996496546
+      },
+      "untrained_control_checks": {
+        "frozen_bias_arrays_identical": true,
+        "traced_initial_user_embedding_matches_control": true,
+        "initial_embedding_check_scope": "First traced user embedding row, plus matching seed and architecture; no optimizer step exists for the control."
+      },
+      "validation_check": {
+        "saved_rmse": 1.7467858152340254,
+        "numpy_rmse": 1.7467858152340254,
+        "absolute_difference": 0.0,
+        "absolute_tolerance": 1e-05,
+        "passed": true
+      },
+      "artifacts": [
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/residual_u0_i20_s100/model/network.keras",
+          "bytes": 1412781,
+          "sha256": "f6c9d4d7545de64a49b8a72d799c29e17eddf9f43efaa79471b1bc17ed5d6a53"
+        },
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/residual_u0_i20_s100/model/metadata.json",
+          "bytes": 12397003,
+          "sha256": "5b105538c5f6424544d62451f0ad972c60b202cd48979992860db18354a7f547"
+        },
+        {
+          "path": "artifacts/colab/run-20261014-residual/final/candidates/residual_u0_i20_s100/validation_result.json",
+          "bytes": 5806,
+          "sha256": "bc6a520e85aaa3bac857d9eabda0c129eb03ef7626f818b9805cc77d9231dcda"
+        }
+      ]
+    }
+  ],
+  "interpretation": "The saved residual corrections are nearly constant across training and known validation pairs. The learned embeddings are much smaller than the same-seed untrained control. This supports auditing regularization and initialization before expanding the network.",
+  "limitations": [
+    "This manual forward pass supports only the explicitly checked architecture/dtype and must be updated when model semantics change.",
+    "Agreement of aggregate validation RMSE within 1e-5 checks the reconstruction; it is not a fresh TensorFlow per-prediction parity test.",
+    "Nearly constant is not exactly constant. This diagnoses saved best checkpoints, not every optimizer step.",
+    "Large embedding shrinkage is observed; causation by L2 or zero-head initialization requires controlled ablations.",
+    "Embedding norm comparisons use the same-seed untrained bias-only control; they do not measure parameter displacement."
+  ]
+}
